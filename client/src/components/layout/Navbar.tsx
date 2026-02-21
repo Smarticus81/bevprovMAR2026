@@ -1,53 +1,24 @@
 import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
 export function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
   return (
     <motion.header 
-      className={`fixed top-0 w-full z-50 transition-all duration-500 ease-in-out ${
-        scrolled ? "glass py-4" : "bg-transparent py-6"
-      }`}
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
+      className="fixed top-0 w-full z-50 mix-blend-difference p-6 flex justify-between items-start text-white pointer-events-none"
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: "easeOut" }}
     >
-      <div className="container mx-auto px-6 md:px-12 flex items-center justify-between">
-        <Link href="/" className="font-serif text-2xl tracking-wider text-white hover:text-primary transition-colors">
-          BevOne<span className="text-primary">.</span>
-        </Link>
+      <Link href="/" className="font-display text-5xl md:text-7xl leading-none pointer-events-auto hover:text-primary transition-colors tracking-widest">
+        BEVONE
+      </Link>
 
-        <nav className="hidden md:flex items-center gap-8">
-          <Link href="#solutions" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
-            Solutions
-          </Link>
-          <Link href="#platform" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
-            Platform
-          </Link>
-          <Link href="#venues" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
-            For Venues
-          </Link>
-        </nav>
-
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" className="hidden md:inline-flex text-white/80 hover:text-white hover:bg-white/10">
-            Sign In
-          </Button>
-          <Button className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6">
-            Book Demo
-          </Button>
-        </div>
+      <div className="flex flex-col items-end gap-1 font-mono text-[10px] md:text-xs uppercase pointer-events-auto">
+        <Link href="#modules" className="hover:text-primary transition-colors">Modules [01]</Link>
+        <Link href="#architecture" className="hover:text-primary transition-colors">Architecture [02]</Link>
+        <button className="mt-6 border-2 border-white px-6 py-2 hover:bg-white hover:text-black transition-all active:scale-95 font-bold tracking-widest bg-black/20 backdrop-blur-sm">
+          INITIALIZE
+        </button>
       </div>
     </motion.header>
   );

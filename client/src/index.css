@@ -29,41 +29,41 @@
   --color-ring: hsl(var(--ring));
   
   --font-sans: 'Inter', sans-serif;
-  --font-serif: 'Playfair Display', serif;
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-mono: 'Space Mono', monospace;
 }
 
 :root {
-  /* Default to dark mode for this luxurious vibe */
-  --background: 220 30% 4%;
-  --foreground: 220 10% 95%;
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
 
-  --card: 220 30% 6%;
-  --card-foreground: 220 10% 95%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 0%;
 
-  --popover: 220 30% 6%;
-  --popover-foreground: 220 10% 95%;
+  --popover: 0 0% 0%;
+  --popover-foreground: 0 0% 100%;
 
-  /* Soft Gold for primary accents */
-  --primary: 40 80% 60%;
-  --primary-foreground: 220 30% 4%;
+  /* High visibility neon red */
+  --primary: 10 100% 50%;
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 220 20% 12%;
-  --secondary-foreground: 220 10% 95%;
+  --secondary: 0 0% 15%;
+  --secondary-foreground: 0 0% 100%;
 
-  --muted: 220 20% 12%;
-  --muted-foreground: 220 10% 60%;
+  --muted: 0 0% 15%;
+  --muted-foreground: 0 0% 60%;
 
-  --accent: 40 80% 60%;
-  --accent-foreground: 220 30% 4%;
+  --accent: 10 100% 50%;
+  --accent-foreground: 0 0% 100%;
 
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 210 40% 98%;
+  --destructive: 0 100% 50%;
+  --destructive-foreground: 0 0% 100%;
 
-  --border: 220 20% 15%;
-  --input: 220 20% 15%;
-  --ring: 40 80% 60%;
+  --border: 0 0% 100%;
+  --input: 0 0% 100%;
+  --ring: 10 100% 50%;
 
-  --radius: 0.5rem;
+  --radius: 0rem; /* Brutalism uses sharp corners */
 }
 
 @layer base {
@@ -71,25 +71,40 @@
     @apply border-border;
   }
   body {
-    @apply font-sans antialiased bg-background text-foreground selection:bg-primary selection:text-primary-foreground;
-  }
-  
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-serif font-medium tracking-tight;
+    @apply font-sans antialiased bg-background text-foreground selection:bg-primary selection:text-white;
   }
 }
 
 @layer utilities {
-  .glass {
-    @apply bg-background/40 backdrop-blur-md border border-white/5;
+  .text-outline {
+    -webkit-text-stroke: 1px white;
+    color: transparent;
   }
-  .glass-card {
-    @apply bg-white/5 backdrop-blur-lg border border-white/10 shadow-xl;
+  .text-outline-black {
+    -webkit-text-stroke: 1px black;
+    color: transparent;
   }
-  .text-glow {
-    text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+  .text-outline-primary {
+    -webkit-text-stroke: 2px hsl(var(--primary));
+    color: transparent;
   }
-  .text-glow-primary {
-    text-shadow: 0 0 20px hsl(var(--primary) / 0.5);
+  
+  .marquee-container {
+    overflow: hidden;
+    white-space: nowrap;
+    position: relative;
+    width: 100vw;
+    margin-left: 50%;
+    transform: translateX(-50%);
+  }
+  
+  .marquee-content {
+    display: inline-block;
+    animation: marquee 20s linear infinite;
+  }
+  
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
   }
 }

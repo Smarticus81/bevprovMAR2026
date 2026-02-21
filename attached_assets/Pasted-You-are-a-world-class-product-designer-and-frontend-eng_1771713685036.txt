@@ -1,0 +1,110 @@
+You are a world-class product designer and frontend engineer. 
+Design a modern, minimalist, premium landing page for a platform called “BevOne”.
+
+BevOne is a unified AI platform that allows event venues to create their own voice-powered AI web apps. It includes three flagship assistants:
+- BevPro POS (voice-powered point of sale)
+- BevPro Inventory
+- Venue Assistant (booking, admin, finance, oversight)
+
+The landing page must feel calm, intelligent, and inevitable. No loud gradients. No neon cyberpunk. No generic SaaS illustrations.
+
+Aesthetic direction:
+- Ultra-minimalist
+- Soft neutral palette (off-white, champagne beige, matte charcoal, subtle stone grays)
+- High-end typography (clean geometric sans-serif)
+- Generous white space
+- Glassmorphism used sparingly and elegantly
+- Subtle motion, not distracting
+
+Hero Section:
+- Fullscreen background animation: extremely close-up macro view of champagne bubbles rising along the inside of a glass.
+- The bubbles should feel abstract and cinematic — soft focus, warm highlights, shallow depth of field.
+- Animation should loop smoothly and feel luxurious.
+- Slight blur overlay so text remains readable.
+- No loud sparkle effects.
+
+Hero Copy (short, confident, not hype-driven):
+Headline:
+"AI, poured perfectly."
+
+Subheadline:
+"BevOne gives venues their own voice-powered assistants — from POS to inventory to full operational oversight."
+
+Primary CTA:
+“See It In Action”
+
+Secondary CTA:
+“Explore the Platform”
+
+Below Hero:
+Interactive Demo Section:
+- Three floating glass cards representing the assistants:
+   1. BevPro POS
+   2. BevPro Inventory
+   3. Venue Assistant
+- Each card has:
+   - Minimal icon
+   - Short 1-line description
+   - “Launch Demo” button
+- When clicked, a modal opens with:
+   - Simulated live voice transcript
+   - Streaming text response
+   - Tool calls visualized in a clean side panel
+   - Latency indicator (small subtle detail)
+   - Conversation replay ability
+
+Platform Section:
+Minimal diagram-style visual showing:
+Venues → Apps → Voice Kernel → Tools → Data
+
+No cartoon icons. Use thin-line diagram style.
+
+Builder Section:
+Headline:
+“Create Your Own AI App.”
+
+Show a simplified UI mock of the App Builder:
+- Select template
+- Configure permissions
+- Enable voice
+- Publish
+
+Keep this section extremely clean and not busy.
+
+Trust Section:
+- Short paragraph about multi-tenant architecture, security, and audit logs.
+- Clean bullet list:
+   - Role-based access
+   - Full action tracing
+   - Tenant isolation
+   - Realtime voice runtime
+
+Footer:
+Minimal.
+Links: Platform, Developers, Security, Contact
+No social media clutter.
+
+Technical Requirements:
+- Build using Next.js + TypeScript + Tailwind.
+- Use motion library for subtle animation (fade/float).
+- Background animation must be optimized (video or WebGL canvas).
+- Performance-first: Lighthouse score above 90.
+- Responsive, mobile-first.
+- No dark neon theme.
+- No excessive gradients.
+- Avoid stock SaaS look.
+
+Tone:
+Confident.
+Understated.
+Precise.
+Premium.
+Not salesy.
+
+Deliver:
+1. Full page layout structure
+2. Component hierarchy
+3. Suggested Tailwind classes
+4. Motion guidance
+5. Placeholder animation implementation strategy
+6. Clean production-ready code scaffold

@@ -7,10 +7,11 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 - **Frontend**: React + Vite + Tailwind CSS v4 + Framer Motion + Wouter routing
 - **Backend**: Express.js on port 5000, PostgreSQL with Drizzle ORM
 - **Auth**: Passport.js local strategy, bcryptjs, express-session + connect-pg-simple
-- **Voice**: OpenAI Realtime API via WebRTC (ephemeral tokens), fallback to Whisper STT→GPT-4o-mini Chat→TTS-1
-- **AI**: OpenAI via Replit AI Integrations (`AI_INTEGRATIONS_OPENAI_API_KEY`, `AI_INTEGRATIONS_OPENAI_BASE_URL`)
+- **Voice**: OpenAI Realtime API via WebRTC (ephemeral tokens from `OPENAI_API_KEY`). Primary pipeline only — no fallback.
+- **AI (chat)**: OpenAI via Replit AI Integrations (`AI_INTEGRATIONS_OPENAI_API_KEY`, `AI_INTEGRATIONS_OPENAI_BASE_URL`) for chat completions
 - **Mobile**: Capacitor iOS app config + PWA fallback
 - **Multi-tenancy**: All data scoped by organizationId, enforced at storage and API layers
+- **Theme**: Consistent dark theme (bg-black, glassmorphic cards) across all pages
 
 ## Data Model (shared/schema.ts)
 ### Core
@@ -91,11 +92,9 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 - `GET/PUT /api/agents/:id/tools` — Get/set agent tools
 
 ### Voice
-- `POST /api/voice/session` — Create WebRTC session (ephemeral token)
+- `POST /api/voice/session` — Create WebRTC session (ephemeral token via OPENAI_API_KEY)
 - `POST /api/voice/tool-call` — Execute tool call (with orgId)
-- `POST /api/voice/transcribe` — Fallback STT (Whisper)
-- `POST /api/voice/chat` — Fallback chat with tools (GPT-4o-mini)
-- `POST /api/voice/synthesize` — Fallback TTS (TTS-1)
+- `POST /api/voice/chat` — Chat completions with tool calling (via Replit AI integration)
 
 ### Venue Data (all scoped by orgId)
 - `GET/POST/PATCH/:id/DELETE/:id /api/venue/menu` — Menu items

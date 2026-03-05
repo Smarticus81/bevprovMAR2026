@@ -22,10 +22,10 @@ export function Navbar() {
       </div>
 
       <div className="flex items-center gap-6">
-        <button className="hidden md:block hover:text-white transition-colors">Sign In</button>
-        <button className="border border-white/20 rounded-full px-5 py-2 hover:bg-white hover:text-black transition-all duration-300">
+        <Link href="/login" data-testid="link-sign-in" className="hidden md:block hover:text-white transition-colors">Sign In</Link>
+        <Link href="/register" data-testid="link-start-building" className="border border-white/20 rounded-full px-5 py-2 hover:bg-white hover:text-black transition-all duration-300">
           Start Building
-        </button>
+        </Link>
       </div>
     </motion.header>
   );

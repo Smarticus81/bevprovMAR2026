@@ -75,7 +75,12 @@ export function useVoiceSession(agentId: number | null) {
         setState((s) => ({ ...s, isSpeaking: true }));
       };
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (micErr: any) {
+        throw new Error("Microphone access required. Please allow microphone permission and ensure a mic is connected.");
+      }
       mediaStreamRef.current = stream;
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 

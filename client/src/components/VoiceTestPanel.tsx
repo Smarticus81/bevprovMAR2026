@@ -1,7 +1,7 @@
 import { useVoiceSession, type TranscriptEntry } from "@/hooks/useVoiceSession";
-import { Mic, MicOff, Phone, PhoneOff, Wrench, Clock, Volume2, Radio, Send } from "lucide-react";
+import { Mic, MicOff, Phone, PhoneOff, Wrench, Clock, Volume2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 interface VoiceTestPanelProps {
   agentId: number;
@@ -11,8 +11,6 @@ interface VoiceTestPanelProps {
 export function VoiceTestPanel({ agentId, agentName }: VoiceTestPanelProps) {
   const voice = useVoiceSession(agentId);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [textInput, setTextInput] = useState("");
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -21,25 +19,19 @@ export function VoiceTestPanel({ agentId, agentName }: VoiceTestPanelProps) {
   }, [voice.transcript]);
 
   return (
-    <div className="bg-gray-900 rounded-2xl overflow-hidden">
-      <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+    <div className="bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden">
+      <div className="p-4 border-b border-white/10 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className={`w-2 h-2 rounded-full ${
             voice.status === "connected" ? "bg-green-500" :
             voice.status === "connecting" ? "bg-yellow-500 animate-pulse" :
-            voice.status === "error" ? "bg-red-500" : "bg-gray-600"
+            voice.status === "error" ? "bg-red-500" : "bg-white/20"
           }`} />
           <span className="text-white text-sm font-medium">{agentName}</span>
         </div>
         <div className="flex items-center gap-2">
-          {voice.mode === "fallback" && voice.status === "connected" && (
-            <span className="text-xs text-amber-400 flex items-center gap-1 bg-amber-400/10 px-2 py-0.5 rounded-full" data-testid="text-mode-indicator">
-              <Radio size={10} />
-              Fallback
-            </span>
-          )}
           {voice.latency !== null && (
-            <span className="text-xs text-gray-400 flex items-center gap-1" data-testid="text-latency">
+            <span className="text-xs text-white/40 flex items-center gap-1" data-testid="text-latency">
               <Clock size={12} />
               {voice.latency}ms
             </span>
@@ -53,12 +45,12 @@ export function VoiceTestPanel({ agentId, agentName }: VoiceTestPanelProps) {
       <div ref={scrollRef} className="h-64 overflow-y-auto p-4 space-y-3" data-testid="voice-transcript">
         {voice.transcript.length === 0 && voice.status !== "connected" && (
           <div className="h-full flex items-center justify-center">
-            <p className="text-gray-500 text-sm">Start a voice session to test your agent</p>
+            <p className="text-white/30 text-sm">Start a voice session to test your agent</p>
           </div>
         )}
         {voice.transcript.length === 0 && voice.status === "connected" && (
           <div className="h-full flex items-center justify-center">
-            <p className="text-gray-400 text-sm animate-pulse">Listening... speak to test your agent</p>
+            <p className="text-white/40 text-sm animate-pulse">Listening... speak to test your agent</p>
           </div>
         )}
         <AnimatePresence>
@@ -70,19 +62,27 @@ export function VoiceTestPanel({ agentId, agentName }: VoiceTestPanelProps) {
               className={`flex ${entry.role === "user" ? "justify-end" : "justify-start"}`}
             >
               {entry.role === "tool" ? (
-                <div className="bg-amber-900/30 border border-amber-800/30 rounded-xl px-3 py-2 max-w-[90%]">
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2 max-w-[90%]">
                   <div className="flex items-center gap-2 mb-1">
                     <Wrench size={12} className="text-amber-400" />
                     <span className="text-amber-400 text-xs font-medium">{entry.toolName}</span>
                   </div>
-                  <pre className="text-amber-200/70 text-xs overflow-x-auto whitespace-pre-wrap">{entry.text}</pre>
+                  {entry.toolResult ? (
+                    <div className="text-white/60 text-sm">
+                      {typeof entry.toolResult === "object" && entry.toolResult.message
+                        ? entry.toolResult.message
+                        : <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(entry.toolResult, null, 2)}</pre>}
+                    </div>
+                  ) : (
+                    <p className="text-white/40 text-xs animate-pulse">{entry.text}</p>
+                  )}
                 </div>
               ) : (
                 <div
                   className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm ${
                     entry.role === "user"
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-800 text-gray-200"
+                      ? "bg-white text-black"
+                      : "bg-white/10 text-white"
                   }`}
                 >
                   {entry.text}
@@ -94,12 +94,12 @@ export function VoiceTestPanel({ agentId, agentName }: VoiceTestPanelProps) {
       </div>
 
       {voice.error && (
-        <div className="px-4 py-2 bg-red-900/30 border-t border-red-800/30">
-          <p className="text-red-400 text-xs">{voice.error}</p>
+        <div className="px-4 py-2 bg-red-500/10 border-t border-red-500/20">
+          <p className="text-red-400 text-xs" data-testid="text-voice-error">{voice.error}</p>
         </div>
       )}
 
-      <div className="p-4 border-t border-gray-800 flex items-center justify-center gap-4">
+      <div className="p-4 border-t border-white/10 flex items-center justify-center gap-4">
         {voice.status === "idle" || voice.status === "error" ? (
           <button
             data-testid="button-start-voice"
@@ -110,44 +110,23 @@ export function VoiceTestPanel({ agentId, agentName }: VoiceTestPanelProps) {
             Start Session
           </button>
         ) : voice.status === "connecting" ? (
-          <button disabled className="flex items-center gap-2 bg-gray-700 text-gray-400 px-6 py-3 rounded-xl text-sm font-medium">
-            <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+          <button disabled className="flex items-center gap-2 bg-white/10 text-white/40 px-6 py-3 rounded-xl text-sm font-medium">
+            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             Connecting...
           </button>
         ) : (
           <>
-            {voice.mode === "fallback" ? (
-              <button
-                data-testid="button-push-to-talk"
-                onMouseDown={() => { setIsRecording(true); voice.startFallbackRecording(); }}
-                onMouseUp={() => { setIsRecording(false); voice.stopFallbackRecording(); }}
-                onMouseLeave={() => { if (isRecording) { setIsRecording(false); voice.stopFallbackRecording(); } }}
-                onTouchStart={(e) => { e.preventDefault(); setIsRecording(true); voice.startFallbackRecording(); }}
-                onTouchEnd={(e) => { e.preventDefault(); setIsRecording(false); voice.stopFallbackRecording(); }}
-                disabled={voice.isSpeaking}
-                className={`p-3 rounded-xl transition-colors select-none ${
-                  isRecording
-                    ? "bg-red-600 text-white scale-110"
-                    : voice.isSpeaking
-                    ? "bg-gray-800 text-gray-500 cursor-not-allowed"
-                    : "bg-blue-600 text-white hover:bg-blue-500"
-                }`}
-              >
-                <Mic size={20} />
-              </button>
-            ) : (
-              <button
-                data-testid="button-toggle-mute"
-                onClick={voice.toggleMute}
-                className={`p-3 rounded-xl transition-colors ${
-                  voice.isListening
-                    ? "bg-gray-800 text-white hover:bg-gray-700"
-                    : "bg-red-600/20 text-red-400 hover:bg-red-600/30"
-                }`}
-              >
-                {voice.isListening ? <Mic size={20} /> : <MicOff size={20} />}
-              </button>
-            )}
+            <button
+              data-testid="button-toggle-mute"
+              onClick={voice.toggleMute}
+              className={`p-3 rounded-xl transition-colors ${
+                voice.isListening
+                  ? "bg-white/10 text-white hover:bg-white/15"
+                  : "bg-red-500/20 text-red-400 hover:bg-red-500/30"
+              }`}
+            >
+              {voice.isListening ? <Mic size={20} /> : <MicOff size={20} />}
+            </button>
             <button
               data-testid="button-end-voice"
               onClick={voice.disconnect}
@@ -156,11 +135,6 @@ export function VoiceTestPanel({ agentId, agentName }: VoiceTestPanelProps) {
               <PhoneOff size={16} />
               End Session
             </button>
-            {voice.mode === "fallback" && (
-              <span className="text-xs text-gray-400" data-testid="text-push-to-talk-label">
-                {isRecording ? "Recording..." : voice.isSpeaking ? "Speaking..." : "Push to Talk"}
-              </span>
-            )}
           </>
         )}
       </div>

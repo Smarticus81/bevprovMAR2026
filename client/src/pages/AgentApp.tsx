@@ -2,16 +2,15 @@ import { useParams } from "wouter";
 import { useVoiceSession } from "@/hooks/useVoiceSession";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { ArrowLeft, Mic, MicOff, PhoneOff, Wrench, Radio } from "lucide-react";
+import { ArrowLeft, Mic, MicOff, PhoneOff, Wrench } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 export default function AgentApp() {
   const { agentId } = useParams<{ agentId: string }>();
   const id = parseInt(agentId || "0");
   const voice = useVoiceSession(id);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [isRecording, setIsRecording] = useState(false);
 
   const { data: agent } = useQuery({
     queryKey: ["agent-app", agentId],
@@ -40,17 +39,9 @@ export default function AgentApp() {
         </Link>
         <div className="text-center">
           <h1 className="text-sm font-medium" data-testid="text-agent-name">{agent?.name || "Voice Agent"}</h1>
-          <div className="flex items-center justify-center gap-2 mt-0.5">
-            {voice.mode === "fallback" && voice.status === "connected" && (
-              <span className="text-[10px] text-amber-400 flex items-center gap-1 bg-amber-400/10 px-1.5 py-0.5 rounded-full" data-testid="text-mode-indicator">
-                <Radio size={8} />
-                Fallback
-              </span>
-            )}
-            {voice.status === "connected" && voice.latency !== null && (
-              <p className="text-xs text-white/30">{voice.latency}ms</p>
-            )}
-          </div>
+          {voice.status === "connected" && voice.latency !== null && (
+            <p className="text-xs text-white/30">{voice.latency}ms</p>
+          )}
         </div>
         <div className="w-16" />
       </header>
@@ -134,7 +125,7 @@ export default function AgentApp() {
 
       {voice.error && (
         <div className="px-5 py-2">
-          <p className="text-red-400 text-xs text-center">{voice.error}</p>
+          <p className="text-red-400 text-xs text-center" data-testid="text-voice-error">{voice.error}</p>
         </div>
       )}
 
@@ -154,38 +145,16 @@ export default function AgentApp() {
           </div>
         ) : (
           <div className="flex items-center gap-6">
-            {voice.mode === "fallback" ? (
-              <motion.button
-                data-testid="button-push-to-talk"
-                onMouseDown={() => { setIsRecording(true); voice.startFallbackRecording(); }}
-                onMouseUp={() => { setIsRecording(false); voice.stopFallbackRecording(); }}
-                onMouseLeave={() => { if (isRecording) { setIsRecording(false); voice.stopFallbackRecording(); } }}
-                onTouchStart={(e) => { e.preventDefault(); setIsRecording(true); voice.startFallbackRecording(); }}
-                onTouchEnd={(e) => { e.preventDefault(); setIsRecording(false); voice.stopFallbackRecording(); }}
-                whileTap={{ scale: 1.1 }}
-                disabled={voice.isSpeaking}
-                className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors select-none ${
-                  isRecording
-                    ? "bg-red-500 text-white shadow-[0_0_30px_rgba(239,68,68,0.4)]"
-                    : voice.isSpeaking
-                    ? "bg-white/5 text-white/30 cursor-not-allowed"
-                    : "bg-blue-500 text-white shadow-[0_0_30px_rgba(59,130,246,0.3)]"
-                }`}
-              >
-                <Mic size={22} />
-              </motion.button>
-            ) : (
-              <motion.button
-                data-testid="button-mute"
-                onClick={voice.toggleMute}
-                whileTap={{ scale: 0.9 }}
-                className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${
-                  voice.isListening ? "bg-white/10 text-white" : "bg-red-500/20 text-red-400"
-                }`}
-              >
-                {voice.isListening ? <Mic size={22} /> : <MicOff size={22} />}
-              </motion.button>
-            )}
+            <motion.button
+              data-testid="button-mute"
+              onClick={voice.toggleMute}
+              whileTap={{ scale: 0.9 }}
+              className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${
+                voice.isListening ? "bg-white/10 text-white" : "bg-red-500/20 text-red-400"
+              }`}
+            >
+              {voice.isListening ? <Mic size={22} /> : <MicOff size={22} />}
+            </motion.button>
 
             <motion.button
               data-testid="button-end-call"
@@ -200,14 +169,9 @@ export default function AgentApp() {
           </div>
         )}
 
-        <p className="text-white/30 text-xs" data-testid="text-voice-status">
+        <p className="text-white/30 text-xs">
           {voice.status === "idle" ? "Tap to start" :
            voice.status === "connecting" ? "Connecting..." :
-           voice.mode === "fallback" ? (
-             isRecording ? "Recording..." :
-             voice.isSpeaking ? "Speaking..." :
-             "Hold to speak"
-           ) :
            voice.isListening ? "Listening..." : "Muted"}
         </p>
       </div>

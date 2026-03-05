@@ -1,7 +1,7 @@
 import { useVoiceSession, type TranscriptEntry } from "@/hooks/useVoiceSession";
-import { Mic, MicOff, Phone, PhoneOff, Wrench, Clock, Volume2 } from "lucide-react";
+import { Mic, MicOff, Phone, PhoneOff, Wrench, Clock, Volume2, Radio, Send } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface VoiceTestPanelProps {
   agentId: number;
@@ -11,6 +11,8 @@ interface VoiceTestPanelProps {
 export function VoiceTestPanel({ agentId, agentName }: VoiceTestPanelProps) {
   const voice = useVoiceSession(agentId);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [textInput, setTextInput] = useState("");
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -30,6 +32,12 @@ export function VoiceTestPanel({ agentId, agentName }: VoiceTestPanelProps) {
           <span className="text-white text-sm font-medium">{agentName}</span>
         </div>
         <div className="flex items-center gap-2">
+          {voice.mode === "fallback" && voice.status === "connected" && (
+            <span className="text-xs text-amber-400 flex items-center gap-1 bg-amber-400/10 px-2 py-0.5 rounded-full" data-testid="text-mode-indicator">
+              <Radio size={10} />
+              Fallback
+            </span>
+          )}
           {voice.latency !== null && (
             <span className="text-xs text-gray-400 flex items-center gap-1" data-testid="text-latency">
               <Clock size={12} />
@@ -108,17 +116,38 @@ export function VoiceTestPanel({ agentId, agentName }: VoiceTestPanelProps) {
           </button>
         ) : (
           <>
-            <button
-              data-testid="button-toggle-mute"
-              onClick={voice.toggleMute}
-              className={`p-3 rounded-xl transition-colors ${
-                voice.isListening
-                  ? "bg-gray-800 text-white hover:bg-gray-700"
-                  : "bg-red-600/20 text-red-400 hover:bg-red-600/30"
-              }`}
-            >
-              {voice.isListening ? <Mic size={20} /> : <MicOff size={20} />}
-            </button>
+            {voice.mode === "fallback" ? (
+              <button
+                data-testid="button-push-to-talk"
+                onMouseDown={() => { setIsRecording(true); voice.startFallbackRecording(); }}
+                onMouseUp={() => { setIsRecording(false); voice.stopFallbackRecording(); }}
+                onMouseLeave={() => { if (isRecording) { setIsRecording(false); voice.stopFallbackRecording(); } }}
+                onTouchStart={(e) => { e.preventDefault(); setIsRecording(true); voice.startFallbackRecording(); }}
+                onTouchEnd={(e) => { e.preventDefault(); setIsRecording(false); voice.stopFallbackRecording(); }}
+                disabled={voice.isSpeaking}
+                className={`p-3 rounded-xl transition-colors select-none ${
+                  isRecording
+                    ? "bg-red-600 text-white scale-110"
+                    : voice.isSpeaking
+                    ? "bg-gray-800 text-gray-500 cursor-not-allowed"
+                    : "bg-blue-600 text-white hover:bg-blue-500"
+                }`}
+              >
+                <Mic size={20} />
+              </button>
+            ) : (
+              <button
+                data-testid="button-toggle-mute"
+                onClick={voice.toggleMute}
+                className={`p-3 rounded-xl transition-colors ${
+                  voice.isListening
+                    ? "bg-gray-800 text-white hover:bg-gray-700"
+                    : "bg-red-600/20 text-red-400 hover:bg-red-600/30"
+                }`}
+              >
+                {voice.isListening ? <Mic size={20} /> : <MicOff size={20} />}
+              </button>
+            )}
             <button
               data-testid="button-end-voice"
               onClick={voice.disconnect}
@@ -127,6 +156,11 @@ export function VoiceTestPanel({ agentId, agentName }: VoiceTestPanelProps) {
               <PhoneOff size={16} />
               End Session
             </button>
+            {voice.mode === "fallback" && (
+              <span className="text-xs text-gray-400" data-testid="text-push-to-talk-label">
+                {isRecording ? "Recording..." : voice.isSpeaking ? "Speaking..." : "Push to Talk"}
+              </span>
+            )}
           </>
         )}
       </div>

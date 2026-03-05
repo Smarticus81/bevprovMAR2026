@@ -23,25 +23,25 @@ function AddForm({ fields, onSubmit, onCancel }: {
 }) {
   const [values, setValues] = useState<Record<string, string>>({});
   return (
-    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="border border-gray-200 rounded-xl p-4 mb-4 bg-white">
+    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="border border-white/10 rounded-xl p-4 mb-4 bg-white/[0.03]">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {fields.map((f) => (
           <div key={f.name}>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">{f.label}</label>
+            <label className="text-xs font-medium text-white/50 mb-1 block">{f.label}</label>
             {f.options ? (
-              <select data-testid={`select-${f.name}`} value={values[f.name] || ""} onChange={(e) => setValues({ ...values, [f.name]: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">Select...</option>
-                {f.options.map((o) => <option key={o} value={o}>{o}</option>)}
+              <select data-testid={`select-${f.name}`} value={values[f.name] || ""} onChange={(e) => setValues({ ...values, [f.name]: e.target.value })} className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/20">
+                <option value="" className="bg-black">Select...</option>
+                {f.options.map((o) => <option key={o} value={o} className="bg-black">{o}</option>)}
               </select>
             ) : (
-              <input data-testid={`input-${f.name}`} type={f.type || "text"} placeholder={f.label} value={values[f.name] || ""} onChange={(e) => setValues({ ...values, [f.name]: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input data-testid={`input-${f.name}`} type={f.type || "text"} placeholder={f.label} value={values[f.name] || ""} onChange={(e) => setValues({ ...values, [f.name]: e.target.value })} className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-white/20" />
             )}
           </div>
         ))}
       </div>
       <div className="flex gap-2 mt-3">
-        <button data-testid="button-save-item" onClick={() => onSubmit(values)} className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors flex items-center gap-1.5"><Check size={14} /> Save</button>
-        <button data-testid="button-cancel-add" onClick={onCancel} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors flex items-center gap-1.5"><X size={14} /> Cancel</button>
+        <button data-testid="button-save-item" onClick={() => onSubmit(values)} className="px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-white/90 transition-colors flex items-center gap-1.5"><Check size={14} /> Save</button>
+        <button data-testid="button-cancel-add" onClick={onCancel} className="px-4 py-2 bg-white/10 text-white/70 rounded-lg text-sm font-medium hover:bg-white/15 transition-colors flex items-center gap-1.5"><X size={14} /> Cancel</button>
       </div>
     </motion.div>
   );
@@ -57,22 +57,22 @@ function DataTable({ columns, data, onDelete, idKey = "id" }: {
     <div className="overflow-x-auto">
       <table className="w-full" data-testid="data-table">
         <thead>
-          <tr className="border-b border-gray-200">
-            {columns.map((c) => <th key={c.key} className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">{c.label}</th>)}
+          <tr className="border-b border-white/10">
+            {columns.map((c) => <th key={c.key} className="text-left text-xs font-medium text-white/40 uppercase tracking-wider py-3 px-4">{c.label}</th>)}
             {onDelete && <th className="w-10"></th>}
           </tr>
         </thead>
         <tbody>
           {data.map((row) => (
-            <tr key={row[idKey]} className="border-b border-gray-100 hover:bg-gray-50 transition-colors" data-testid={`row-${row[idKey]}`}>
+            <tr key={row[idKey]} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors" data-testid={`row-${row[idKey]}`}>
               {columns.map((c) => (
-                <td key={c.key} className="py-3 px-4 text-sm text-gray-700">
+                <td key={c.key} className="py-3 px-4 text-sm text-white/70">
                   {c.render ? c.render(row[c.key], row) : row[c.key] ?? "—"}
                 </td>
               ))}
               {onDelete && (
                 <td className="py-3 px-2">
-                  <button data-testid={`button-delete-${row[idKey]}`} onClick={() => onDelete(row[idKey])} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50">
+                  <button data-testid={`button-delete-${row[idKey]}`} onClick={() => onDelete(row[idKey])} className="p-1.5 text-white/30 hover:text-red-400 transition-colors rounded-lg hover:bg-red-500/10">
                     <Trash2 size={14} />
                   </button>
                 </td>
@@ -80,7 +80,7 @@ function DataTable({ columns, data, onDelete, idKey = "id" }: {
             </tr>
           ))}
           {data.length === 0 && (
-            <tr><td colSpan={columns.length + 1} className="py-12 text-center text-sm text-gray-400">No data yet. Click "Add" to create your first entry.</td></tr>
+            <tr><td colSpan={columns.length + 1} className="py-12 text-center text-sm text-white/30">No data yet. Click "Add" to create your first entry.</td></tr>
           )}
         </tbody>
       </table>
@@ -99,8 +99,8 @@ function MenuTab() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-gray-500">{items.length} items on the menu</p>
-        <button data-testid="button-add-menu" onClick={() => setAdding(true)} className="flex items-center gap-1.5 px-3 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"><Plus size={14} /> Add Item</button>
+        <p className="text-sm text-white/40">{items.length} items on the menu</p>
+        <button data-testid="button-add-menu" onClick={() => setAdding(true)} className="flex items-center gap-1.5 px-3 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-white/90 transition-colors"><Plus size={14} /> Add Item</button>
       </div>
       <AnimatePresence>
         {adding && <AddForm fields={[
@@ -114,10 +114,10 @@ function MenuTab() {
         columns={[
           { key: "name", label: "Name" },
           { key: "price", label: "Price", render: (v: string) => `$${parseFloat(v).toFixed(2)}` },
-          { key: "category", label: "Category", render: (v: string) => <span className="inline-block px-2 py-0.5 bg-gray-100 rounded-md text-xs font-medium capitalize">{v}</span> },
+          { key: "category", label: "Category", render: (v: string) => <span className="inline-block px-2 py-0.5 bg-white/10 rounded-md text-xs font-medium capitalize text-white/70">{v}</span> },
           { key: "description", label: "Description" },
           { key: "available", label: "Available", render: (v: boolean, row: any) => (
-            <button data-testid={`toggle-avail-${row.id}`} onClick={() => toggle.mutate({ id: row.id, available: !v })} className={`w-8 h-5 rounded-full transition-colors relative ${v ? "bg-green-500" : "bg-gray-300"}`}>
+            <button data-testid={`toggle-avail-${row.id}`} onClick={() => toggle.mutate({ id: row.id, available: !v })} className={`w-8 h-5 rounded-full transition-colors relative ${v ? "bg-green-500" : "bg-white/20"}`}>
               <div className={`w-3.5 h-3.5 bg-white rounded-full absolute top-0.5 transition-transform ${v ? "left-3.5" : "left-0.5"}`} />
             </button>
           )},
@@ -139,8 +139,8 @@ function InventoryTab() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-gray-500">{items.length} inventory items</p>
-        <button data-testid="button-add-inventory" onClick={() => setAdding(true)} className="flex items-center gap-1.5 px-3 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"><Plus size={14} /> Add Item</button>
+        <p className="text-sm text-white/40">{items.length} inventory items</p>
+        <button data-testid="button-add-inventory" onClick={() => setAdding(true)} className="flex items-center gap-1.5 px-3 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-white/90 transition-colors"><Plus size={14} /> Add Item</button>
       </div>
       <AnimatePresence>
         {adding && <AddForm fields={[
@@ -157,7 +157,7 @@ function InventoryTab() {
           { key: "name", label: "Item" },
           { key: "quantity", label: "Qty", render: (v: string, row: any) => {
             const q = parseFloat(v); const t = parseFloat(row.reorderThreshold || "0");
-            return <span className={q <= t ? "text-red-600 font-semibold" : ""}>{v} {row.unit}</span>;
+            return <span className={q <= t ? "text-red-400 font-semibold" : ""}>{v} {row.unit}</span>;
           }},
           { key: "reorderThreshold", label: "Reorder At" },
           { key: "cost", label: "Cost/Unit", render: (v: string) => v ? `$${parseFloat(v).toFixed(2)}` : "—" },
@@ -180,8 +180,8 @@ function StaffTab() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-gray-500">{staff.length} staff members</p>
-        <button data-testid="button-add-staff" onClick={() => setAdding(true)} className="flex items-center gap-1.5 px-3 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"><Plus size={14} /> Add Staff</button>
+        <p className="text-sm text-white/40">{staff.length} staff members</p>
+        <button data-testid="button-add-staff" onClick={() => setAdding(true)} className="flex items-center gap-1.5 px-3 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-white/90 transition-colors"><Plus size={14} /> Add Staff</button>
       </div>
       <AnimatePresence>
         {adding && <AddForm fields={[
@@ -194,7 +194,7 @@ function StaffTab() {
       <DataTable
         columns={[
           { key: "name", label: "Name" },
-          { key: "role", label: "Role", render: (v: string) => <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md text-xs font-medium">{v}</span> },
+          { key: "role", label: "Role", render: (v: string) => <span className="inline-block px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-md text-xs font-medium">{v}</span> },
           { key: "email", label: "Email" },
           { key: "phone", label: "Phone" },
         ]}
@@ -215,8 +215,8 @@ function BookingsTab() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-gray-500">{bookingsList.length} bookings</p>
-        <button data-testid="button-add-booking" onClick={() => setAdding(true)} className="flex items-center gap-1.5 px-3 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"><Plus size={14} /> Add Booking</button>
+        <p className="text-sm text-white/40">{bookingsList.length} bookings</p>
+        <button data-testid="button-add-booking" onClick={() => setAdding(true)} className="flex items-center gap-1.5 px-3 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-white/90 transition-colors"><Plus size={14} /> Add Booking</button>
       </div>
       <AnimatePresence>
         {adding && <AddForm fields={[
@@ -233,10 +233,10 @@ function BookingsTab() {
       <DataTable
         columns={[
           { key: "eventDate", label: "Date" },
-          { key: "eventType", label: "Type", render: (v: string) => <span className="inline-block px-2 py-0.5 bg-purple-50 text-purple-700 rounded-md text-xs font-medium">{v}</span> },
+          { key: "eventType", label: "Type", render: (v: string) => <span className="inline-block px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded-md text-xs font-medium">{v}</span> },
           { key: "guestName", label: "Guest" },
           { key: "guestCount", label: "Count" },
-          { key: "status", label: "Status", render: (v: string) => <span className={`inline-block px-2 py-0.5 rounded-md text-xs font-medium ${v === "confirmed" ? "bg-green-50 text-green-700" : v === "cancelled" ? "bg-red-50 text-red-700" : "bg-yellow-50 text-yellow-700"}`}>{v}</span> },
+          { key: "status", label: "Status", render: (v: string) => <span className={`inline-block px-2 py-0.5 rounded-md text-xs font-medium ${v === "confirmed" ? "bg-green-500/20 text-green-400" : v === "cancelled" ? "bg-red-500/20 text-red-400" : "bg-yellow-500/20 text-yellow-400"}`}>{v}</span> },
         ]}
         data={bookingsList}
         onDelete={(id) => del.mutate(id)}
@@ -255,8 +255,8 @@ function GuestsTab() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-gray-500">{guestList.length} guests, {guestList.filter((g: any) => g.vipStatus).length} VIP</p>
-        <button data-testid="button-add-guest" onClick={() => setAdding(true)} className="flex items-center gap-1.5 px-3 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"><Plus size={14} /> Add Guest</button>
+        <p className="text-sm text-white/40">{guestList.length} guests, {guestList.filter((g: any) => g.vipStatus).length} VIP</p>
+        <button data-testid="button-add-guest" onClick={() => setAdding(true)} className="flex items-center gap-1.5 px-3 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-white/90 transition-colors"><Plus size={14} /> Add Guest</button>
       </div>
       <AnimatePresence>
         {adding && <AddForm fields={[
@@ -273,7 +273,7 @@ function GuestsTab() {
           { key: "phone", label: "Phone" },
           { key: "visitCount", label: "Visits" },
           { key: "totalSpent", label: "Total Spent", render: (v: string) => `$${parseFloat(v || "0").toFixed(2)}` },
-          { key: "vipStatus", label: "VIP", render: (v: boolean) => v ? <span className="inline-block px-2 py-0.5 bg-amber-50 text-amber-700 rounded-md text-xs font-bold">VIP</span> : "—" },
+          { key: "vipStatus", label: "VIP", render: (v: boolean) => v ? <span className="inline-block px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded-md text-xs font-bold">VIP</span> : "—" },
           { key: "notes", label: "Notes" },
         ]}
         data={guestList}
@@ -293,8 +293,8 @@ function SuppliersTab() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-gray-500">{supplierList.length} suppliers</p>
-        <button data-testid="button-add-supplier" onClick={() => setAdding(true)} className="flex items-center gap-1.5 px-3 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"><Plus size={14} /> Add Supplier</button>
+        <p className="text-sm text-white/40">{supplierList.length} suppliers</p>
+        <button data-testid="button-add-supplier" onClick={() => setAdding(true)} className="flex items-center gap-1.5 px-3 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-white/90 transition-colors"><Plus size={14} /> Add Supplier</button>
       </div>
       <AnimatePresence>
         {adding && <AddForm fields={[
@@ -327,18 +327,18 @@ export default function VenueData() {
     <DashboardLayout>
       <div className="p-6 lg:p-10 max-w-6xl">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900" data-testid="text-venue-title">Venue Data</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage the data your voice agents use — menus, inventory, staff, bookings, and guests.</p>
+          <h1 className="text-2xl font-bold text-white" data-testid="text-venue-title">Venue Data</h1>
+          <p className="text-sm text-white/40 mt-1">Manage the data your voice agents use — menus, inventory, staff, bookings, and guests.</p>
         </div>
 
-        <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-xl overflow-x-auto" data-testid="venue-tabs">
+        <div className="flex gap-1 mb-6 bg-white/5 p-1 rounded-xl overflow-x-auto" data-testid="venue-tabs">
           {TABS.map(({ key, label, icon: Icon }) => (
             <button
               key={key}
               data-testid={`tab-${key}`}
               onClick={() => setActiveTab(key)}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
-                activeTab === key ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                activeTab === key ? "bg-white text-black shadow-sm" : "text-white/50 hover:text-white"
               }`}
             >
               <Icon size={14} />
@@ -347,7 +347,7 @@ export default function VenueData() {
           ))}
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="bg-white/[0.03] rounded-xl border border-white/10 overflow-hidden">
           <div className="p-4">
             {activeTab === "menu" && <MenuTab />}
             {activeTab === "inventory" && <InventoryTab />}

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { requireAuth } from "./auth";
 import { storage } from "./storage";
-import { openai } from "./replit_integrations/audio/client";
+import { openai, speechToText, textToSpeech, ensureCompatibleFormat } from "./replit_integrations/audio/client";
 import { executeToolCall, getOpenAIToolDefinitions, buildSystemPrompt } from "./tools";
 
 const voice = Router();
@@ -20,10 +20,24 @@ voice.post("/api/voice/session", requireAuth, async (req, res) => {
     const systemPrompt = buildSystemPrompt(agent);
     const toolDefs = getOpenAIToolDefinitions(tools);
 
+    const apiKey = process.env.OPENAI_API_KEY || process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+    const isDummyKey = !apiKey || apiKey === "_DUMMY_API_KEY_" || apiKey.includes("DUMMY");
+
+    if (isDummyKey) {
+      return res.json({
+        token: null,
+        fallback: true,
+        voice: config.voice || "alloy",
+        tools: toolDefs.map((t: any) => t.name),
+        agentName: agent.name,
+        agentType: agent.type,
+      });
+    }
+
     const response = await fetch("https://api.openai.com/v1/realtime/sessions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${process.env.AI_INTEGRATIONS_OPENAI_API_KEY}`,
+        "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -39,7 +53,14 @@ voice.post("/api/voice/session", requireAuth, async (req, res) => {
     if (!response.ok) {
       const err = await response.text();
       console.error("Realtime session error:", err);
-      return res.status(502).json({ error: "Failed to create realtime session", fallback: true });
+      return res.json({
+        token: null,
+        fallback: true,
+        voice: config.voice || "alloy",
+        tools: toolDefs.map((t: any) => t.name),
+        agentName: agent.name,
+        agentType: agent.type,
+      });
     }
 
     const session = await response.json();
@@ -76,13 +97,19 @@ voice.post("/api/voice/transcribe", requireAuth, async (req, res) => {
     const chunks: Buffer[] = [];
     req.on("data", (chunk) => chunks.push(chunk));
     req.on("end", async () => {
-      const audioBuffer = Buffer.concat(chunks);
-      const file = new File([audioBuffer], "audio.webm", { type: "audio/webm" });
-      const transcription = await openai.audio.transcriptions.create({
-        model: "whisper-1",
-        file,
-      });
-      res.json({ text: transcription.text });
+      try {
+        const audioBuffer = Buffer.concat(chunks);
+        if (audioBuffer.length < 100) {
+          return res.json({ text: "" });
+        }
+
+        const { buffer, format } = await ensureCompatibleFormat(audioBuffer);
+        const text = await speechToText(buffer, format);
+        res.json({ text });
+      } catch (innerErr: any) {
+        console.error("Transcription processing error:", innerErr);
+        res.status(500).json({ error: "Transcription failed" });
+      }
     });
   } catch (error: any) {
     console.error("Transcription error:", error);
@@ -150,7 +177,7 @@ voice.post("/api/voice/chat", requireAuth, async (req, res) => {
     });
   } catch (error: any) {
     console.error("Chat error:", error);
-    res.status(500).json({ error: "Chat failed" });
+    res.status(500).json({ error: "Chat failed: " + error.message });
   }
 });
 
@@ -159,19 +186,17 @@ voice.post("/api/voice/synthesize", requireAuth, async (req, res) => {
     const { text, voice: voiceName } = req.body;
     if (!text) return res.status(400).json({ error: "text is required" });
 
-    const mp3 = await openai.audio.speech.create({
-      model: "tts-1",
-      voice: (voiceName || "alloy") as any,
-      input: text,
-      response_format: "mp3",
-    });
+    const audioBuffer = await textToSpeech(
+      text,
+      (voiceName || "alloy") as any,
+      "mp3"
+    );
 
-    const buffer = Buffer.from(await mp3.arrayBuffer());
-    res.set({ "Content-Type": "audio/mpeg", "Content-Length": buffer.length.toString() });
-    res.send(buffer);
+    res.set({ "Content-Type": "audio/mpeg", "Content-Length": audioBuffer.length.toString() });
+    res.send(audioBuffer);
   } catch (error: any) {
     console.error("Synthesis error:", error);
-    res.status(500).json({ error: "Speech synthesis failed" });
+    res.status(500).json({ error: "Speech synthesis failed: " + error.message });
   }
 });
 

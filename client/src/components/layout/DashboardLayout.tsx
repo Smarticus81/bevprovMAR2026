@@ -15,14 +15,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] flex">
-      <aside className="hidden lg:flex w-64 bg-white border-r border-gray-200 flex-col fixed h-full z-30">
-        <div className="p-6 border-b border-gray-100">
-          <Link href="/dashboard" className="text-xl font-semibold text-gray-900 tracking-tight">
+    <div className="min-h-screen bg-black text-white flex">
+      <aside className="hidden lg:flex w-64 bg-black border-r border-white/10 flex-col fixed h-full z-30">
+        <div className="p-6 border-b border-white/10">
+          <Link href="/dashboard" className="text-xl font-semibold text-white tracking-tight">
             BevPro
           </Link>
           {organization && (
-            <p className="text-xs text-gray-500 mt-1 truncate">{organization.name}</p>
+            <p className="text-xs text-white/40 mt-1 truncate">{organization.name}</p>
           )}
         </div>
 
@@ -38,8 +38,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                   active
-                    ? "bg-gray-900 text-white"
-                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    ? "bg-white text-black"
+                    : "text-white/50 hover:bg-white/5 hover:text-white"
                 }`}
               >
                 <Icon size={18} />
@@ -49,20 +49,20 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="p-4 border-t border-gray-100">
+        <div className="p-4 border-t border-white/10">
           <div className="flex items-center gap-3 px-3 py-2">
-            <div className="w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center text-xs font-medium">
+            <div className="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center text-xs font-medium">
               {user?.name?.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">{user?.name}</p>
-              <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+              <p className="text-sm font-medium text-white truncate">{user?.name}</p>
+              <p className="text-xs text-white/40 truncate">{user?.email}</p>
             </div>
           </div>
           <button
             data-testid="button-logout"
             onClick={() => logout.mutate()}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-500 hover:text-red-600 transition-colors w-full mt-1"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-white/40 hover:text-red-400 transition-colors w-full mt-1"
           >
             <LogOut size={16} />
             Sign Out
@@ -70,15 +70,15 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <div className="lg:hidden fixed top-0 w-full bg-white border-b border-gray-200 z-40 px-4 py-3 flex items-center justify-between">
-        <Link href="/dashboard" className="text-lg font-semibold text-gray-900">BevPro</Link>
-        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+      <div className="lg:hidden fixed top-0 w-full bg-black/80 backdrop-blur-xl border-b border-white/10 z-40 px-4 py-3 flex items-center justify-between">
+        <Link href="/dashboard" className="text-lg font-semibold text-white">BevPro</Link>
+        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-white">
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
 
       {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 bg-white z-30 pt-16">
+        <div className="lg:hidden fixed inset-0 bg-black z-30 pt-16">
           <nav className="p-4 space-y-1">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
@@ -87,7 +87,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-base text-gray-700 hover:bg-gray-100"
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-base text-white/60 hover:bg-white/5 hover:text-white"
                 >
                   <Icon size={20} />
                   {item.label}
@@ -96,7 +96,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             })}
             <button
               onClick={() => { logout.mutate(); setMobileMenuOpen(false); }}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-base text-red-600 hover:bg-red-50 w-full"
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-base text-red-400 hover:bg-red-500/10 w-full"
             >
               <LogOut size={20} />
               Sign Out

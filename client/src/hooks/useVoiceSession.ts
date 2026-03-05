@@ -185,8 +185,14 @@ export function useVoiceSession(agentId: number | null) {
   }, [addTranscript]);
 
   const connectFallback = useCallback(async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaStreamRef.current = stream;
+    let hasMic = false;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+      hasMic = true;
+    } catch {
+      mediaStreamRef.current = null;
+    }
 
     if (!audioRef.current) {
       audioRef.current = new Audio();
@@ -204,7 +210,9 @@ export function useVoiceSession(agentId: number | null) {
 
     addTranscript({
       role: "assistant",
-      text: "Voice session active (text fallback mode). Speak and I'll respond.",
+      text: hasMic
+        ? "Voice session active. Hold the mic button to speak."
+        : "Voice session active (text mode). Type your message below.",
       timestamp: Date.now(),
     });
   }, [addTranscript]);
@@ -393,6 +401,77 @@ export function useVoiceSession(agentId: number | null) {
     }
   }, []);
 
+  const sendTextMessage = useCallback(async (text: string) => {
+    if (!text.trim() || !agentId) return;
+
+    addTranscript({ role: "user", text, timestamp: Date.now() });
+    fallbackMessagesRef.current.push({ role: "user", content: text });
+    setState((s) => ({ ...s, isListening: false }));
+
+    const startTime = Date.now();
+    try {
+      const chatRes = await fetch("/api/voice/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          agentId,
+          messages: fallbackMessagesRef.current,
+        }),
+      });
+      const chatData = await chatRes.json();
+
+      if (chatData.toolCalls) {
+        for (const tc of chatData.toolCalls) {
+          addTranscript({
+            role: "tool",
+            text: tc.result?.result?.message || JSON.stringify(tc.result?.result),
+            timestamp: Date.now(),
+            toolName: tc.name,
+            toolResult: tc.result?.result,
+          });
+        }
+      }
+
+      const assistantText = chatData.content || "I couldn't process that request.";
+      const lat = Date.now() - startTime;
+      addTranscript({ role: "assistant", text: assistantText, timestamp: Date.now() });
+      setState((s) => ({ ...s, latency: lat, isSpeaking: true }));
+      fallbackMessagesRef.current.push({ role: "assistant", content: assistantText });
+
+      if (mediaStreamRef.current) {
+        const ttsRes = await fetch("/api/voice/synthesize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ text: assistantText, voice: voiceNameRef.current }),
+        });
+        if (ttsRes.ok) {
+          const audioBuffer = await ttsRes.arrayBuffer();
+          const audioBlob = new Blob([audioBuffer], { type: "audio/mpeg" });
+          const url = URL.createObjectURL(audioBlob);
+          if (audioRef.current) {
+            audioRef.current.src = url;
+            audioRef.current.onended = () => {
+              URL.revokeObjectURL(url);
+              setState((s) => ({ ...s, isSpeaking: false, isListening: true }));
+            };
+            await audioRef.current.play();
+          }
+        } else {
+          setState((s) => ({ ...s, isSpeaking: false, isListening: true }));
+        }
+      } else {
+        setState((s) => ({ ...s, isSpeaking: false, isListening: true }));
+      }
+    } catch (err) {
+      console.error("Text message error:", err);
+      setState((s) => ({ ...s, error: "Message failed", isListening: true, isSpeaking: false }));
+    }
+  }, [agentId, addTranscript]);
+
+  const hasMic = !!mediaStreamRef.current;
+
   useEffect(() => {
     return () => {
       disconnect();
@@ -406,5 +485,7 @@ export function useVoiceSession(agentId: number | null) {
     toggleMute,
     startFallbackRecording,
     stopFallbackRecording,
+    sendTextMessage,
+    hasMic,
   };
 }

@@ -31,7 +31,7 @@ const AGENT_TYPE_COLORS: Record<AgentType, string> = {
   "voice-pos": "from-purple-500 to-purple-600",
   "inventory": "from-green-500 to-green-600",
   "venue-admin": "from-orange-500 to-orange-600",
-  "bevone": "from-gray-900 to-gray-800",
+  "bevone": "from-white/20 to-white/5",
 };
 
 const AGENT_TYPE_ICONS: Record<AgentType, React.ElementType> = {
@@ -126,14 +126,14 @@ function AppStorePage() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-[#f5f5f7]">
+      <div className="min-h-screen">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             data-testid="banner-featured"
-            className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6 sm:p-10 mb-8 cursor-pointer"
+            className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/10 via-white/5 to-white/[0.02] p-6 sm:p-10 mb-8 cursor-pointer border border-white/10"
             onClick={() => {
               const bevone = storeItems.find((i) => i.type === "bevone");
               if (bevone) setSelectedAgent(bevone);
@@ -155,7 +155,7 @@ function AppStorePage() {
                 <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight" data-testid="text-featured-name">
                   BevOne
                 </h2>
-                <p className="text-sm sm:text-base text-gray-300 mt-1 max-w-lg" data-testid="text-featured-description">
+                <p className="text-sm sm:text-base text-white/50 mt-1 max-w-lg" data-testid="text-featured-description">
                   {AGENT_TYPE_DESCRIPTIONS["bevone"]}
                 </p>
                 <div className="flex items-center gap-3 mt-4">
@@ -168,28 +168,28 @@ function AppStorePage() {
                 </div>
               </div>
               <div className="hidden sm:block flex-shrink-0">
-                <ChevronRight className="w-6 h-6 text-gray-400" />
+                <ChevronRight className="w-6 h-6 text-white/30" />
               </div>
             </div>
           </motion.div>
 
           <div className="relative mb-6">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
             <input
               data-testid="input-search"
               type="text"
               placeholder="Search agents..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-10 py-3 bg-white rounded-xl border-0 shadow-sm text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 transition-shadow"
+              className="w-full pl-12 pr-10 py-3 bg-white/5 rounded-xl border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 transition-shadow"
             />
             {searchQuery && (
               <button
                 data-testid="button-clear-search"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-white/10 transition-colors"
               >
-                <X className="w-4 h-4 text-gray-400" />
+                <X className="w-4 h-4 text-white/40" />
               </button>
             )}
           </div>
@@ -205,8 +205,8 @@ function AppStorePage() {
                   onClick={() => setActiveCategory(tab.key)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
                     isActive
-                      ? "bg-gray-900 text-white shadow-md"
-                      : "bg-white text-gray-600 hover:bg-gray-100 shadow-sm"
+                      ? "bg-white text-black shadow-md"
+                      : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -219,12 +219,12 @@ function AppStorePage() {
           {isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="bg-white rounded-2xl p-5 shadow-sm animate-pulse">
+                <div key={i} className="bg-white/[0.03] rounded-2xl p-5 border border-white/5 animate-pulse">
                   <div className="flex items-start gap-4">
-                    <div className="w-14 h-14 rounded-[14px] bg-gray-200" />
+                    <div className="w-14 h-14 rounded-[14px] bg-white/10" />
                     <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-gray-200 rounded w-3/4" />
-                      <div className="h-3 bg-gray-100 rounded w-1/2" />
+                      <div className="h-4 bg-white/10 rounded w-3/4" />
+                      <div className="h-3 bg-white/5 rounded w-1/2" />
                     </div>
                   </div>
                 </div>
@@ -237,9 +237,9 @@ function AppStorePage() {
               className="text-center py-16"
               data-testid="text-empty-state"
             >
-              <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 text-lg font-medium">No agents found</p>
-              <p className="text-gray-400 text-sm mt-1">Try adjusting your search or category filter</p>
+              <Search className="w-12 h-12 text-white/20 mx-auto mb-4" />
+              <p className="text-white/60 text-lg font-medium">No agents found</p>
+              <p className="text-white/30 text-sm mt-1">Try adjusting your search or category filter</p>
             </motion.div>
           ) : (
             <motion.div
@@ -262,7 +262,7 @@ function AppStorePage() {
                       transition={{ duration: 0.2, delay: index * 0.03 }}
                       data-testid={`card-agent-${item.id}`}
                       onClick={() => setSelectedAgent(item)}
-                      className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                      className="bg-white/[0.03] rounded-2xl p-5 border border-white/10 hover:border-white/20 hover:bg-white/[0.06] transition-all cursor-pointer group"
                     >
                       <div className="flex items-start gap-4">
                         <div
@@ -273,31 +273,31 @@ function AppStorePage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <h3
-                              className="font-semibold text-gray-900 text-sm truncate"
+                              className="font-semibold text-white text-sm truncate"
                               data-testid={`text-agent-name-${item.id}`}
                             >
                               {item.name}
                             </h3>
                           </div>
-                          <p className="text-xs text-gray-500 mt-0.5" data-testid={`text-agent-type-${item.id}`}>
+                          <p className="text-xs text-white/40 mt-0.5" data-testid={`text-agent-type-${item.id}`}>
                             {AGENT_TYPE_LABELS[item.type]}
                           </p>
-                          <p className="text-xs text-gray-400 mt-1 line-clamp-2">
+                          <p className="text-xs text-white/30 mt-1 line-clamp-2">
                             {item.description}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+                      <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5">
                         <span
                           data-testid={`badge-status-${item.id}`}
                           className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider ${
                             isActive
-                              ? "bg-green-100 text-green-700"
+                              ? "bg-green-500/20 text-green-400"
                               : isDraft
-                              ? "bg-yellow-100 text-yellow-700"
+                              ? "bg-yellow-500/20 text-yellow-400"
                               : item.isTemplate
-                              ? "bg-gray-100 text-gray-500"
-                              : "bg-blue-100 text-blue-700"
+                              ? "bg-white/10 text-white/40"
+                              : "bg-blue-500/20 text-blue-400"
                           }`}
                         >
                           {isActive ? "Active" : isDraft ? "Draft" : item.isTemplate ? "Available" : item.status}
@@ -314,7 +314,7 @@ function AppStorePage() {
                           }}
                           className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-colors ${
                             isActive
-                              ? "bg-gray-100 text-gray-900 hover:bg-gray-200"
+                              ? "bg-white/10 text-white hover:bg-white/15"
                               : "bg-blue-500 text-white hover:bg-blue-600"
                           }`}
                         >
@@ -338,7 +338,7 @@ function AppStorePage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
               onClick={() => setSelectedAgent(null)}
               data-testid="overlay-detail"
             />
@@ -347,17 +347,17 @@ function AppStorePage() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl max-h-[85vh] overflow-y-auto"
+              className="fixed bottom-0 left-0 right-0 z-50 bg-[#111] rounded-t-3xl shadow-2xl max-h-[85vh] overflow-y-auto border-t border-white/10"
               data-testid="sheet-agent-detail"
             >
-              <div className="sticky top-0 bg-white z-10 pt-3 pb-2 px-6 rounded-t-3xl">
-                <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
+              <div className="sticky top-0 bg-[#111] z-10 pt-3 pb-2 px-6 rounded-t-3xl">
+                <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4" />
                 <button
                   data-testid="button-close-detail"
                   onClick={() => setSelectedAgent(null)}
-                  className="absolute top-4 right-4 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                  className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/15 transition-colors"
                 >
-                  <X className="w-4 h-4 text-gray-600" />
+                  <X className="w-4 h-4 text-white/60" />
                 </button>
               </div>
 
@@ -417,17 +417,17 @@ function AgentDetailContent({
           <Icon className="w-10 h-10 text-white" />
         </div>
         <div className="flex-1 min-w-0">
-          <h2 className="text-xl font-bold text-gray-900" data-testid="text-detail-name">
+          <h2 className="text-xl font-bold text-white" data-testid="text-detail-name">
             {item.name}
           </h2>
-          <p className="text-sm text-gray-500 mt-0.5" data-testid="text-detail-type">
+          <p className="text-sm text-white/40 mt-0.5" data-testid="text-detail-type">
             {AGENT_TYPE_LABELS[item.type]}
           </p>
           <div className="flex items-center gap-2 mt-2">
             <span
               data-testid="badge-detail-status"
               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
-                isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                isActive ? "bg-green-500/20 text-green-400" : "bg-white/10 text-white/40"
               }`}
             >
               {isActive ? "Active" : item.isTemplate ? "Available" : item.status}
@@ -437,27 +437,27 @@ function AgentDetailContent({
       </div>
 
       <div className="mb-6">
-        <h3 className="text-sm font-semibold text-gray-900 mb-2">Description</h3>
-        <p className="text-sm text-gray-600 leading-relaxed" data-testid="text-detail-description">
+        <h3 className="text-sm font-semibold text-white mb-2">Description</h3>
+        <p className="text-sm text-white/60 leading-relaxed" data-testid="text-detail-description">
           {item.description}
         </p>
       </div>
 
       <div className="mb-6">
-        <h3 className="text-sm font-semibold text-gray-900 mb-3">
-          Tools <span className="text-gray-400 font-normal">({tools.length})</span>
+        <h3 className="text-sm font-semibold text-white mb-3">
+          Tools <span className="text-white/30 font-normal">({tools.length})</span>
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" data-testid="list-tools">
           {tools.map((tool) => (
             <div
               key={tool.name}
               data-testid={`tool-${tool.name}`}
-              className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl"
+              className="flex items-start gap-3 p-3 bg-white/5 rounded-xl border border-white/5"
             >
-              <Wrench className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+              <Wrench className="w-4 h-4 text-white/30 mt-0.5 flex-shrink-0" />
               <div className="min-w-0">
-                <p className="text-xs font-medium text-gray-800">{tool.name.replace(/_/g, " ")}</p>
-                <p className="text-[11px] text-gray-500 mt-0.5">{tool.description}</p>
+                <p className="text-xs font-medium text-white/80">{tool.name.replace(/_/g, " ")}</p>
+                <p className="text-[11px] text-white/40 mt-0.5">{tool.description}</p>
               </div>
             </div>
           ))}
@@ -465,33 +465,33 @@ function AgentDetailContent({
       </div>
 
       <div className="mb-8">
-        <h3 className="text-sm font-semibold text-gray-900 mb-3">Voice Configuration</h3>
-        <div className="bg-gray-50 rounded-xl p-4 space-y-2" data-testid="section-voice-config">
+        <h3 className="text-sm font-semibold text-white mb-3">Voice Configuration</h3>
+        <div className="bg-white/5 rounded-xl p-4 space-y-2 border border-white/5" data-testid="section-voice-config">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Voice</span>
-            <span className="text-gray-900 font-medium">{(voiceConfig?.voice as string) || "Default"}</span>
+            <span className="text-white/40">Voice</span>
+            <span className="text-white font-medium">{(voiceConfig?.voice as string) || "Default"}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Language</span>
-            <span className="text-gray-900 font-medium">{(voiceConfig?.language as string) || "English"}</span>
+            <span className="text-white/40">Language</span>
+            <span className="text-white font-medium">{(voiceConfig?.language as string) || "English"}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Speed</span>
-            <span className="text-gray-900 font-medium">{(voiceConfig?.speed as number) || 1.0}x</span>
+            <span className="text-white/40">Speed</span>
+            <span className="text-white font-medium">{(voiceConfig?.speed as number) || 1.0}x</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-gray-500">VAD Sensitivity</span>
-            <span className="text-gray-900 font-medium">{(voiceConfig?.vadSensitivity as number) || 0.5}</span>
+            <span className="text-white/40">VAD Sensitivity</span>
+            <span className="text-white font-medium">{(voiceConfig?.vadSensitivity as number) || 0.5}</span>
           </div>
         </div>
       </div>
 
-      <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t border-gray-100">
+      <div className="sticky bottom-0 bg-[#111] pt-4 pb-2 border-t border-white/10">
         {!item.isTemplate ? (
           <button
             data-testid="button-open-agent"
             onClick={() => onOpen(item)}
-            className="w-full py-3.5 rounded-2xl bg-gray-900 text-white font-semibold text-sm hover:bg-gray-800 transition-colors"
+            className="w-full py-3.5 rounded-2xl bg-white text-black font-semibold text-sm hover:bg-white/90 transition-colors"
           >
             Configure Agent
           </button>

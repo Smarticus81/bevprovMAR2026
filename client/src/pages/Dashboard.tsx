@@ -40,10 +40,11 @@ export default function Dashboard() {
       const res = await apiRequest("POST", "/api/agents", data);
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (newAgent) => {
       queryClient.invalidateQueries({ queryKey: ["agents"] });
       setShowCreate(false);
       setNewAgentName("");
+      window.location.href = `/dashboard/agents/${newAgent.id}`;
     },
   });
 

@@ -1,16 +1,11 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  Bot, Store, Settings, CreditCard, LogOut, Menu, X, ChevronDown,
-  Mic, Box, Briefcase, Sparkles
-} from "lucide-react";
+import { Bot, Store, LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Agents", icon: Bot },
   { href: "/dashboard/store", label: "App Store", icon: Store },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings },
-  { href: "/pricing", label: "Pricing", icon: CreditCard },
 ];
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -20,10 +15,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] flex">
-      {/* SIDEBAR */}
       <aside className="hidden lg:flex w-64 bg-white border-r border-gray-200 flex-col fixed h-full z-30">
         <div className="p-6 border-b border-gray-100">
-          <Link href="/" className="text-xl font-semibold text-gray-900 tracking-tight">
+          <Link href="/dashboard" className="text-xl font-semibold text-gray-900 tracking-tight">
             BevPro
           </Link>
           {organization && (
@@ -75,9 +69,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* MOBILE HEADER */}
       <div className="lg:hidden fixed top-0 w-full bg-white border-b border-gray-200 z-40 px-4 py-3 flex items-center justify-between">
-        <Link href="/" className="text-lg font-semibold text-gray-900">BevPro</Link>
+        <Link href="/dashboard" className="text-lg font-semibold text-gray-900">BevPro</Link>
         <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
@@ -111,7 +104,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {/* MAIN CONTENT */}
       <main className="flex-1 lg:ml-64 pt-14 lg:pt-0">
         {children}
       </main>

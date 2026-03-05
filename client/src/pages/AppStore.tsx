@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, X, Star, Sparkles, ShoppingCart, Package, Building2, Layers, Mic, ChevronRight, Wrench, Volume2 } from "lucide-react";
@@ -55,9 +56,16 @@ function AppStorePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<CategoryKey>("all");
   const [selectedAgent, setSelectedAgent] = useState<StoreItem | null>(null);
+  const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
 
   const { data: agents = [], isLoading } = useQuery<Agent[]>({
-    queryKey: ["/api/agents"],
+    queryKey: ["agents"],
+    queryFn: async () => {
+      const res = await fetch("/api/agents", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to load agents");
+      return res.json();
+    },
   });
 
   const storeItems = useMemo<StoreItem[]>(() => {
@@ -101,13 +109,18 @@ function AppStorePage() {
 
   const activateAgent = async (item: StoreItem) => {
     if (item.isTemplate) {
-      await apiRequest("POST", "/api/agents", {
+      const res = await apiRequest("POST", "/api/agents", {
         name: item.name,
         type: item.type,
         description: item.description,
-        status: "active",
       });
-      window.location.reload();
+      const newAgent = await res.json();
+      queryClient.invalidateQueries({ queryKey: ["agents"] });
+      setSelectedAgent(null);
+      setLocation(`/dashboard/agents/${newAgent.id}`);
+    } else {
+      setSelectedAgent(null);
+      setLocation(`/dashboard/agents/${item.id}`);
     }
   };
 
@@ -295,6 +308,8 @@ function AppStorePage() {
                             e.stopPropagation();
                             if (item.isTemplate) {
                               setSelectedAgent(item);
+                            } else {
+                              setLocation(`/dashboard/agents/${item.id}`);
                             }
                           }}
                           className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-colors ${
@@ -303,7 +318,7 @@ function AppStorePage() {
                               : "bg-blue-500 text-white hover:bg-blue-600"
                           }`}
                         >
-                          {isActive ? "OPEN" : "GET"}
+                          {isActive || isDraft ? "OPEN" : "GET"}
                         </button>
                       </div>
                     </motion.div>
@@ -351,6 +366,10 @@ function AppStorePage() {
                   item={selectedAgent}
                   onActivate={activateAgent}
                   onClose={() => setSelectedAgent(null)}
+                  onOpen={(item) => {
+                    setSelectedAgent(null);
+                    setLocation(`/dashboard/agents/${item.id}`);
+                  }}
                 />
               </div>
             </motion.div>
@@ -365,10 +384,12 @@ function AgentDetailContent({
   item,
   onActivate,
   onClose,
+  onOpen,
 }: {
   item: StoreItem;
   onActivate: (item: StoreItem) => void;
   onClose: () => void;
+  onOpen: (item: StoreItem) => void;
 }) {
   const Icon = AGENT_TYPE_ICONS[item.type];
   const gradient = AGENT_TYPE_COLORS[item.type];
@@ -466,13 +487,13 @@ function AgentDetailContent({
       </div>
 
       <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t border-gray-100">
-        {isActive ? (
+        {!item.isTemplate ? (
           <button
             data-testid="button-open-agent"
-            onClick={onClose}
+            onClick={() => onOpen(item)}
             className="w-full py-3.5 rounded-2xl bg-gray-900 text-white font-semibold text-sm hover:bg-gray-800 transition-colors"
           >
-            Open Agent
+            Configure Agent
           </button>
         ) : (
           <button
@@ -481,7 +502,7 @@ function AgentDetailContent({
             disabled={activating}
             className="w-full py-3.5 rounded-2xl bg-blue-500 text-white font-semibold text-sm hover:bg-blue-600 transition-colors disabled:opacity-50"
           >
-            {activating ? "Activating..." : "Activate Agent"}
+            {activating ? "Creating..." : "Create Agent"}
           </button>
         )}
       </div>

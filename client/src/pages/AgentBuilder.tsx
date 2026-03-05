@@ -1,29 +1,17 @@
 import { useState, useEffect } from "react";
-import { useParams } from "wouter";
+import { useParams, Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { getToolsForAgentType } from "@/lib/agentTools";
 import type { Agent, AgentConfig, AgentTool } from "@shared/schema";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Slider } from "@/components/ui/slider";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Loader2, Save, ArrowLeft, CheckCircle2 } from "lucide-react";
-import { Link } from "wouter";
+import { AGENT_TYPE_LABELS } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { VoiceTestPanel } from "@/components/VoiceTestPanel";
+import { motion } from "framer-motion";
+import {
+  Loader2, Save, ArrowLeft, CheckCircle2,
+  Mic, Wrench, Settings2, PlayCircle, ChevronRight
+} from "lucide-react";
 
 const VOICES = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"] as const;
 const LANGUAGES = [
@@ -37,10 +25,21 @@ const LANGUAGES = [
   { value: "zh", label: "Chinese" },
 ];
 
+const TABS = [
+  { id: "general", label: "General", icon: Settings2 },
+  { id: "voice", label: "Voice", icon: Mic },
+  { id: "tools", label: "Tools", icon: Wrench },
+  { id: "test", label: "Test", icon: PlayCircle },
+] as const;
+
+type TabId = (typeof TABS)[number]["id"];
+
 export default function AgentBuilder() {
   const { id } = useParams<{ id: string }>();
+  const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<TabId>("general");
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -48,22 +47,28 @@ export default function AgentBuilder() {
   const [language, setLanguage] = useState("en");
   const [speed, setSpeed] = useState(1);
   const [greeting, setGreeting] = useState("");
-  const [squareEnabled, setSquareEnabled] = useState(false);
-  const [toastEnabled, setToastEnabled] = useState(false);
-  const [operatingHoursStart, setOperatingHoursStart] = useState("09:00");
-  const [operatingHoursEnd, setOperatingHoursEnd] = useState("22:00");
   const [fallbackMessage, setFallbackMessage] = useState("");
   const [maxConversationLength, setMaxConversationLength] = useState(10);
   const [enabledTools, setEnabledTools] = useState<Record<string, boolean>>({});
   const [isActive, setIsActive] = useState(false);
 
   const { data: agent, isLoading } = useQuery<Agent>({
-    queryKey: ["/api/agents", id],
+    queryKey: ["agents", id],
+    queryFn: async () => {
+      const res = await fetch(`/api/agents/${id}`, { credentials: "include" });
+      if (!res.ok) throw new Error("Agent not found");
+      return res.json();
+    },
     enabled: !!id,
   });
 
   const { data: savedTools } = useQuery<AgentTool[]>({
-    queryKey: ["/api/agents", id, "tools"],
+    queryKey: ["agents", id, "tools"],
+    queryFn: async () => {
+      const res = await fetch(`/api/agents/${id}/tools`, { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
     enabled: !!id,
   });
 
@@ -76,10 +81,6 @@ export default function AgentBuilder() {
       setLanguage(c?.language || "en");
       setSpeed(c?.speed || 1);
       setGreeting(c?.greeting || "");
-      setSquareEnabled(c?.squareEnabled || false);
-      setToastEnabled(c?.toastEnabled || false);
-      setOperatingHoursStart(c?.operatingHours?.start || "09:00");
-      setOperatingHoursEnd(c?.operatingHours?.end || "22:00");
       setFallbackMessage(c?.fallbackMessage || "");
       setMaxConversationLength(c?.maxConversationLength || 10);
       setIsActive(agent.status === "active");
@@ -90,12 +91,8 @@ export default function AgentBuilder() {
     if (savedTools && agent) {
       const toolMap: Record<string, boolean> = {};
       const available = getToolsForAgentType(agent.type);
-      available.forEach((t) => {
-        toolMap[t.name] = false;
-      });
-      savedTools.forEach((t) => {
-        toolMap[t.toolName] = t.enabled;
-      });
+      available.forEach((t) => { toolMap[t.name] = false; });
+      savedTools.forEach((t) => { toolMap[t.toolName] = t.enabled; });
       setEnabledTools(toolMap);
     }
   }, [savedTools, agent]);
@@ -107,72 +104,40 @@ export default function AgentBuilder() {
         description,
         status: isActive ? "active" : "draft",
         config: {
-          voice,
-          language,
-          speed,
-          greeting,
-          squareEnabled,
-          toastEnabled,
-          operatingHours: { start: operatingHoursStart, end: operatingHoursEnd },
-          fallbackMessage,
-          maxConversationLength,
+          voice, language, speed, greeting, fallbackMessage, maxConversationLength,
         },
       });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/agents", id] });
-      toast({ title: "Agent saved", description: "Your changes have been saved." });
-    },
-    onError: (err: Error) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    },
-  });
-
-  const saveToolsMutation = useMutation({
-    mutationFn: async () => {
       const tools = Object.entries(enabledTools).map(([toolName, enabled]) => {
         const def = getToolsForAgentType(agent!.type).find((t) => t.name === toolName);
-        return {
-          agentId: Number(id),
-          toolName,
-          toolCategory: def?.category || "Unknown",
-          enabled,
-          config: {},
-        };
+        return { agentId: Number(id), toolName, toolCategory: def?.category || "Unknown", enabled, config: {} };
       });
       await apiRequest("PUT", `/api/agents/${id}/tools`, { tools });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/agents", id, "tools"] });
-      toast({ title: "Tools saved", description: "Tool configuration has been saved." });
+      queryClient.invalidateQueries({ queryKey: ["agents"] });
+      toast({ title: "Saved", description: "Agent configuration saved." });
     },
     onError: (err: Error) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     },
   });
 
-  const handleSaveAll = () => {
-    saveMutation.mutate();
-    saveToolsMutation.mutate();
-  };
-
   if (isLoading) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
-        </div>
-      </DashboardLayout>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <Loader2 className="w-6 h-6 text-white/40 animate-spin" />
+      </div>
     );
   }
 
   if (!agent) {
     return (
-      <DashboardLayout>
-        <div className="p-8 text-center text-gray-500" data-testid="text-agent-not-found">
-          Agent not found.
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-white/50 mb-4" data-testid="text-agent-not-found">Agent not found</p>
+          <Link href="/dashboard" className="text-white/70 hover:text-white text-sm underline">Back to Dashboard</Link>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
@@ -182,349 +147,254 @@ export default function AgentBuilder() {
     acc[tool.category].push(tool);
     return acc;
   }, {});
-
-  const isSaving = saveMutation.isPending || saveToolsMutation.isPending;
+  const enabledCount = Object.values(enabledTools).filter(Boolean).length;
 
   return (
-    <DashboardLayout>
-      <div className="p-6 lg:p-8 max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Link href="/dashboard" data-testid="link-back-dashboard">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="w-4 h-4 mr-1" />
+    <div className="min-h-screen bg-black text-white font-sans">
+      <header className="sticky top-0 z-40 bg-black/80 backdrop-blur-xl border-b border-white/5">
+        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link href="/dashboard">
+              <button className="flex items-center gap-1.5 text-white/50 hover:text-white text-sm transition-colors" data-testid="link-back-dashboard">
+                <ArrowLeft size={16} />
                 Back
-              </Button>
+              </button>
             </Link>
+            <div className="h-5 w-px bg-white/10" />
             <div>
-              <h1 className="text-2xl font-bold text-gray-900" data-testid="text-agent-name-header">
-                {name || "Untitled Agent"}
-              </h1>
-              <p className="text-sm text-gray-500">{agent.type}</p>
+              <h1 className="text-base font-semibold" data-testid="text-agent-name-header">{name || "Untitled Agent"}</h1>
+              <p className="text-xs text-white/40">{AGENT_TYPE_LABELS[agent.type as keyof typeof AGENT_TYPE_LABELS] || agent.type}</p>
             </div>
           </div>
-          <Button
-            onClick={handleSaveAll}
-            disabled={isSaving}
-            data-testid="button-save-agent"
-          >
-            {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-            Save Changes
-          </Button>
+          <div className="flex items-center gap-3">
+            <button
+              data-testid="switch-activate"
+              onClick={() => { setIsActive(!isActive); }}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                isActive ? "bg-green-500/20 text-green-400 border border-green-500/30" : "bg-white/5 text-white/40 border border-white/10"
+              }`}
+            >
+              {isActive ? "Active" : "Draft"}
+            </button>
+            <button
+              data-testid="button-save-agent"
+              onClick={() => saveMutation.mutate()}
+              disabled={saveMutation.isPending}
+              className="flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full text-sm font-medium hover:bg-white/90 disabled:opacity-50 transition-colors"
+            >
+              {saveMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+              Save
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-5xl mx-auto px-6 py-6">
+        <div className="flex gap-2 mb-8 overflow-x-auto pb-1">
+          {TABS.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                data-testid={`tab-${tab.id}`}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                  activeTab === tab.id
+                    ? "bg-white text-black"
+                    : "text-white/50 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <Icon size={15} />
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
 
-        <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="bg-white border border-gray-200 w-full justify-start flex-wrap h-auto p-1 gap-1">
-            <TabsTrigger value="general" data-testid="tab-general">General</TabsTrigger>
-            <TabsTrigger value="voice" data-testid="tab-voice">Voice</TabsTrigger>
-            <TabsTrigger value="tools" data-testid="tab-tools">Tools</TabsTrigger>
-            <TabsTrigger value="integrations" data-testid="tab-integrations">Integrations</TabsTrigger>
-            <TabsTrigger value="settings" data-testid="tab-settings">Settings</TabsTrigger>
-            <TabsTrigger value="review" data-testid="tab-review">Review</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="general">
-            <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
-              <h2 className="text-lg font-semibold text-gray-900">General Information</h2>
+        {activeTab === "general" && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 space-y-6">
+              <h2 className="text-lg font-semibold">General</h2>
               <div className="space-y-2">
-                <Label htmlFor="agent-name">Agent Name</Label>
-                <Input
-                  id="agent-name"
+                <label className="text-sm text-white/60 block">Agent Name</label>
+                <input
+                  data-testid="input-agent-name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter agent name"
-                  data-testid="input-agent-name"
+                  placeholder="e.g., Front Bar POS"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-white/20"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="agent-description">Description</Label>
-                <Textarea
-                  id="agent-description"
+                <label className="text-sm text-white/60 block">Description</label>
+                <textarea
+                  data-testid="input-agent-description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Describe what this agent does"
-                  rows={4}
-                  data-testid="input-agent-description"
+                  placeholder="Describe what this agent handles..."
+                  rows={3}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 resize-none"
                 />
               </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="voice">
-            <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
-              <h2 className="text-lg font-semibold text-gray-900">Voice Configuration</h2>
               <div className="space-y-2">
-                <Label>Voice</Label>
-                <Select value={voice} onValueChange={setVoice}>
-                  <SelectTrigger data-testid="select-voice">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {VOICES.map((v) => (
-                      <SelectItem key={v} value={v} data-testid={`select-voice-option-${v}`}>
-                        {v.charAt(0).toUpperCase() + v.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Language</Label>
-                <Select value={language} onValueChange={setLanguage}>
-                  <SelectTrigger data-testid="select-language">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {LANGUAGES.map((l) => (
-                      <SelectItem key={l.value} value={l.value} data-testid={`select-language-option-${l.value}`}>
-                        {l.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Speed: {speed.toFixed(1)}x</Label>
-                <Slider
-                  value={[speed]}
-                  onValueChange={([v]) => setSpeed(v)}
-                  min={0.5}
-                  max={2}
-                  step={0.1}
-                  data-testid="slider-speed"
-                />
-                <div className="flex justify-between text-xs text-gray-400">
-                  <span>0.5x</span>
-                  <span>1.0x</span>
-                  <span>2.0x</span>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="greeting">Greeting Message</Label>
-                <Textarea
-                  id="greeting"
+                <label className="text-sm text-white/60 block">Greeting Message</label>
+                <textarea
+                  data-testid="input-greeting"
                   value={greeting}
                   onChange={(e) => setGreeting(e.target.value)}
                   placeholder="Hi! How can I help you today?"
-                  rows={3}
-                  data-testid="input-greeting"
+                  rows={2}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 resize-none"
                 />
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="tools">
-            <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">Tools</h2>
-                <Badge variant="secondary" data-testid="text-tools-count">
-                  {Object.values(enabledTools).filter(Boolean).length} / {availableTools.length} enabled
-                </Badge>
-              </div>
-              {Object.entries(toolsByCategory).map(([category, tools]) => (
-                <div key={category} className="space-y-3">
-                  <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">{category}</h3>
-                  <div className="space-y-2">
-                    {tools.map((tool) => (
-                      <div
-                        key={tool.name}
-                        className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:border-gray-200 transition-colors"
-                      >
-                        <div>
-                          <p className="text-sm font-medium text-gray-900" data-testid={`text-tool-name-${tool.name}`}>
-                            {tool.name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
-                          </p>
-                          <p className="text-xs text-gray-500">{tool.description}</p>
-                        </div>
-                        <Switch
-                          checked={enabledTools[tool.name] || false}
-                          onCheckedChange={(checked) =>
-                            setEnabledTools((prev) => ({ ...prev, [tool.name]: checked }))
-                          }
-                          data-testid={`switch-tool-${tool.name}`}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="integrations">
-            <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
-              <h2 className="text-lg font-semibold text-gray-900">Integrations</h2>
-              <div className="flex items-center justify-between p-4 rounded-lg border border-gray-100">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Square POS</p>
-                  <p className="text-xs text-gray-500">Connect to Square for payments and orders</p>
-                </div>
-                <Switch
-                  checked={squareEnabled}
-                  onCheckedChange={setSquareEnabled}
-                  data-testid="switch-square"
-                />
-              </div>
-              <div className="flex items-center justify-between p-4 rounded-lg border border-gray-100">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Toast POS</p>
-                  <p className="text-xs text-gray-500">Connect to Toast for restaurant operations</p>
-                </div>
-                <Switch
-                  checked={toastEnabled}
-                  onCheckedChange={setToastEnabled}
-                  data-testid="switch-toast"
-                />
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="settings">
-            <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
-              <h2 className="text-lg font-semibold text-gray-900">Settings</h2>
-              <div className="space-y-2">
-                <Label>Operating Hours</Label>
-                <div className="flex items-center gap-3">
-                  <Input
-                    type="time"
-                    value={operatingHoursStart}
-                    onChange={(e) => setOperatingHoursStart(e.target.value)}
-                    data-testid="input-hours-start"
-                  />
-                  <span className="text-gray-400">to</span>
-                  <Input
-                    type="time"
-                    value={operatingHoursEnd}
-                    onChange={(e) => setOperatingHoursEnd(e.target.value)}
-                    data-testid="input-hours-end"
-                  />
-                </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="fallback">Fallback Message</Label>
-                <Textarea
-                  id="fallback"
+                <label className="text-sm text-white/60 block">Fallback Message</label>
+                <textarea
+                  data-testid="input-fallback-message"
                   value={fallbackMessage}
                   onChange={(e) => setFallbackMessage(e.target.value)}
-                  placeholder="Sorry, I didn't understand that. Could you please repeat?"
-                  rows={3}
-                  data-testid="input-fallback-message"
+                  placeholder="Sorry, I didn't catch that. Could you say it again?"
+                  rows={2}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 resize-none"
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Max Conversation Length: {maxConversationLength} messages</Label>
-                <Slider
-                  value={[maxConversationLength]}
-                  onValueChange={([v]) => setMaxConversationLength(v)}
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === "voice" && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 space-y-6">
+              <h2 className="text-lg font-semibold">Voice</h2>
+              <div className="space-y-3">
+                <label className="text-sm text-white/60 block">Voice Model</label>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                  {VOICES.map((v) => (
+                    <button
+                      key={v}
+                      data-testid={`button-voice-${v}`}
+                      onClick={() => setVoice(v)}
+                      className={`px-3 py-2.5 rounded-xl text-sm font-medium text-center transition-all ${
+                        voice === v
+                          ? "bg-white text-black"
+                          : "bg-white/5 text-white/60 border border-white/10 hover:bg-white/10"
+                      }`}
+                    >
+                      {v.charAt(0).toUpperCase() + v.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-3">
+                <label className="text-sm text-white/60 block">Language</label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {LANGUAGES.map((l) => (
+                    <button
+                      key={l.value}
+                      data-testid={`button-language-${l.value}`}
+                      onClick={() => setLanguage(l.value)}
+                      className={`px-3 py-2.5 rounded-xl text-sm font-medium text-center transition-all ${
+                        language === l.value
+                          ? "bg-white text-black"
+                          : "bg-white/5 text-white/60 border border-white/10 hover:bg-white/10"
+                      }`}
+                    >
+                      {l.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm text-white/60">Max Conversation Length</label>
+                  <span className="text-sm text-white/80 font-medium">{maxConversationLength} turns</span>
+                </div>
+                <input
+                  data-testid="slider-max-conversation"
+                  type="range"
                   min={1}
                   max={50}
-                  step={1}
-                  data-testid="slider-max-conversation"
+                  value={maxConversationLength}
+                  onChange={(e) => setMaxConversationLength(Number(e.target.value))}
+                  className="w-full accent-white"
                 />
-                <div className="flex justify-between text-xs text-gray-400">
+                <div className="flex justify-between text-xs text-white/30">
                   <span>1</span>
                   <span>25</span>
                   <span>50</span>
                 </div>
               </div>
             </div>
-          </TabsContent>
+          </motion.div>
+        )}
 
-          <TabsContent value="review">
-            <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
-              <h2 className="text-lg font-semibold text-gray-900">Review & Activate</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 rounded-lg bg-gray-50 space-y-1">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">Name</p>
-                  <p className="text-sm font-medium text-gray-900" data-testid="text-review-name">{name || "—"}</p>
-                </div>
-                <div className="p-4 rounded-lg bg-gray-50 space-y-1">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">Type</p>
-                  <p className="text-sm font-medium text-gray-900" data-testid="text-review-type">{agent.type}</p>
-                </div>
-                <div className="p-4 rounded-lg bg-gray-50 space-y-1">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">Voice</p>
-                  <p className="text-sm font-medium text-gray-900" data-testid="text-review-voice">
-                    {voice.charAt(0).toUpperCase() + voice.slice(1)}
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-gray-50 space-y-1">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">Language</p>
-                  <p className="text-sm font-medium text-gray-900" data-testid="text-review-language">
-                    {LANGUAGES.find((l) => l.value === language)?.label || language}
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-gray-50 space-y-1">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">Speed</p>
-                  <p className="text-sm font-medium text-gray-900" data-testid="text-review-speed">{speed.toFixed(1)}x</p>
-                </div>
-                <div className="p-4 rounded-lg bg-gray-50 space-y-1">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">Tools Enabled</p>
-                  <p className="text-sm font-medium text-gray-900" data-testid="text-review-tools">
-                    {Object.values(enabledTools).filter(Boolean).length} / {availableTools.length}
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-gray-50 space-y-1">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">Integrations</p>
-                  <p className="text-sm font-medium text-gray-900" data-testid="text-review-integrations">
-                    {[squareEnabled && "Square", toastEnabled && "Toast"].filter(Boolean).join(", ") || "None"}
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-gray-50 space-y-1">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">Operating Hours</p>
-                  <p className="text-sm font-medium text-gray-900" data-testid="text-review-hours">
-                    {operatingHoursStart} - {operatingHoursEnd}
-                  </p>
-                </div>
+        {activeTab === "tools" && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Tools</h2>
+                <span className="text-sm text-white/40">{enabledCount} / {availableTools.length} enabled</span>
               </div>
-              {description && (
-                <div className="p-4 rounded-lg bg-gray-50 space-y-1">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">Description</p>
-                  <p className="text-sm text-gray-700" data-testid="text-review-description">{description}</p>
+              <p className="text-sm text-white/40">
+                These are the actions your agent can perform during a voice conversation.
+                Enable the ones relevant to your venue.
+              </p>
+              {Object.entries(toolsByCategory).map(([category, tools]) => (
+                <div key={category} className="space-y-2">
+                  <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">{category}</h3>
+                  {tools.map((tool) => {
+                    const enabled = enabledTools[tool.name] || false;
+                    return (
+                      <button
+                        key={tool.name}
+                        data-testid={`switch-tool-${tool.name}`}
+                        onClick={() => setEnabledTools((prev) => ({ ...prev, [tool.name]: !enabled }))}
+                        className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all text-left ${
+                          enabled
+                            ? "border-white/20 bg-white/[0.06]"
+                            : "border-white/5 bg-white/[0.02] hover:border-white/10"
+                        }`}
+                      >
+                        <div>
+                          <p className={`text-sm font-medium ${enabled ? "text-white" : "text-white/50"}`}>
+                            {tool.name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                          </p>
+                          <p className="text-xs text-white/30 mt-0.5">{tool.description}</p>
+                        </div>
+                        <div className={`w-10 h-6 rounded-full transition-colors flex items-center px-0.5 ${
+                          enabled ? "bg-green-500" : "bg-white/10"
+                        }`}>
+                          <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                            enabled ? "translate-x-4" : "translate-x-0"
+                          }`} />
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
-              )}
-              {greeting && (
-                <div className="p-4 rounded-lg bg-gray-50 space-y-1">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">Greeting</p>
-                  <p className="text-sm text-gray-700" data-testid="text-review-greeting">{greeting}</p>
-                </div>
-              )}
-              <div className="flex items-center justify-between p-4 rounded-lg border-2 border-gray-200">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className={`w-5 h-5 ${isActive ? "text-green-500" : "text-gray-300"}`} />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {isActive ? "Agent is Active" : "Agent is Inactive"}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {isActive ? "This agent is live and responding to requests" : "Activate to make this agent available"}
-                    </p>
-                  </div>
-                </div>
-                <Switch
-                  checked={isActive}
-                  onCheckedChange={setIsActive}
-                  data-testid="switch-activate"
-                />
-              </div>
-              <Button
-                className="w-full"
-                onClick={handleSaveAll}
-                disabled={isSaving}
-                data-testid="button-save-and-activate"
-              >
-                {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                Save & {isActive ? "Activate" : "Deactivate"}
-              </Button>
-
-              <div className="mt-6">
-                <h3 className="text-sm font-medium text-gray-900 mb-3">Voice Test</h3>
-                <VoiceTestPanel agentId={parseInt(id!)} agentName={name} />
-              </div>
+              ))}
             </div>
-          </TabsContent>
-        </Tabs>
+          </motion.div>
+        )}
+
+        {activeTab === "test" && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 space-y-4">
+              <h2 className="text-lg font-semibold">Test Your Agent</h2>
+              <p className="text-sm text-white/40">
+                Start a live voice session to test how your agent responds. 
+                Make sure you've saved your configuration first.
+              </p>
+              {enabledCount === 0 && (
+                <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-4">
+                  <p className="text-sm text-amber-400">No tools enabled. Your agent won't be able to perform any actions. Go to the Tools tab to enable some.</p>
+                </div>
+              )}
+            </div>
+            <VoiceTestPanel agentId={parseInt(id!)} agentName={name} />
+          </motion.div>
+        )}
       </div>
-    </DashboardLayout>
+    </div>
   );
 }

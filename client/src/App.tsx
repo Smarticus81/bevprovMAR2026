@@ -22,8 +22,8 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
-        <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <Loader2 className="w-6 h-6 text-white/40 animate-spin" />
       </div>
     );
   }
@@ -37,8 +37,8 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 
 function LazyFallback() {
   return (
-    <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
-      <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
+    <div className="min-h-screen bg-black flex items-center justify-center">
+      <Loader2 className="w-6 h-6 text-white/40 animate-spin" />
     </div>
   );
 }
@@ -61,11 +61,7 @@ function Router() {
           {() => <ProtectedRoute component={AppStore} />}
         </Route>
         <Route path="/app/:agentId">
-          {(params) => (
-            <Suspense fallback={<LazyFallback />}>
-              <AgentApp />
-            </Suspense>
-          )}
+          {() => <ProtectedRoute component={AgentApp} />}
         </Route>
         <Route component={NotFound} />
       </Switch>

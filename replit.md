@@ -40,9 +40,9 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 - `client/src/pages/Login.tsx` — Auth login page
 - `client/src/pages/Register.tsx` — Auth registration page
 - `client/src/pages/Dashboard.tsx` — Agent list with CRUD
-- `client/src/pages/AgentBuilder.tsx` — No-code agent configuration (6 tabs)
-- `client/src/pages/AppStore.tsx` — iOS App Store-style agent marketplace
-- `client/src/pages/AgentApp.tsx` — Full-screen mobile voice interface
+- `client/src/pages/AgentBuilder.tsx` — No-code agent configuration (4 tabs: General, Voice, Tools, Test), dark theme, standalone layout (no sidebar)
+- `client/src/pages/AppStore.tsx` — iOS App Store-style agent marketplace (OPEN navigates to builder, GET creates from template)
+- `client/src/pages/AgentApp.tsx` — Full-screen mobile voice interface (auth-protected)
 - `client/src/pages/Pricing.tsx` — Pricing page (3 tiers, UI only)
 - `client/src/hooks/useAuth.ts` — Auth hook
 - `client/src/hooks/useVoiceSession.ts` — WebRTC voice session hook
@@ -74,5 +74,8 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 ## Design
 - Font: Inter (Google Fonts)
 - Landing: Black background, champagne video, x.ai-inspired minimalism
-- Dashboard: Light (#f5f5f7), Apple-esque, sidebar navigation
+- Dashboard: Light (#f5f5f7), Apple-esque, sidebar navigation (Agents + App Store links only)
+- Agent Builder: Dark theme (bg-black, glassmorphic cards, pill tabs) — matches Pricing page aesthetic
+- Pricing: Dark theme (bg-black, white text, glassmorphic tier cards)
 - Mobile app: Full black, iOS-native feel, safe area insets
+- Query keys: All agent queries use `["agents"]` key for cache consistency

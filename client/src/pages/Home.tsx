@@ -115,11 +115,11 @@ export default function Home() {
                     <button
                       key={agent.id}
                       onClick={() => setActiveAgent(agent.id)}
-                      className={\`flex items-center gap-2 whitespace-nowrap px-3 py-1.5 rounded-full text-xs transition-colors duration-300 \${
+                      className={`flex items-center gap-2 whitespace-nowrap px-3 py-1.5 rounded-full text-xs transition-colors duration-300 ${
                         isActive 
                           ? 'bg-white text-black font-medium' 
                           : 'text-white/50 hover:text-white hover:bg-white/10'
-                      }\`}
+                      }`}
                     >
                       <Icon size={14} className={isActive ? "text-black" : "text-white/50"} />
                       {agent.name}

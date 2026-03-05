@@ -98,5 +98,274 @@ export async function registerRoutes(
     return res.json(tools);
   });
 
+  // ========== MENU ITEMS ==========
+  app.get("/api/venue/menu", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const items = await storage.getMenuItems(user.organizationId);
+    return res.json(items);
+  });
+
+  app.post("/api/venue/menu", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const schema = z.object({
+      name: z.string().min(1),
+      price: z.string(),
+      category: z.string().min(1),
+      description: z.string().optional(),
+      available: z.boolean().optional(),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    const item = await storage.createMenuItem({ ...parsed.data, organizationId: user.organizationId });
+    return res.status(201).json(item);
+  });
+
+  app.patch("/api/venue/menu/:id", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const item = await storage.updateMenuItem(parseInt(req.params.id), user.organizationId, req.body);
+    if (!item) return res.status(404).json({ error: "Item not found" });
+    return res.json(item);
+  });
+
+  app.delete("/api/venue/menu/:id", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const deleted = await storage.deleteMenuItem(parseInt(req.params.id), user.organizationId);
+    if (!deleted) return res.status(404).json({ error: "Item not found" });
+    return res.status(204).send();
+  });
+
+  // ========== INVENTORY ==========
+  app.get("/api/venue/inventory", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const items = await storage.getInventoryItems(user.organizationId);
+    return res.json(items);
+  });
+
+  app.post("/api/venue/inventory", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const schema = z.object({
+      name: z.string().min(1),
+      quantity: z.string(),
+      unit: z.string().min(1),
+      cost: z.string().optional(),
+      reorderThreshold: z.string().optional(),
+      supplier: z.string().optional(),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    const item = await storage.createInventoryItem({ ...parsed.data, organizationId: user.organizationId });
+    return res.status(201).json(item);
+  });
+
+  app.patch("/api/venue/inventory/:id", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const item = await storage.updateInventoryItem(parseInt(req.params.id), user.organizationId, req.body);
+    if (!item) return res.status(404).json({ error: "Item not found" });
+    return res.json(item);
+  });
+
+  app.delete("/api/venue/inventory/:id", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const deleted = await storage.deleteInventoryItem(parseInt(req.params.id), user.organizationId);
+    if (!deleted) return res.status(404).json({ error: "Item not found" });
+    return res.status(204).send();
+  });
+
+  // ========== STAFF ==========
+  app.get("/api/venue/staff", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const staff = await storage.getStaffMembers(user.organizationId);
+    return res.json(staff);
+  });
+
+  app.post("/api/venue/staff", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const schema = z.object({
+      name: z.string().min(1),
+      role: z.string().min(1),
+      email: z.string().optional(),
+      phone: z.string().optional(),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    const member = await storage.createStaffMember({ ...parsed.data, organizationId: user.organizationId });
+    return res.status(201).json(member);
+  });
+
+  app.patch("/api/venue/staff/:id", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const member = await storage.updateStaffMember(parseInt(req.params.id), user.organizationId, req.body);
+    if (!member) return res.status(404).json({ error: "Staff member not found" });
+    return res.json(member);
+  });
+
+  app.delete("/api/venue/staff/:id", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const deleted = await storage.deleteStaffMember(parseInt(req.params.id), user.organizationId);
+    if (!deleted) return res.status(404).json({ error: "Staff member not found" });
+    return res.status(204).send();
+  });
+
+  // ========== BOOKINGS ==========
+  app.get("/api/venue/bookings", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const bookingsList = await storage.getBookings(user.organizationId);
+    return res.json(bookingsList);
+  });
+
+  app.post("/api/venue/bookings", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const schema = z.object({
+      eventDate: z.string(),
+      eventTime: z.string().optional(),
+      eventType: z.string().min(1),
+      guestName: z.string().min(1),
+      guestEmail: z.string().optional(),
+      guestPhone: z.string().optional(),
+      guestCount: z.number().optional(),
+      notes: z.string().optional(),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    const booking = await storage.createBooking({ ...parsed.data, organizationId: user.organizationId });
+    return res.status(201).json(booking);
+  });
+
+  app.patch("/api/venue/bookings/:id", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const booking = await storage.updateBooking(parseInt(req.params.id), user.organizationId, req.body);
+    if (!booking) return res.status(404).json({ error: "Booking not found" });
+    return res.json(booking);
+  });
+
+  app.delete("/api/venue/bookings/:id", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const deleted = await storage.deleteBooking(parseInt(req.params.id), user.organizationId);
+    if (!deleted) return res.status(404).json({ error: "Booking not found" });
+    return res.status(204).send();
+  });
+
+  // ========== GUESTS ==========
+  app.get("/api/venue/guests", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const guestList = await storage.getGuests(user.organizationId);
+    return res.json(guestList);
+  });
+
+  app.post("/api/venue/guests", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const schema = z.object({
+      name: z.string().min(1),
+      email: z.string().optional(),
+      phone: z.string().optional(),
+      notes: z.string().optional(),
+      vipStatus: z.boolean().optional(),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    const guest = await storage.createGuest({ ...parsed.data, organizationId: user.organizationId });
+    return res.status(201).json(guest);
+  });
+
+  app.patch("/api/venue/guests/:id", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const guest = await storage.updateGuest(parseInt(req.params.id), user.organizationId, req.body);
+    if (!guest) return res.status(404).json({ error: "Guest not found" });
+    return res.json(guest);
+  });
+
+  app.delete("/api/venue/guests/:id", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const deleted = await storage.deleteGuest(parseInt(req.params.id), user.organizationId);
+    if (!deleted) return res.status(404).json({ error: "Guest not found" });
+    return res.status(204).send();
+  });
+
+  // ========== SUPPLIERS ==========
+  app.get("/api/venue/suppliers", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const supplierList = await storage.getSuppliers(user.organizationId);
+    return res.json(supplierList);
+  });
+
+  app.post("/api/venue/suppliers", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const schema = z.object({
+      name: z.string().min(1),
+      contactName: z.string().optional(),
+      email: z.string().optional(),
+      phone: z.string().optional(),
+      items: z.string().optional(),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    const supplier = await storage.createSupplier({ ...parsed.data, organizationId: user.organizationId });
+    return res.status(201).json(supplier);
+  });
+
+  app.patch("/api/venue/suppliers/:id", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const supplier = await storage.updateSupplier(parseInt(req.params.id), user.organizationId, req.body);
+    if (!supplier) return res.status(404).json({ error: "Supplier not found" });
+    return res.json(supplier);
+  });
+
+  app.delete("/api/venue/suppliers/:id", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const deleted = await storage.deleteSupplier(parseInt(req.params.id), user.organizationId);
+    if (!deleted) return res.status(404).json({ error: "Supplier not found" });
+    return res.status(204).send();
+  });
+
+  // ========== TASKS ==========
+  app.get("/api/venue/tasks", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const taskList = await storage.getTasks(user.organizationId);
+    return res.json(taskList);
+  });
+
+  app.post("/api/venue/tasks", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const schema = z.object({
+      title: z.string().min(1),
+      description: z.string().optional(),
+      assignee: z.string().optional(),
+      dueDate: z.string().optional(),
+      priority: z.string().optional(),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    const task = await storage.createTask({ ...parsed.data, organizationId: user.organizationId });
+    return res.status(201).json(task);
+  });
+
+  app.patch("/api/venue/tasks/:id", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const task = await storage.updateTask(parseInt(req.params.id), user.organizationId, req.body);
+    if (!task) return res.status(404).json({ error: "Task not found" });
+    return res.json(task);
+  });
+
+  app.delete("/api/venue/tasks/:id", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const deleted = await storage.deleteTask(parseInt(req.params.id), user.organizationId);
+    if (!deleted) return res.status(404).json({ error: "Task not found" });
+    return res.status(204).send();
+  });
+
+  // ========== ORDERS (read-only for dashboard) ==========
+  app.get("/api/venue/orders", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const ordersList = await storage.getOrders(user.organizationId);
+    return res.json(ordersList);
+  });
+
+  // ========== REVENUE STATS ==========
+  app.get("/api/venue/stats", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const stats = await storage.getRevenueStats(user.organizationId);
+    return res.json(stats);
+  });
+
   return httpServer;
 }

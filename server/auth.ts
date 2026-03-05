@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import type { Express, Request, Response, NextFunction } from "express";
-import { storage } from "./storage";
+import { storage, seedVenueData } from "./storage";
 
 const PgSession = connectPgSimple(session);
 
@@ -84,6 +84,8 @@ export function setupAuth(app: Express) {
         role: "owner",
         organizationId: org.id,
       });
+
+      seedVenueData(org.id).catch((err) => console.error("Seed data error:", err));
 
       req.login(user, (err) => {
         if (err) return res.status(500).json({ error: "Login failed after registration" });

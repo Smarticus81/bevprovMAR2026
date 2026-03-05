@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, serial, timestamp, integer, jsonb, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, jsonb, boolean, numeric, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -64,6 +64,134 @@ export const messages = pgTable("messages", {
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
+export const menuItems = pgTable("menu_items", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  price: numeric("price", { precision: 10, scale: 2 }).notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  available: boolean("available").notNull().default(true),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
+});
+
+export const inventoryItems = pgTable("inventory_items", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  quantity: numeric("quantity", { precision: 10, scale: 2 }).notNull(),
+  unit: text("unit").notNull(),
+  cost: numeric("cost", { precision: 10, scale: 2 }),
+  reorderThreshold: numeric("reorder_threshold", { precision: 10, scale: 2 }).notNull().default("0"),
+  supplier: text("supplier"),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
+});
+
+export const orders = pgTable("orders", {
+  id: serial("id").primaryKey(),
+  items: jsonb("items").$type<OrderItem[]>().notNull().default([]),
+  total: numeric("total", { precision: 10, scale: 2 }).notNull(),
+  status: text("status").notNull().default("pending"),
+  paymentMethod: text("payment_method"),
+  paymentStatus: text("payment_status").notNull().default("unpaid"),
+  tableNumber: integer("table_number"),
+  customerName: text("customer_name"),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const tabs = pgTable("tabs", {
+  id: serial("id").primaryKey(),
+  customerName: text("customer_name").notNull(),
+  items: jsonb("items").$type<OrderItem[]>().notNull().default([]),
+  total: numeric("total", { precision: 10, scale: 2 }).notNull().default("0"),
+  status: text("status").notNull().default("open"),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const bookings = pgTable("bookings", {
+  id: serial("id").primaryKey(),
+  eventDate: date("event_date").notNull(),
+  eventTime: text("event_time"),
+  eventType: text("event_type").notNull(),
+  guestName: text("guest_name").notNull(),
+  guestEmail: text("guest_email"),
+  guestPhone: text("guest_phone"),
+  guestCount: integer("guest_count").notNull().default(1),
+  status: text("status").notNull().default("pending"),
+  notes: text("notes"),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const staffMembers = pgTable("staff_members", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  role: text("role").notNull(),
+  email: text("email"),
+  phone: text("phone"),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
+});
+
+export const staffShifts = pgTable("staff_shifts", {
+  id: serial("id").primaryKey(),
+  staffMemberId: integer("staff_member_id").references(() => staffMembers.id, { onDelete: "cascade" }).notNull(),
+  shiftDate: date("shift_date").notNull(),
+  startTime: text("start_time").notNull(),
+  endTime: text("end_time").notNull(),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
+});
+
+export const guests = pgTable("guests", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email"),
+  phone: text("phone"),
+  notes: text("notes"),
+  visitCount: integer("visit_count").notNull().default(0),
+  totalSpent: numeric("total_spent", { precision: 10, scale: 2 }).notNull().default("0"),
+  vipStatus: boolean("vip_status").notNull().default(false),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
+});
+
+export const tasks = pgTable("tasks", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  assignee: text("assignee"),
+  dueDate: date("due_date"),
+  status: text("status").notNull().default("pending"),
+  priority: text("priority").notNull().default("medium"),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const wasteLogs = pgTable("waste_logs", {
+  id: serial("id").primaryKey(),
+  item: text("item").notNull(),
+  quantity: numeric("quantity", { precision: 10, scale: 2 }).notNull(),
+  unit: text("unit"),
+  reason: text("reason").notNull(),
+  cost: numeric("cost", { precision: 10, scale: 2 }),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const suppliers = pgTable("suppliers", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  contactName: text("contact_name"),
+  email: text("email"),
+  phone: text("phone"),
+  items: text("items"),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
+});
+
+export interface OrderItem {
+  name: string;
+  quantity: number;
+  price: number;
+}
+
 export interface AgentConfig {
   voice?: string;
   language?: string;
@@ -108,6 +236,17 @@ export const insertUserSchema = createInsertSchema(users).omit({ id: true, creat
 export const insertAgentSchema = createInsertSchema(agents).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertAgentToolSchema = createInsertSchema(agentTools).omit({ id: true });
 export const insertWaitlistSchema = createInsertSchema(waitlist).omit({ id: true, createdAt: true });
+export const insertMenuItemSchema = createInsertSchema(menuItems).omit({ id: true });
+export const insertInventoryItemSchema = createInsertSchema(inventoryItems).omit({ id: true });
+export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true });
+export const insertTabSchema = createInsertSchema(tabs).omit({ id: true, createdAt: true });
+export const insertBookingSchema = createInsertSchema(bookings).omit({ id: true, createdAt: true });
+export const insertStaffMemberSchema = createInsertSchema(staffMembers).omit({ id: true });
+export const insertStaffShiftSchema = createInsertSchema(staffShifts).omit({ id: true });
+export const insertGuestSchema = createInsertSchema(guests).omit({ id: true });
+export const insertTaskSchema = createInsertSchema(tasks).omit({ id: true, createdAt: true });
+export const insertWasteLogSchema = createInsertSchema(wasteLogs).omit({ id: true, createdAt: true });
+export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true });
 
 export type InsertOrg = z.infer<typeof insertOrgSchema>;
 export type Organization = typeof organizations.$inferSelect;
@@ -119,3 +258,25 @@ export type InsertAgentTool = z.infer<typeof insertAgentToolSchema>;
 export type AgentTool = typeof agentTools.$inferSelect;
 export type InsertWaitlistEntry = z.infer<typeof insertWaitlistSchema>;
 export type WaitlistEntry = typeof waitlist.$inferSelect;
+export type InsertMenuItem = z.infer<typeof insertMenuItemSchema>;
+export type MenuItem = typeof menuItems.$inferSelect;
+export type InsertInventoryItem = z.infer<typeof insertInventoryItemSchema>;
+export type InventoryItem = typeof inventoryItems.$inferSelect;
+export type InsertOrder = z.infer<typeof insertOrderSchema>;
+export type Order = typeof orders.$inferSelect;
+export type InsertTab = z.infer<typeof insertTabSchema>;
+export type Tab = typeof tabs.$inferSelect;
+export type InsertBooking = z.infer<typeof insertBookingSchema>;
+export type Booking = typeof bookings.$inferSelect;
+export type InsertStaffMember = z.infer<typeof insertStaffMemberSchema>;
+export type StaffMember = typeof staffMembers.$inferSelect;
+export type InsertStaffShift = z.infer<typeof insertStaffShiftSchema>;
+export type StaffShift = typeof staffShifts.$inferSelect;
+export type InsertGuest = z.infer<typeof insertGuestSchema>;
+export type Guest = typeof guests.$inferSelect;
+export type InsertTask = z.infer<typeof insertTaskSchema>;
+export type Task = typeof tasks.$inferSelect;
+export type InsertWasteLog = z.infer<typeof insertWasteLogSchema>;
+export type WasteLog = typeof wasteLogs.$inferSelect;
+export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
+export type Supplier = typeof suppliers.$inferSelect;

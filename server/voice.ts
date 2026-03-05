@@ -59,10 +59,11 @@ voice.post("/api/voice/session", requireAuth, async (req, res) => {
 
 voice.post("/api/voice/tool-call", requireAuth, async (req, res) => {
   try {
+    const user = req.user as any;
     const { toolName, arguments: args } = req.body;
     if (!toolName) return res.status(400).json({ error: "toolName is required" });
 
-    const result = executeToolCall(toolName, args || {});
+    const result = await executeToolCall(toolName, args || {}, user.organizationId);
     return res.json(result);
   } catch (error: any) {
     console.error("Tool call error:", error);
@@ -125,7 +126,7 @@ voice.post("/api/voice/chat", requireAuth, async (req, res) => {
 
       for (const tc of assistantMessage.tool_calls) {
         const args = JSON.parse(tc.function.arguments);
-        const result = executeToolCall(tc.function.name, args);
+        const result = await executeToolCall(tc.function.name, args, user.organizationId);
         toolCalls.push({ name: tc.function.name, args, result });
 
         chatMessages.push({

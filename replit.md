@@ -1,22 +1,37 @@
 # BevPro — Voice Agent Builder for Venues
 
 ## Overview
-BevPro is a multi-tenant, no-code voice agent builder platform for event and wedding venue owners. Venue owners can create 5 types of voice agents (POS Integration, Agentic Voice POS, Inventory Manager, Venue Agent, and BevOne all-in-one). Features full voice pipeline with tool calling via OpenAI Realtime API + WebRTC.
+BevPro is a multi-tenant, no-code voice agent builder platform for event and wedding venue owners. Venue owners can create 5 types of voice agents (POS Integration, Agentic Voice POS, Inventory Manager, Venue Agent, and BevOne all-in-one). Features full voice pipeline with tool calling via OpenAI Realtime API + WebRTC, with automatic fallback to STT→Chat→TTS.
 
 ## Architecture
 - **Frontend**: React + Vite + Tailwind CSS v4 + Framer Motion + Wouter routing
 - **Backend**: Express.js on port 5000, PostgreSQL with Drizzle ORM
 - **Auth**: Passport.js local strategy, bcryptjs, express-session + connect-pg-simple
-- **Voice**: OpenAI Realtime API via WebRTC (ephemeral tokens), fallback to STT→Chat→TTS
+- **Voice**: OpenAI Realtime API via WebRTC (ephemeral tokens), fallback to Whisper STT→GPT-4o-mini Chat→TTS-1
 - **AI**: OpenAI via Replit AI Integrations (`AI_INTEGRATIONS_OPENAI_API_KEY`, `AI_INTEGRATIONS_OPENAI_BASE_URL`)
 - **Mobile**: Capacitor iOS app config + PWA fallback
+- **Multi-tenancy**: All data scoped by organizationId, enforced at storage and API layers
 
 ## Data Model (shared/schema.ts)
+### Core
 - `organizations`: id, name, slug, plan (starter/pro/enterprise)
 - `users`: id, email, password (hashed), name, role, organizationId
 - `agents`: id, name, description, type, status (draft/active/paused), config (jsonb), organizationId
 - `agentTools`: id, agentId, toolName, toolCategory, enabled, config (jsonb)
 - `waitlist`: id, email, agentType, message
+
+### Venue Data (all scoped by organizationId)
+- `menuItems`: id, name, price, category, description, available, organizationId
+- `inventoryItems`: id, name, quantity, unit, cost, reorderThreshold, supplier, organizationId
+- `orders`: id, items (jsonb), total, status, paymentMethod, paymentStatus, tableNumber, customerName, organizationId
+- `tabs`: id, customerName, items (jsonb), total, status, organizationId
+- `bookings`: id, eventDate, eventTime, eventType, guestName, guestEmail, guestPhone, guestCount, status, notes, organizationId
+- `staffMembers`: id, name, role, email, phone, organizationId
+- `staffShifts`: id, staffMemberId, shiftDate, startTime, endTime, organizationId
+- `guests`: id, name, email, phone, notes, visitCount, totalSpent, vipStatus, organizationId
+- `tasks`: id, title, description, assignee, dueDate, status, priority, organizationId
+- `wasteLogs`: id, item, quantity, unit, reason, cost, organizationId
+- `suppliers`: id, name, contactName, email, phone, items, organizationId
 
 ## Voice Agent Types
 1. **BevOne** (bevone) — All-in-one comprehensive venue assistant
@@ -25,14 +40,20 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 4. **Inventory Manager** (inventory) — Stock tracking and management
 5. **Venue Agent** (venue-admin) — Bookings, scheduling, operations
 
+## 21 Real Tools (all query actual database)
+### POS: square_pos_sync, toast_pos_sync, payment_processing, receipt_generation, tab_management, menu_lookup
+### Voice POS: voice_ordering, split_checks, customer_lookup
+### Inventory: stock_tracking, low_stock_alerts, supplier_management, waste_tracking, auto_reorder, inventory_pos_sync
+### Operations: calendar_booking, staff_scheduling, financial_reports, guest_management, vendor_coordination, task_assignments
+
 ## Key Files
 ### Server
 - `server/index.ts` — Express app setup
-- `server/auth.ts` — Passport.js auth, session management
-- `server/routes.ts` — API routes (agents CRUD, waitlist, tools)
-- `server/voice.ts` — Voice pipeline (WebRTC session, tool calls, fallback STT/TTS)
-- `server/tools.ts` — Tool execution engine with mock data
-- `server/storage.ts` — Database storage interface (Drizzle)
+- `server/auth.ts` — Passport.js auth, session management, seeds venue data on registration
+- `server/routes.ts` — API routes (agents CRUD, venue data CRUD, waitlist)
+- `server/voice.ts` — Voice pipeline (WebRTC session, tool calls with orgId, fallback STT/Chat/TTS)
+- `server/tools.ts` — 21 real tool implementations against PostgreSQL (no mocks)
+- `server/storage.ts` — Database storage interface with all CRUD methods + seedVenueData()
 - `server/db.ts` — Database connection
 
 ### Client
@@ -40,42 +61,62 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 - `client/src/pages/Login.tsx` — Auth login page
 - `client/src/pages/Register.tsx` — Auth registration page
 - `client/src/pages/Dashboard.tsx` — Agent list with CRUD
-- `client/src/pages/AgentBuilder.tsx` — No-code agent configuration (4 tabs: General, Voice, Tools, Test), dark theme, standalone layout (no sidebar)
-- `client/src/pages/AppStore.tsx` — iOS App Store-style agent marketplace (OPEN navigates to builder, GET creates from template)
+- `client/src/pages/AgentBuilder.tsx` — No-code agent configuration (4 tabs: General, Voice, Tools, Test), dark theme
+- `client/src/pages/AppStore.tsx` — iOS App Store-style agent marketplace
 - `client/src/pages/AgentApp.tsx` — Full-screen mobile voice interface (auth-protected)
+- `client/src/pages/VenueData.tsx` — Venue data management (6 tabs: Menu, Inventory, Staff, Bookings, Guests, Suppliers)
 - `client/src/pages/Pricing.tsx` — Pricing page (3 tiers, UI only)
 - `client/src/hooks/useAuth.ts` — Auth hook
-- `client/src/hooks/useVoiceSession.ts` — WebRTC voice session hook
+- `client/src/hooks/useVoiceSession.ts` — WebRTC voice session hook with fallback chain
 - `client/src/components/VoiceTestPanel.tsx` — Voice test widget for agent builder
-- `client/src/components/layout/DashboardLayout.tsx` — Dashboard sidebar layout
+- `client/src/components/layout/DashboardLayout.tsx` — Dashboard sidebar layout (Agents, Venue Data, App Store)
 - `client/src/components/layout/Navbar.tsx` — Landing page navbar
 - `client/src/lib/agentTools.ts` — Tool catalog definitions
 
 ### Config
-- `shared/schema.ts` — Drizzle schema + types + Zod validation
+- `shared/schema.ts` — Drizzle schema + types + Zod validation (16 tables)
 - `capacitor.config.ts` — Capacitor iOS app config
 - `client/public/manifest.json` — PWA manifest
 
 ## API Endpoints
-- `POST /api/auth/register` — Register user + org
+### Auth
+- `POST /api/auth/register` — Register user + org + seed venue data
 - `POST /api/auth/login` — Login
 - `POST /api/auth/logout` — Logout
 - `GET /api/auth/me` — Current user + org
+
+### Agents
 - `GET/POST /api/agents` — List/create agents
 - `GET/PATCH/DELETE /api/agents/:id` — Get/update/delete agent
 - `GET/PUT /api/agents/:id/tools` — Get/set agent tools
+
+### Voice
 - `POST /api/voice/session` — Create WebRTC session (ephemeral token)
-- `POST /api/voice/tool-call` — Execute tool call
-- `POST /api/voice/transcribe` — Fallback STT
-- `POST /api/voice/chat` — Fallback chat with tools
-- `POST /api/voice/synthesize` — Fallback TTS
+- `POST /api/voice/tool-call` — Execute tool call (with orgId)
+- `POST /api/voice/transcribe` — Fallback STT (Whisper)
+- `POST /api/voice/chat` — Fallback chat with tools (GPT-4o-mini)
+- `POST /api/voice/synthesize` — Fallback TTS (TTS-1)
+
+### Venue Data (all scoped by orgId)
+- `GET/POST/PATCH/:id/DELETE/:id /api/venue/menu` — Menu items
+- `GET/POST/PATCH/:id/DELETE/:id /api/venue/inventory` — Inventory
+- `GET/POST/PATCH/:id/DELETE/:id /api/venue/staff` — Staff members
+- `GET/POST/PATCH/:id/DELETE/:id /api/venue/bookings` — Bookings
+- `GET/POST/PATCH/:id/DELETE/:id /api/venue/guests` — Guests
+- `GET/POST/PATCH/:id/DELETE/:id /api/venue/suppliers` — Suppliers
+- `GET/POST/PATCH/:id/DELETE/:id /api/venue/tasks` — Tasks
+- `GET /api/venue/orders` — Orders (read-only)
+- `GET /api/venue/stats` — Revenue statistics
 - `POST /api/waitlist` — Landing page email capture
 
 ## Design
 - Font: Inter (Google Fonts)
 - Landing: Black background, champagne video, x.ai-inspired minimalism
-- Dashboard: Light (#f5f5f7), Apple-esque, sidebar navigation (Agents + App Store links only)
-- Agent Builder: Dark theme (bg-black, glassmorphic cards, pill tabs) — matches Pricing page aesthetic
+- Dashboard: Light (#f5f5f7), Apple-esque, sidebar navigation (Agents, Venue Data, App Store)
+- Agent Builder: Dark theme (bg-black, glassmorphic cards, pill tabs) — matches Pricing page
 - Pricing: Dark theme (bg-black, white text, glassmorphic tier cards)
 - Mobile app: Full black, iOS-native feel, safe area insets
-- Query keys: All agent queries use `["agents"]` key for cache consistency
+- Query keys: All agent queries use `["agents"]` key; venue data uses `["venue", "menu"]` etc.
+
+## Seed Data
+New registrations auto-get: 18 menu items, 15 inventory items, 5 suppliers, 5 staff members, 4 guest profiles

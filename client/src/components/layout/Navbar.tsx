@@ -11,7 +11,7 @@ export function Navbar() {
     >
       <div className="flex items-center gap-12">
         <Link href="/" className="text-white text-xl tracking-tight normal-case font-semibold mr-4">
-          BevOne
+          BevPro
         </Link>
         <nav className="hidden md:flex gap-8">
           <Link href="#agents" className="hover:text-white transition-colors">Agents</Link>

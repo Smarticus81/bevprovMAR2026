@@ -75,7 +75,7 @@ export default function Home() {
           className="text-center mb-16"
         >
           <h1 data-testid="text-hero-title" className="text-[12vw] md:text-[9vw] font-medium tracking-tight leading-none text-glow text-white/90">
-            BevOne
+            BevPro
           </h1>
           <p data-testid="text-hero-subtitle" className="text-white/50 text-sm md:text-base tracking-wide mt-4 max-w-lg mx-auto font-light">
             The voice app builder for event and wedding venues.
@@ -180,7 +180,7 @@ export default function Home() {
         transition={{ delay: 1, duration: 1 }}
       >
         <div>
-          © 2026 BevOne Inc. — The hospitality intelligence platform.
+          © 2026 BevPro Inc. — The hospitality intelligence platform.
         </div>
         <div className="flex gap-6">
           <a href="#" className="hover:text-white transition-colors">Privacy</a>

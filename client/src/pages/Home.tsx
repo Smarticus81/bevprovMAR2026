@@ -1,183 +1,165 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/layout/Navbar";
-import { ArrowRight, Terminal, WifiOff, ShieldAlert, Cpu } from "lucide-react";
+import { ArrowUp, Mic, Store, Box, Briefcase, Plus, Sparkles } from "lucide-react";
+import { useState } from "react";
 
-// This will be resolved once the video is generated
+// Champagne video asset
 import champagneVideo from "@/assets/videos/champagne-bg.mp4";
 
+const AGENTS = [
+  {
+    id: "bevone",
+    name: "BevOne",
+    description: "The all-in-one comprehensive venue assistant.",
+    icon: Sparkles
+  },
+  {
+    id: "voice-pos",
+    name: "Agentic Voice POS",
+    description: "Fully voice-controlled point of sale system.",
+    icon: Mic
+  },
+  {
+    id: "pos-integration",
+    name: "POS Integration Agent",
+    description: "Seamless voice layer for Square & Toast.",
+    icon: Store
+  },
+  {
+    id: "inventory",
+    name: "Inventory Manager",
+    description: "Track stock and sync with POS automatically.",
+    icon: Box
+  },
+  {
+    id: "venue-admin",
+    name: "Venue Agent",
+    description: "Administrative oversight and operational tasks.",
+    icon: Briefcase
+  }
+];
+
 export default function Home() {
+  const [activeAgent, setActiveAgent] = useState("bevone");
+  const [isHovering, setIsHovering] = useState(false);
+
   return (
-    <div className="min-h-screen bg-background text-foreground selection:bg-primary/50">
+    <div className="min-h-screen bg-black text-white overflow-hidden relative font-sans">
       <Navbar />
 
-      {/* HERO SECTION */}
-      <section className="relative h-[100dvh] w-full bg-black text-white overflow-hidden flex flex-col justify-end p-6 md:p-12 pb-24 border-b-2 border-white">
-        <div className="absolute inset-0 z-0">
+      {/* BACKGROUND VIDEO WITH X.AI STYLE MASKING */}
+      <div className="fixed inset-0 z-0 flex items-center justify-center pointer-events-none">
+        <div className="absolute inset-0 bg-black z-10 opacity-40"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black z-10"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-black via-transparent to-black z-10"></div>
+        
+        <motion.div 
+          className="w-[120vw] h-[120vh] opacity-80"
+          animate={{ scale: isHovering ? 1.05 : 1 }}
+          transition={{ duration: 2, ease: "easeOut" }}
+        >
           <video 
             src={champagneVideo} 
             autoPlay 
             loop 
             muted 
             playsInline 
-            className="w-full h-full object-cover opacity-70 grayscale contrast-125" 
+            className="w-full h-full object-cover mask-radial" 
           />
-          <div className="absolute inset-0 bg-black/30"></div>
-        </div>
-        
-        <div className="relative z-10 w-full">
-          <motion.h1 
-            className="font-display text-[15vw] md:text-[12vw] leading-[0.8] tracking-tighter mix-blend-difference uppercase"
-            initial={{ opacity: 0, y: 100 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-          >
-            POUR<br/>
-            <span className="text-outline">PERFECTION.</span>
-          </motion.h1>
-
-          <motion.div 
-            className="flex flex-col lg:flex-row justify-between items-start lg:items-end mt-12 border-t-2 border-white/20 pt-8 gap-8"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5, duration: 1 }}
-          >
-            <p className="font-mono text-sm md:text-base max-w-xl uppercase tracking-widest text-white/80 leading-relaxed">
-              The all-in-one platform for event venues, bartenders, and managers. <br/><br/>
-              <span className="text-primary font-bold bg-primary/10 px-2 py-1 border border-primary/30">
-                Built to handle the friday night rush.
-              </span>
-            </p>
-
-            <div className="flex flex-col items-start lg:items-end font-mono text-xs md:text-sm text-primary uppercase gap-2">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-primary rounded-full animate-ping"></span>
-                SYSTEM: ONLINE
-              </div>
-              <div>SPEED: LIGHTNING FAST</div>
-              <div>SECURITY: BANK-GRADE</div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* MARQUEE */}
-      <div className="border-b-2 border-white bg-primary text-black py-4 font-display text-4xl tracking-widest marquee-container uppercase">
-        <div className="marquee-content">
-          NEVER LOSE AN ORDER • KEEP THE DRINKS FLOWING • FLAWLESS INVENTORY TRACKING • EFFORTLESS EVENT BOOKING • NEVER LOSE AN ORDER • KEEP THE DRINKS FLOWING • FLAWLESS INVENTORY TRACKING • EFFORTLESS EVENT BOOKING •
-        </div>
+        </motion.div>
       </div>
 
-      {/* MODULES GRID */}
-      <section id="modules" className="bg-white text-black py-24 md:py-40 px-6 md:px-12">
-        <div className="border-b-[4px] border-black pb-4 mb-20 md:mb-32 flex justify-between items-end">
-          <h2 className="font-display text-7xl md:text-[9rem] leading-[0.8] tracking-tighter">EVERYTHING<br/>YOU NEED.</h2>
-          <span className="font-mono text-sm hidden md:block uppercase font-bold">/// Three Core Tools</span>
-        </div>
+      {/* MAIN CONTENT AREA */}
+      <main className="relative z-10 h-screen flex flex-col items-center justify-center px-6">
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border-[4px] border-black bg-black">
-          {/* POS */}
-          <div className="bg-white border-b-[4px] md:border-b-0 md:border-r-[4px] border-black p-8 md:p-16 hover:bg-black hover:text-white transition-colors duration-300 group flex flex-col justify-between">
-            <div className="font-mono text-sm md:text-base mb-24 md:mb-40 font-bold tracking-widest border-b-2 border-black group-hover:border-white pb-2">
-              01 // POINT OF SALE
-            </div>
-            <div>
-              <h3 className="font-display text-6xl md:text-8xl mb-6 leading-none">BEVPRO<br/>POS</h3>
-              <p className="font-sans text-xl font-medium leading-relaxed text-black/70 group-hover:text-white/70">
-                A lightning-fast register that works even when the WiFi goes down. Process payments and keep the line moving, no matter what.
-              </p>
-            </div>
-          </div>
-          
-          {/* VA */}
-          <div className="bg-white border-b-[4px] md:border-b-0 md:border-r-[4px] border-black p-8 md:p-16 hover:bg-black hover:text-white transition-colors duration-300 group flex flex-col justify-between">
-            <div className="font-mono text-sm md:text-base mb-24 md:mb-40 font-bold tracking-widest border-b-2 border-black group-hover:border-white pb-2 text-primary">
-              02 // EVENT MANAGER
-            </div>
-            <div>
-              <h3 className="font-display text-6xl md:text-8xl mb-6 leading-none text-primary">VENUE<br/>ASSISTANT</h3>
-              <p className="font-sans text-xl font-medium leading-relaxed text-black/70 group-hover:text-white/70">
-                Your AI-powered booking coordinator. Handle inquiries, schedule events, and manage your calendar hands-free.
-              </p>
-            </div>
-          </div>
-          
-          {/* INV */}
-          <div className="bg-white p-8 md:p-16 hover:bg-black hover:text-white transition-colors duration-300 group flex flex-col justify-between">
-            <div className="font-mono text-sm md:text-base mb-24 md:mb-40 font-bold tracking-widest border-b-2 border-black group-hover:border-white pb-2">
-              03 // STOCK CONTROL
-            </div>
-            <div>
-              <h3 className="font-display text-6xl md:text-8xl mb-6 leading-none">SMART<br/>INVENTORY</h3>
-              <p className="font-sans text-xl font-medium leading-relaxed text-black/70 group-hover:text-white/70">
-                Know exactly what you poured versus what you sold. Automated ordering ensures you never run out of your best sellers.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+        {/* HUGE GLOWING LOGO / TITLE */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1.5, ease: "easeOut" }}
+          className="text-center mb-16"
+        >
+          <h1 className="text-[12vw] md:text-[9vw] font-medium tracking-tight leading-none text-glow text-white/90">
+            BevOne
+          </h1>
+          <p className="text-white/50 text-sm md:text-base tracking-wide mt-4 max-w-lg mx-auto font-light">
+            The voice app builder for event and wedding venues.
+          </p>
+        </motion.div>
 
-      {/* ARCHITECTURE SECTION */}
-      <section id="architecture" className="py-24 md:py-40 bg-black text-white px-6 md:px-12 border-t-2 border-white">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 md:gap-24">
-          <div>
-            <h2 className="font-display text-6xl md:text-8xl leading-[0.8] mb-12">
-              BUILT FOR<br/>THE REAL<br/><span className="text-primary text-outline-primary">WORLD.</span>
-            </h2>
+        {/* X.AI STYLE INPUT BOX */}
+        <motion.div 
+          className="w-full max-w-2xl"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 0.3 }}
+          onMouseEnter={() => setIsHovering(true)}
+          onMouseLeave={() => setIsHovering(false)}
+        >
+          <div className="glass-input rounded-2xl p-2 flex flex-col transition-all duration-300">
+            <div className="px-4 pt-3 pb-8">
+              <input 
+                type="text" 
+                placeholder="What kind of voice agent do you want to build?" 
+                className="w-full bg-transparent border-none outline-none text-lg text-white placeholder:text-white/30 font-light"
+              />
+            </div>
             
-            <div className="font-mono text-sm md:text-base text-white/70 space-y-6 max-w-lg">
-              <p>
-                We know what a Friday night feels like. Sticky fingers, dropped internet connections, and a line out the door.
-              </p>
-              <p>
-                BevOne is designed to be <span className="text-white font-bold bg-white/10 px-2 py-1">bulletproof</span> when you need it most.
-              </p>
+            {/* BUILDER OPTIONS - HORIZONTAL SCROLL OR WRAP */}
+            <div className="flex items-center justify-between border-t border-white/10 pt-2 px-2 mt-2">
+              <div className="flex gap-2 overflow-x-auto hide-scrollbar py-1">
+                {AGENTS.map((agent) => {
+                  const Icon = agent.icon;
+                  const isActive = activeAgent === agent.id;
+                  return (
+                    <button
+                      key={agent.id}
+                      onClick={() => setActiveAgent(agent.id)}
+                      className={\`flex items-center gap-2 whitespace-nowrap px-3 py-1.5 rounded-full text-xs transition-colors duration-300 \${
+                        isActive 
+                          ? 'bg-white text-black font-medium' 
+                          : 'text-white/50 hover:text-white hover:bg-white/10'
+                      }\`}
+                    >
+                      <Icon size={14} className={isActive ? "text-black" : "text-white/50"} />
+                      {agent.name}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              <button className="bg-white/10 hover:bg-white hover:text-black text-white rounded-full p-2 ml-2 transition-colors shrink-0">
+                <ArrowUp size={18} />
+              </button>
             </div>
           </div>
-
-          <div className="space-y-4">
-            {[
-              { icon: WifiOff, title: "WORKS OFFLINE", desc: "If the internet drops, you keep ringing up orders. Everything syncs later." },
-              { icon: ShieldAlert, title: "TOTAL PRIVACY", desc: "Your venue's data is locked down and completely separated from everyone else." },
-              { icon: Cpu, title: "VOICE ASSISTANT", desc: "Talk to your system to get things done faster. No more tapping through menus." },
-              { icon: Terminal, title: "ZERO MISTAKES", desc: "Smart safeguards prevent accidental orders and keep your numbers perfect." }
-            ].map((item, i) => (
-              <div key={i} className="flex gap-6 items-start border-2 border-white/20 p-6 md:p-8 hover:border-primary transition-colors hover:bg-white/5">
-                <item.icon className="w-10 h-10 md:w-12 md:h-12 text-primary shrink-0" strokeWidth={1.5} />
-                <div>
-                  <h4 className="font-display text-3xl md:text-4xl tracking-wide mb-2">{item.title}</h4>
-                  <p className="font-mono text-sm md:text-base text-white/60">{item.desc}</p>
-                </div>
-              </div>
-            ))}
+          
+          <div className="text-center mt-6">
+            <p className="text-white/40 text-xs flex items-center justify-center gap-2">
+              <Plus size={12} />
+              Integrates with Square & Toast POS
+            </p>
           </div>
-        </div>
-      </section>
+        </motion.div>
+      </main>
 
-      {/* FINAL CTA */}
-      <section className="relative py-40 md:py-64 bg-primary text-black flex flex-col items-center justify-center text-center px-6 border-y-[4px] border-black overflow-hidden">
-        <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] mix-blend-overlay pointer-events-none"></div>
-        
-        <h2 className="font-display text-[12vw] leading-[0.8] tracking-tighter mix-blend-multiply relative z-10">
-          OWN THE NIGHT.
-        </h2>
-        
-        <button className="mt-16 md:mt-24 font-display text-4xl md:text-6xl border-[4px] border-black px-12 md:px-20 py-6 hover:bg-black hover:text-primary transition-all active:scale-95 uppercase tracking-widest relative z-10 group shadow-[16px_16px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-3 hover:translate-y-3">
-          GET STARTED <ArrowRight className="inline-block ml-4 w-10 h-10 group-hover:translate-x-4 transition-transform" strokeWidth={3} />
-        </button>
-      </section>
-
-      {/* FOOTER */}
-      <footer className="bg-black text-white p-6 md:p-12 font-mono text-xs md:text-sm uppercase flex flex-col md:flex-row justify-between items-center md:items-start gap-8 border-t-[4px] border-white">
+      {/* FOOTER AREA */}
+      <motion.footer 
+        className="fixed bottom-0 w-full p-6 md:p-8 flex flex-col md:flex-row justify-between items-center z-10 text-xs text-white/40 gap-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1, duration: 1 }}
+      >
         <div>
-          <div className="font-display text-4xl mb-4 tracking-widest">BEVONE //</div>
-          <div className="text-white/50">© 2026 // ALL RIGHTS RESERVED.</div>
+          © 2026 BevOne Inc. — The hospitality intelligence platform.
         </div>
-        <div className="flex gap-8 text-white/70">
-          <a href="#" className="hover:text-primary transition-colors">OPERATIONS</a>
-          <a href="#" className="hover:text-primary transition-colors">INTELLIGENCE</a>
-          <a href="#" className="hover:text-primary transition-colors">TERMINAL</a>
+        <div className="flex gap-6">
+          <a href="#" className="hover:text-white transition-colors">Privacy</a>
+          <a href="#" className="hover:text-white transition-colors">Terms</a>
+          <a href="#" className="hover:text-white transition-colors">Documentation</a>
         </div>
-      </footer>
+      </motion.footer>
+
     </div>
   );
 }

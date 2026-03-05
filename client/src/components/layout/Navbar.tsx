@@ -4,20 +4,27 @@ import { motion } from "framer-motion";
 export function Navbar() {
   return (
     <motion.header 
-      className="fixed top-0 w-full z-50 mix-blend-difference p-6 flex justify-between items-start text-white pointer-events-none"
-      initial={{ opacity: 0, y: -20 }}
+      className="fixed top-0 w-full z-50 px-6 py-8 flex justify-between items-center text-xs tracking-widest uppercase font-medium text-white/70"
+      initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, ease: "easeOut" }}
+      transition={{ duration: 1, ease: "easeOut" }}
     >
-      <Link href="/" className="font-display text-5xl md:text-7xl leading-none pointer-events-auto hover:text-primary transition-colors tracking-widest">
-        BEVONE
-      </Link>
+      <div className="flex items-center gap-12">
+        <Link href="/" className="text-white text-xl tracking-tight normal-case font-semibold mr-4">
+          BevOne
+        </Link>
+        <nav className="hidden md:flex gap-8">
+          <Link href="#agents" className="hover:text-white transition-colors">Agents</Link>
+          <Link href="#integrations" className="hover:text-white transition-colors">Integrations</Link>
+          <Link href="#venues" className="hover:text-white transition-colors">Venues</Link>
+          <Link href="#company" className="hover:text-white transition-colors">Company</Link>
+        </nav>
+      </div>
 
-      <div className="flex flex-col items-end gap-1 font-mono text-[10px] md:text-xs uppercase pointer-events-auto">
-        <Link href="#modules" className="hover:text-primary transition-colors">Modules [01]</Link>
-        <Link href="#architecture" className="hover:text-primary transition-colors">Architecture [02]</Link>
-        <button className="mt-6 border-2 border-white px-6 py-2 hover:bg-white hover:text-black transition-all active:scale-95 font-bold tracking-widest bg-black/20 backdrop-blur-sm">
-          INITIALIZE
+      <div className="flex items-center gap-6">
+        <button className="hidden md:block hover:text-white transition-colors">Sign In</button>
+        <button className="border border-white/20 rounded-full px-5 py-2 hover:bg-white hover:text-black transition-all duration-300">
+          Start Building
         </button>
       </div>
     </motion.header>

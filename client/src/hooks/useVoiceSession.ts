@@ -377,12 +377,32 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
       }
     };
 
+    let fatalError = false;
+
     recognition.onerror = (event: any) => {
       if (event.error === "aborted" || event.error === "no-speech") return;
       console.error("Speech recognition error:", event.error);
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        fatalError = true;
+        stopSpeechRecognition();
+        setState((s) => ({
+          ...s,
+          status: "error",
+          error: "Microphone access denied. Please allow microphone permissions and ensure you're using a supported browser (Chrome or Safari).",
+        }));
+      } else if (event.error === "network") {
+        fatalError = true;
+        stopSpeechRecognition();
+        setState((s) => ({
+          ...s,
+          status: "error",
+          error: "Speech recognition requires an internet connection.",
+        }));
+      }
     };
 
     recognition.onend = () => {
+      if (fatalError) return;
       if (speechRecRef.current === recognition) {
         try {
           recognition.start();
@@ -393,7 +413,7 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
     try {
       recognition.start();
     } catch (e: any) {
-      setState((s) => ({ ...s, status: "error", error: "Failed to start speech recognition" }));
+      setState((s) => ({ ...s, status: "error", error: "Failed to start speech recognition. Try using Chrome or Safari." }));
     }
   }, [connect, stopSpeechRecognition]);
 

@@ -545,7 +545,13 @@ function VoiceControls({ voice, wakeWordConfig }: { voice: ReturnType<typeof use
         </div>
       )}
 
-      {!voice.returningToStandby && voice.status !== "wake-listening" && (
+      {voice.error && (
+        <div className="max-w-xs text-center px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/20" data-testid="text-voice-error">
+          <p className="text-red-400 text-xs">{voice.error}</p>
+        </div>
+      )}
+
+      {!voice.error && !voice.returningToStandby && voice.status !== "wake-listening" && (
         <p className="text-white/30 text-xs">
           {voice.status === "idle" ? "Tap to start" :
            voice.status === "connecting" ? "Connecting..." :

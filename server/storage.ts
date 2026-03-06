@@ -15,6 +15,7 @@ import {
   type Task, type InsertTask, tasks,
   type WasteLog, type InsertWasteLog, wasteLogs,
   type Supplier, type InsertSupplier, suppliers,
+  type RagDocument, type InsertRagDocument, ragDocuments,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, ilike, lte, sql, gte, desc } from "drizzle-orm";
@@ -104,6 +105,11 @@ export interface IStorage {
   deleteSupplier(id: number, orgId: number): Promise<boolean>;
 
   getRevenueStats(orgId: number, startDate?: string, endDate?: string): Promise<{ revenue: number; orderCount: number; avgOrder: number }>;
+
+  getRagDocuments(agentId: number, orgId: number): Promise<RagDocument[]>;
+  createRagDocument(doc: InsertRagDocument): Promise<RagDocument>;
+  deleteRagDocument(id: number, orgId: number): Promise<boolean>;
+  searchRagDocuments(agentId: number, orgId: number, query: string, maxResults?: number): Promise<RagDocument[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -507,6 +513,33 @@ export class DatabaseStorage implements IStorage {
       orderCount: parseInt(result?.orderCount || "0"),
       avgOrder: parseFloat(parseFloat(result?.avgOrder || "0").toFixed(2)),
     };
+  }
+
+  async getRagDocuments(agentId: number, orgId: number): Promise<RagDocument[]> {
+    return db.select().from(ragDocuments)
+      .where(and(eq(ragDocuments.agentId, agentId), eq(ragDocuments.organizationId, orgId)))
+      .orderBy(desc(ragDocuments.createdAt));
+  }
+
+  async createRagDocument(doc: InsertRagDocument): Promise<RagDocument> {
+    const [result] = await db.insert(ragDocuments).values(doc).returning();
+    return result;
+  }
+
+  async deleteRagDocument(id: number, orgId: number): Promise<boolean> {
+    const result = await db.delete(ragDocuments)
+      .where(and(eq(ragDocuments.id, id), eq(ragDocuments.organizationId, orgId)));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async searchRagDocuments(agentId: number, orgId: number, query: string, maxResults: number = 5): Promise<RagDocument[]> {
+    return db.select().from(ragDocuments)
+      .where(and(
+        eq(ragDocuments.agentId, agentId),
+        eq(ragDocuments.organizationId, orgId),
+        ilike(ragDocuments.content, `%${query}%`)
+      ))
+      .limit(maxResults);
   }
 }
 

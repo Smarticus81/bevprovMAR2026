@@ -176,6 +176,17 @@ export const wasteLogs = pgTable("waste_logs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const ragDocuments = pgTable("rag_documents", {
+  id: serial("id").primaryKey(),
+  agentId: integer("agent_id").references(() => agents.id, { onDelete: "cascade" }).notNull(),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
+  filename: text("filename").notNull(),
+  content: text("content").notNull(),
+  contentType: text("content_type").notNull().default("text/plain"),
+  sizeBytes: integer("size_bytes").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const suppliers = pgTable("suppliers", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -192,6 +203,25 @@ export interface OrderItem {
   price: number;
 }
 
+export interface WakeWordConfig {
+  enabled: boolean;
+  phrase: string;
+  endPhrases: string[];
+  shutdownPhrases: string[];
+  levenshteinThreshold: number;
+}
+
+export interface ExternalDbConfig {
+  enabled: boolean;
+  type: "supabase" | "convex" | "custom";
+  connectionString: string;
+}
+
+export interface RagConfig {
+  enabled: boolean;
+  maxResults: number;
+}
+
 export interface AgentConfig {
   voice?: string;
   language?: string;
@@ -204,6 +234,11 @@ export interface AgentConfig {
   squareEnabled?: boolean;
   toastEnabled?: boolean;
   systemPrompt?: string;
+  wakeWord?: WakeWordConfig;
+  externalDb?: ExternalDbConfig;
+  rag?: RagConfig;
+  mcpEnabled?: boolean;
+  fileUploadEnabled?: boolean;
 }
 
 export const AGENT_TYPES = [
@@ -246,6 +281,7 @@ export const insertStaffShiftSchema = createInsertSchema(staffShifts).omit({ id:
 export const insertGuestSchema = createInsertSchema(guests).omit({ id: true });
 export const insertTaskSchema = createInsertSchema(tasks).omit({ id: true, createdAt: true });
 export const insertWasteLogSchema = createInsertSchema(wasteLogs).omit({ id: true, createdAt: true });
+export const insertRagDocumentSchema = createInsertSchema(ragDocuments).omit({ id: true, createdAt: true });
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true });
 
 export type InsertOrg = z.infer<typeof insertOrgSchema>;
@@ -278,5 +314,7 @@ export type InsertTask = z.infer<typeof insertTaskSchema>;
 export type Task = typeof tasks.$inferSelect;
 export type InsertWasteLog = z.infer<typeof insertWasteLogSchema>;
 export type WasteLog = typeof wasteLogs.$inferSelect;
+export type InsertRagDocument = z.infer<typeof insertRagDocumentSchema>;
+export type RagDocument = typeof ragDocuments.$inferSelect;
 export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
 export type Supplier = typeof suppliers.$inferSelect;

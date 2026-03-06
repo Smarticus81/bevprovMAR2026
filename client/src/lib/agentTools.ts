@@ -27,6 +27,7 @@ export const TOOL_CATALOG: ToolDefinition[] = [
   { name: "guest_management", category: "Operations", description: "Manage guest lists and RSVPs", agentTypes: ["venue-admin", "bevone"] },
   { name: "vendor_coordination", category: "Operations", description: "Coordinate with vendors and suppliers", agentTypes: ["venue-admin", "bevone"] },
   { name: "task_assignments", category: "Operations", description: "Assign and track staff tasks", agentTypes: ["venue-admin", "bevone"] },
+  { name: "knowledge_base_search", category: "Knowledge", description: "Search uploaded documents and knowledge base", agentTypes: ["pos-integration", "voice-pos", "inventory", "venue-admin", "bevone"] },
 ];
 
 export function getToolsForAgentType(agentType: string): ToolDefinition[] {

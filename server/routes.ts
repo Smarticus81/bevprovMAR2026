@@ -7,6 +7,7 @@ import { voiceRouter } from "./voice";
 import { mcpRouter } from "./mcp";
 import { autoEnableToolsForAgent } from "./tools";
 import { z } from "zod";
+import multer from "multer";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -371,6 +372,63 @@ export async function registerRoutes(
     const user = req.user as any;
     const stats = await storage.getRevenueStats(user.organizationId);
     return res.json(stats);
+  });
+
+  // ========== RAG DOCUMENTS ==========
+  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
+
+  app.get("/api/agents/:id/documents", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const agentId = parseInt(req.params.id);
+    const agent = await storage.getAgentById(agentId, user.organizationId);
+    if (!agent) return res.status(404).json({ error: "Agent not found" });
+    const docs = await storage.getRagDocuments(agentId, user.organizationId);
+    return res.json(docs);
+  });
+
+  app.post("/api/agents/:id/documents", requireAuth, upload.single("file"), async (req, res) => {
+    const user = req.user as any;
+    const agentId = parseInt(req.params.id);
+    const agent = await storage.getAgentById(agentId, user.organizationId);
+    if (!agent) return res.status(404).json({ error: "Agent not found" });
+
+    const file = req.file;
+    if (!file) return res.status(400).json({ error: "No file uploaded" });
+
+    const allowedTypes = ["text/plain", "text/csv", "text/markdown", "application/json", "text/html"];
+    const isText = allowedTypes.includes(file.mimetype) || file.originalname.endsWith(".txt") || file.originalname.endsWith(".md") || file.originalname.endsWith(".csv") || file.originalname.endsWith(".json");
+    if (!isText) return res.status(400).json({ error: "Only text-based files are supported (.txt, .md, .csv, .json)" });
+
+    const content = file.buffer.toString("utf-8");
+    const doc = await storage.createRagDocument({
+      agentId,
+      organizationId: user.organizationId,
+      filename: file.originalname,
+      content,
+      contentType: file.mimetype || "text/plain",
+      sizeBytes: file.size,
+    });
+    return res.status(201).json(doc);
+  });
+
+  app.delete("/api/agents/:id/documents/:docId", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const agentId = parseInt(req.params.id);
+    const docId = parseInt(req.params.docId);
+    const agent = await storage.getAgentById(agentId, user.organizationId);
+    if (!agent) return res.status(404).json({ error: "Agent not found" });
+    const deleted = await storage.deleteRagDocument(docId, user.organizationId);
+    if (!deleted) return res.status(404).json({ error: "Document not found" });
+    return res.json({ success: true });
+  });
+
+  app.get("/api/agents/:id/documents/search", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const agentId = parseInt(req.params.id);
+    const query = (req.query.q as string) || "";
+    if (!query) return res.status(400).json({ error: "Query parameter 'q' is required" });
+    const results = await storage.searchRagDocuments(agentId, user.organizationId, query);
+    return res.json(results);
   });
 
   return httpServer;

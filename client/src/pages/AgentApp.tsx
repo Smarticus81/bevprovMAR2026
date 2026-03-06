@@ -1,12 +1,12 @@
 import { useParams } from "wouter";
-import { useVoiceSession, type TranscriptEntry } from "@/hooks/useVoiceSession";
+import { useVoiceSession, type TranscriptEntry, type WakeWordConfig } from "@/hooks/useVoiceSession";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { ArrowLeft, Mic, MicOff, PhoneOff, Wrench, ShoppingCart, DollarSign, CreditCard, User, Hash, Receipt } from "lucide-react";
+import { ArrowLeft, Mic, MicOff, PhoneOff, Wrench, ShoppingCart, DollarSign, CreditCard, User, Hash, Receipt, Volume2, Upload, FileText, Loader2, X } from "lucide-react";
 import { BevProLogo } from "@/components/BevProLogo";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState, useMemo } from "react";
-import type { OrderItem } from "@shared/schema";
+import type { OrderItem, AgentConfig } from "@shared/schema";
 
 interface PosState {
   orderItems: OrderItem[];
@@ -392,18 +392,129 @@ function TranscriptPanel({
   );
 }
 
-function VoiceControls({ voice }: { voice: ReturnType<typeof useVoiceSession> }) {
+function FileUploadButton({ agentId }: { agentId: number }) {
+  const [uploading, setUploading] = useState(false);
+  const [uploadResult, setUploadResult] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleUpload = async (file: File) => {
+    setUploading(true);
+    setUploadResult(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`/api/agents/${agentId}/documents`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        setUploadResult(`Error: ${err.error || "Upload failed"}`);
+      } else {
+        const doc = await res.json();
+        setUploadResult(`Uploaded: ${doc.filename}`);
+        setTimeout(() => setUploadResult(null), 3000);
+      }
+    } catch {
+      setUploadResult("Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".txt,.md,.csv,.json"
+        className="hidden"
+        data-testid="input-file-upload"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) handleUpload(f);
+          e.target.value = "";
+        }}
+      />
+      <button
+        data-testid="button-upload-file"
+        onClick={() => fileInputRef.current?.click()}
+        disabled={uploading}
+        className="flex items-center gap-1.5 text-white/50 hover:text-white text-sm transition-colors disabled:opacity-50"
+      >
+        {uploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+        <span className="hidden sm:inline">Upload</span>
+      </button>
+      {uploadResult && (
+        <motion.div
+          initial={{ opacity: 0, y: -5 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          className="absolute top-full right-0 mt-1 px-3 py-1.5 rounded-lg bg-white/10 text-xs text-white/70 whitespace-nowrap"
+          data-testid="text-upload-result"
+        >
+          {uploadResult}
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
+function VoiceControls({ voice, wakeWordConfig }: { voice: ReturnType<typeof useVoiceSession>; wakeWordConfig?: WakeWordConfig }) {
   return (
     <div className="shrink-0 flex flex-col items-center gap-3 pb-8 pt-4">
-      {voice.status === "idle" || voice.status === "error" ? (
-        <motion.button
-          data-testid="button-start-call"
-          onClick={voice.connect}
-          whileTap={{ scale: 0.92 }}
-          className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-[0_0_60px_rgba(255,255,255,0.15)]"
-        >
-          <Mic size={32} className="text-black" />
-        </motion.button>
+      {voice.status === "wake-listening" ? (
+        <div className="flex flex-col items-center gap-3">
+          <motion.div
+            animate={{ scale: [1, 1.15, 1] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            className="w-20 h-20 rounded-full bg-white/10 border border-white/20 flex items-center justify-center"
+            data-testid="indicator-wake-listening"
+          >
+            <Volume2 size={32} className="text-white/60" />
+          </motion.div>
+          <p className="text-white/50 text-sm" data-testid="text-wake-listening">
+            Listening for '{wakeWordConfig?.phrase || "hey bev"}'...
+          </p>
+          <motion.button
+            data-testid="button-stop-wake-word"
+            onClick={voice.disconnect}
+            whileTap={{ scale: 0.9 }}
+            className="px-4 py-2 rounded-full text-xs font-medium border border-white/10 text-white/40 hover:text-white/70 hover:border-white/20 transition-all"
+          >
+            Stop Listening
+          </motion.button>
+        </div>
+      ) : voice.returningToStandby ? (
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center">
+            <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          </div>
+          <p className="text-white/50 text-sm" data-testid="text-returning-standby">Returning to standby...</p>
+        </div>
+      ) : voice.status === "idle" || voice.status === "error" ? (
+        <div className="flex flex-col items-center gap-3">
+          <motion.button
+            data-testid="button-start-call"
+            onClick={voice.connect}
+            whileTap={{ scale: 0.92 }}
+            className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-[0_0_60px_rgba(255,255,255,0.15)]"
+          >
+            <Mic size={32} className="text-black" />
+          </motion.button>
+          {wakeWordConfig?.enabled && (
+            <motion.button
+              data-testid="button-start-wake-word"
+              onClick={voice.startWakeWordListening}
+              whileTap={{ scale: 0.95 }}
+              className="px-4 py-2 rounded-full text-xs font-medium border border-white/10 text-white/40 hover:text-white/70 hover:border-white/20 transition-all flex items-center gap-2"
+            >
+              <Volume2 size={14} />
+              Start Wake Word
+            </motion.button>
+          )}
+        </div>
       ) : voice.status === "connecting" ? (
         <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center">
           <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -434,11 +545,13 @@ function VoiceControls({ voice }: { voice: ReturnType<typeof useVoiceSession> })
         </div>
       )}
 
-      <p className="text-white/30 text-xs">
-        {voice.status === "idle" ? "Tap to start" :
-         voice.status === "connecting" ? "Connecting..." :
-         voice.isListening ? "Listening..." : "Muted"}
-      </p>
+      {!voice.returningToStandby && voice.status !== "wake-listening" && (
+        <p className="text-white/30 text-xs">
+          {voice.status === "idle" ? "Tap to start" :
+           voice.status === "connecting" ? "Connecting..." :
+           voice.isListening ? "Listening..." : "Muted"}
+        </p>
+      )}
     </div>
   );
 }
@@ -446,7 +559,6 @@ function VoiceControls({ voice }: { voice: ReturnType<typeof useVoiceSession> })
 export default function AgentApp() {
   const { agentId } = useParams<{ agentId: string }>();
   const id = parseInt(agentId || "0");
-  const voice = useVoiceSession(id);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { data: agent } = useQuery({
@@ -458,6 +570,17 @@ export default function AgentApp() {
     },
     enabled: !!agentId,
   });
+
+  const agentConfig = agent?.config as AgentConfig | null;
+  const wakeWordConfig: WakeWordConfig | undefined = agentConfig?.wakeWord?.enabled ? {
+    enabled: true,
+    phrase: agentConfig.wakeWord.phrase || "hey bev",
+    endPhrases: agentConfig.wakeWord.endPhrases || [],
+    shutdownPhrases: agentConfig.wakeWord.shutdownPhrases || [],
+    levenshteinThreshold: agentConfig.wakeWord.levenshteinThreshold ?? 2,
+  } : undefined;
+
+  const voice = useVoiceSession(id, wakeWordConfig);
 
   const isVoicePos = agent?.type === "voice-pos";
 
@@ -485,7 +608,9 @@ export default function AgentApp() {
               <p className="text-xs text-white/30">{voice.latency}ms</p>
             )}
           </div>
-          <div className="w-16" />
+          <div className="w-16 flex justify-end">
+            {agentConfig?.fileUploadEnabled && <FileUploadButton agentId={id} />}
+          </div>
         </header>
 
         {voice.error && (
@@ -504,7 +629,7 @@ export default function AgentApp() {
           </div>
         </div>
 
-        <VoiceControls voice={voice} />
+        <VoiceControls voice={voice} wakeWordConfig={wakeWordConfig} />
       </div>
     );
   }
@@ -524,7 +649,9 @@ export default function AgentApp() {
             <p className="text-xs text-white/30">{voice.latency}ms</p>
           )}
         </div>
-        <div className="w-16" />
+        <div className="w-16 flex justify-end">
+          {agentConfig?.fileUploadEnabled && <FileUploadButton agentId={id} />}
+        </div>
       </header>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 pb-4">
@@ -633,7 +760,7 @@ export default function AgentApp() {
         </div>
       )}
 
-      <VoiceControls voice={voice} />
+      <VoiceControls voice={voice} wakeWordConfig={wakeWordConfig} />
     </div>
   );
 }

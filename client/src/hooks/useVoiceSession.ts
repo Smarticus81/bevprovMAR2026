@@ -8,16 +8,65 @@ export interface TranscriptEntry {
   toolResult?: any;
 }
 
+export interface WakeWordConfig {
+  enabled: boolean;
+  phrase: string;
+  endPhrases: string[];
+  shutdownPhrases: string[];
+  levenshteinThreshold: number;
+}
+
 interface VoiceSessionState {
-  status: "idle" | "connecting" | "connected" | "error";
+  status: "idle" | "connecting" | "connected" | "error" | "wake-listening";
   isListening: boolean;
   isSpeaking: boolean;
   transcript: TranscriptEntry[];
   latency: number | null;
   error: string | null;
+  returningToStandby: boolean;
 }
 
-export function useVoiceSession(agentId: number | null) {
+function levenshteinDistance(a: string, b: string): number {
+  const an = a.length;
+  const bn = b.length;
+  const matrix: number[][] = [];
+  for (let i = 0; i <= an; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= bn; j++) {
+    matrix[0][j] = j;
+  }
+  for (let i = 1; i <= an; i++) {
+    for (let j = 1; j <= bn; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost
+      );
+    }
+  }
+  return matrix[an][bn];
+}
+
+function phraseMatchesWithLevenshtein(transcript: string, phrase: string, threshold: number): boolean {
+  const tWords = transcript.toLowerCase().split(/\s+/).filter(Boolean);
+  const pWords = phrase.toLowerCase().split(/\s+/).filter(Boolean);
+  if (pWords.length === 0) return false;
+  for (let i = 0; i <= tWords.length - pWords.length; i++) {
+    let allMatch = true;
+    for (let j = 0; j < pWords.length; j++) {
+      if (levenshteinDistance(tWords[i + j], pWords[j]) > threshold) {
+        allMatch = false;
+        break;
+      }
+    }
+    if (allMatch) return true;
+  }
+  return false;
+}
+
+export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWordConfig) {
   const [state, setState] = useState<VoiceSessionState>({
     status: "idle",
     isListening: false,
@@ -25,6 +74,7 @@ export function useVoiceSession(agentId: number | null) {
     transcript: [],
     latency: null,
     error: null,
+    returningToStandby: false,
   });
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
@@ -33,15 +83,53 @@ export function useVoiceSession(agentId: number | null) {
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const startTimeRef = useRef<number>(0);
   const greetingRef = useRef<string | null>(null);
+  const speechRecRef = useRef<any>(null);
+  const wakeWordConfigRef = useRef<WakeWordConfig | undefined>(wakeWordConfig);
+
+  useEffect(() => {
+    wakeWordConfigRef.current = wakeWordConfig;
+  }, [wakeWordConfig]);
 
   const addTranscript = useCallback((entry: TranscriptEntry) => {
     setState((s) => ({ ...s, transcript: [...s.transcript, entry] }));
   }, []);
 
+  const stopSpeechRecognition = useCallback(() => {
+    if (speechRecRef.current) {
+      try {
+        speechRecRef.current.onresult = null;
+        speechRecRef.current.onerror = null;
+        speechRecRef.current.onend = null;
+        speechRecRef.current.abort();
+      } catch (_e) {}
+      speechRecRef.current = null;
+    }
+  }, []);
+
+  const disconnectVoice = useCallback(() => {
+    if (dcRef.current) {
+      dcRef.current.close();
+      dcRef.current = null;
+    }
+    if (pcRef.current) {
+      pcRef.current.close();
+      pcRef.current = null;
+    }
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+      mediaStreamRef.current = null;
+    }
+    if (audioRef.current) {
+      audioRef.current.srcObject = null;
+      audioRef.current.src = "";
+    }
+  }, []);
+
   const connect = useCallback(async () => {
     if (!agentId) return;
 
-    setState((s) => ({ ...s, status: "connecting", error: null, transcript: [] }));
+    stopSpeechRecognition();
+    setState((s) => ({ ...s, status: "connecting", error: null, transcript: [], returningToStandby: false }));
 
     try {
       const tokenRes = await fetch("/api/voice/session", {
@@ -109,6 +197,36 @@ export function useVoiceSession(agentId: number | null) {
           case "conversation.item.input_audio_transcription.completed":
             if (msg.transcript) {
               addTranscript({ role: "user", text: msg.transcript, timestamp: Date.now() });
+              const cfg = wakeWordConfigRef.current;
+              if (cfg?.enabled) {
+                const text = msg.transcript.toLowerCase();
+                for (const endPhrase of cfg.endPhrases) {
+                  if (phraseMatchesWithLevenshtein(text, endPhrase, cfg.levenshteinThreshold)) {
+                    setState((s) => ({ ...s, returningToStandby: true }));
+                    setTimeout(() => {
+                      disconnectVoice();
+                      startWakeWordListeningInternal();
+                    }, 1500);
+                    return;
+                  }
+                }
+                for (const shutdownPhrase of cfg.shutdownPhrases) {
+                  if (phraseMatchesWithLevenshtein(text, shutdownPhrase, cfg.levenshteinThreshold)) {
+                    disconnectVoice();
+                    stopSpeechRecognition();
+                    setState({
+                      status: "idle",
+                      isListening: false,
+                      isSpeaking: false,
+                      transcript: [],
+                      latency: null,
+                      error: null,
+                      returningToStandby: false,
+                    });
+                    return;
+                  }
+                }
+              }
             }
             break;
 
@@ -145,7 +263,7 @@ export function useVoiceSession(agentId: number | null) {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
-                body: JSON.stringify({ toolName, arguments: toolArgs }),
+                body: JSON.stringify({ toolName, arguments: toolArgs, agentId }),
               });
               const toolResult = await toolRes.json();
 
@@ -219,25 +337,73 @@ export function useVoiceSession(agentId: number | null) {
         error: error.message || "Connection failed",
       }));
     }
-  }, [agentId, addTranscript]);
+  }, [agentId, addTranscript, stopSpeechRecognition, disconnectVoice]);
+
+  const startWakeWordListeningInternal = useCallback(() => {
+    stopSpeechRecognition();
+    setState((s) => ({
+      ...s,
+      status: "wake-listening",
+      isListening: false,
+      isSpeaking: false,
+      transcript: [],
+      latency: null,
+      error: null,
+      returningToStandby: false,
+    }));
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setState((s) => ({ ...s, status: "error", error: "Speech recognition not supported in this browser" }));
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+    speechRecRef.current = recognition;
+
+    recognition.onresult = (event: any) => {
+      const cfg = wakeWordConfigRef.current;
+      if (!cfg) return;
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (phraseMatchesWithLevenshtein(transcript, cfg.phrase, cfg.levenshteinThreshold)) {
+          stopSpeechRecognition();
+          connect();
+          return;
+        }
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      if (event.error === "aborted" || event.error === "no-speech") return;
+      console.error("Speech recognition error:", event.error);
+    };
+
+    recognition.onend = () => {
+      if (speechRecRef.current === recognition) {
+        try {
+          recognition.start();
+        } catch (_e) {}
+      }
+    };
+
+    try {
+      recognition.start();
+    } catch (e: any) {
+      setState((s) => ({ ...s, status: "error", error: "Failed to start speech recognition" }));
+    }
+  }, [connect, stopSpeechRecognition]);
+
+  const startWakeWordListening = useCallback(() => {
+    startWakeWordListeningInternal();
+  }, [startWakeWordListeningInternal]);
 
   const disconnect = useCallback(() => {
-    if (dcRef.current) {
-      dcRef.current.close();
-      dcRef.current = null;
-    }
-    if (pcRef.current) {
-      pcRef.current.close();
-      pcRef.current = null;
-    }
-    if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach((t) => t.stop());
-      mediaStreamRef.current = null;
-    }
-    if (audioRef.current) {
-      audioRef.current.srcObject = null;
-      audioRef.current.src = "";
-    }
+    stopSpeechRecognition();
+    disconnectVoice();
     setState({
       status: "idle",
       isListening: false,
@@ -245,8 +411,9 @@ export function useVoiceSession(agentId: number | null) {
       transcript: [],
       latency: null,
       error: null,
+      returningToStandby: false,
     });
-  }, []);
+  }, [stopSpeechRecognition, disconnectVoice]);
 
   const toggleMute = useCallback(() => {
     if (mediaStreamRef.current) {
@@ -269,5 +436,6 @@ export function useVoiceSession(agentId: number | null) {
     connect,
     disconnect,
     toggleMute,
+    startWakeWordListening,
   };
 }

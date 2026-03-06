@@ -158,7 +158,7 @@ export default function Home() {
           <div className="glass-input rounded-2xl p-2 flex flex-col transition-all duration-300">
             <div
               ref={scrollRef}
-              className="px-4 pt-3 pb-4 min-h-[100px] max-h-[140px] overflow-y-auto hide-scrollbar space-y-3"
+              className="px-4 pt-3 pb-4 h-[180px] overflow-y-auto hide-scrollbar space-y-3"
             >
               <AnimatePresence mode="popLayout">
                 {displayed.map((msg, i) => (

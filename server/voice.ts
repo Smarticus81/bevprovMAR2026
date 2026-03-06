@@ -26,6 +26,14 @@ voice.post("/api/voice/session", requireAuth, async (req, res) => {
       tools = await autoEnableToolsForAgent(agent.id, agent.type);
     }
     const config = (agent.config || {}) as any;
+
+    if (config.rag?.enabled) {
+      const hasRagTool = tools.some(t => t.toolName === "knowledge_base_search");
+      if (!hasRagTool) {
+        tools = [...tools, { id: 0, agentId: agent.id, toolName: "knowledge_base_search", toolCategory: "Knowledge", enabled: true, config: {} } as any];
+      }
+    }
+
     const systemPrompt = buildSystemPrompt(agent);
     const toolDefs = getOpenAIToolDefinitions(tools);
 
@@ -75,10 +83,13 @@ voice.post("/api/voice/session", requireAuth, async (req, res) => {
 voice.post("/api/voice/tool-call", requireAuth, async (req, res) => {
   try {
     const user = req.user as any;
-    const { toolName, arguments: args } = req.body;
+    const { toolName, arguments: args, agentId } = req.body;
     if (!toolName) return res.status(400).json({ error: "toolName is required" });
 
-    const result = await executeToolCall(toolName, args || {}, user.organizationId);
+    const toolArgs = { ...(args || {}) };
+    if (agentId) toolArgs._agentId = agentId;
+
+    const result = await executeToolCall(toolName, toolArgs, user.organizationId);
     return res.json(result);
   } catch (error: any) {
     console.error("Tool call error:", error);

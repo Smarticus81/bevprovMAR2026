@@ -143,6 +143,10 @@ const TOOL_DEFINITIONS: Record<string, { description: string; parameters: Record
     description: "Create, list, assign, or complete staff tasks.",
     parameters: { type: "object", properties: { action: { type: "string", enum: ["list", "create", "complete", "status"], description: "Task action" }, taskDescription: { type: "string", description: "Task description (for create)" }, assignee: { type: "string", description: "Person to assign to" }, priority: { type: "string", enum: ["low", "medium", "high", "urgent"], description: "Task priority" }, taskId: { type: "number", description: "Task ID (for complete/status)" } }, required: ["action"] },
   },
+  knowledge_base_search: {
+    description: "Search the agent's uploaded knowledge base documents for relevant information. Use this when a user asks about policies, procedures, menus, or venue-specific information that might be in uploaded files.",
+    parameters: { type: "object", properties: { query: { type: "string", description: "Search query to find relevant knowledge base content" } }, required: ["query"] },
+  },
 };
 
 export async function executeToolCall(toolName: string, args: Record<string, unknown>, orgId: number): Promise<ToolCallResult> {
@@ -689,6 +693,34 @@ export async function executeToolCall(toolName: string, args: Record<string, unk
         return { success: false, result: { error: "Invalid task action." } };
       }
 
+      case "knowledge_base_search": {
+        const query = (args.query as string) || "";
+        const agentId = (args._agentId as number) || 0;
+        if (!query) return { success: true, result: { message: "No search query provided", results: [] } };
+        let maxResults = 5;
+        if (agentId) {
+          const agent = await storage.getAgentById(agentId, orgId);
+          if (agent) {
+            const cfg = (agent.config || {}) as AgentConfig;
+            maxResults = cfg.rag?.maxResults || 5;
+          }
+        }
+        const docs = await storage.searchRagDocuments(agentId, orgId, query, maxResults);
+        if (docs.length === 0) {
+          return { success: true, result: { message: "No relevant documents found in the knowledge base.", results: [] } };
+        }
+        return {
+          success: true,
+          result: {
+            message: `Found ${docs.length} relevant document(s)`,
+            results: docs.map(d => ({
+              filename: d.filename,
+              content: d.content.substring(0, 2000),
+            })),
+          },
+        };
+      }
+
       default:
         return { success: false, result: { error: `Tool "${toolName}" is not implemented.` } };
     }
@@ -759,6 +791,14 @@ export function buildSystemPrompt(agent: Agent): string {
   }
   if (config.fallbackMessage) {
     prompt += `\n\nIf you can't help with something, say: "${config.fallbackMessage}"`;
+  }
+
+  if (config.rag?.enabled) {
+    prompt += `\n\nYou have access to a knowledge base with uploaded documents. When users ask about policies, procedures, venue-specific info, or anything that might be documented, use the knowledge_base_search tool to find relevant information before answering.`;
+  }
+
+  if (config.wakeWord?.enabled) {
+    prompt += `\n\nThis agent uses wake word activation. The user said "${config.wakeWord.phrase}" to activate you. Be responsive and ready to help immediately.`;
   }
 
   return prompt;

@@ -33,6 +33,14 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 - `tasks`: id, title, description, assignee, dueDate, status, priority, organizationId
 - `wasteLogs`: id, item, quantity, unit, reason, cost, organizationId
 - `suppliers`: id, name, contactName, email, phone, items, organizationId
+- `ragDocuments`: id, agentId, organizationId, filename, content, contentType, sizeBytes, createdAt
+
+### Agent Config (JSONB)
+- `wakeWord`: { enabled, phrase, endPhrases[], shutdownPhrases[], levenshteinThreshold }
+- `externalDb`: { enabled, type (supabase/convex/custom), connectionString }
+- `rag`: { enabled, maxResults }
+- `mcpEnabled`: boolean
+- `fileUploadEnabled`: boolean
 
 ## Voice Agent Types
 1. **BevOne** (bevone) — All-in-one comprehensive venue assistant
@@ -41,11 +49,12 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 4. **Inventory Manager** (inventory) — Stock tracking and management
 5. **Venue Agent** (venue-admin) — Bookings, scheduling, operations
 
-## 21 Real Tools (all query actual database)
+## 22 Real Tools (all query actual database)
 ### POS: square_pos_sync, toast_pos_sync, payment_processing, receipt_generation, tab_management, menu_lookup
 ### Voice POS: voice_ordering, split_checks, customer_lookup
 ### Inventory: stock_tracking, low_stock_alerts, supplier_management, waste_tracking, auto_reorder, inventory_pos_sync
 ### Operations: calendar_booking, staff_scheduling, financial_reports, guest_management, vendor_coordination, task_assignments
+### Knowledge: knowledge_base_search (RAG — searches uploaded documents)
 
 ## Key Files
 ### Server
@@ -64,20 +73,20 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 - `client/src/pages/Login.tsx` — Auth login page (+ conditional Google OAuth button)
 - `client/src/pages/Register.tsx` — Auth registration page (+ conditional Google OAuth button)
 - `client/src/pages/Dashboard.tsx` — Agent list with CRUD
-- `client/src/pages/AgentBuilder.tsx` — No-code agent configuration (3 tabs: General, Voice, Test), dark theme, auto-enabled tools displayed as info
+- `client/src/pages/AgentBuilder.tsx` — No-code agent configuration (4 tabs: General, Voice, Integrations, Test), wake word config in General tab, dark theme
 - `client/src/pages/AppStore.tsx` — iOS App Store-style agent marketplace
 - `client/src/pages/AgentApp.tsx` — Full-screen voice interface; voice-pos type shows split-screen POS UI with live order display
 - `client/src/pages/VenueData.tsx` — Venue data management (6 tabs: Menu, Inventory, Staff, Bookings, Guests, Suppliers)
 - `client/src/pages/Pricing.tsx` — Pricing page (3 tiers, UI only)
 - `client/src/hooks/useAuth.ts` — Auth hook
-- `client/src/hooks/useVoiceSession.ts` — WebRTC voice session hook (sends greeting at session start)
+- `client/src/hooks/useVoiceSession.ts` — WebRTC voice session hook (greeting, wake word detection, end/shutdown phrases)
 - `client/src/components/VoiceTestPanel.tsx` — Voice test widget for agent builder
 - `client/src/components/layout/DashboardLayout.tsx` — Dashboard sidebar layout (Agents, Venue Data, App Store)
 - `client/src/components/layout/Navbar.tsx` — Landing page navbar
 - `client/src/lib/agentTools.ts` — Tool catalog definitions
 
 ### Config
-- `shared/schema.ts` — Drizzle schema + types + Zod validation (16 tables)
+- `shared/schema.ts` — Drizzle schema + types + Zod validation (17 tables, incl. ragDocuments)
 - `capacitor.config.ts` — Capacitor iOS app config
 - `client/public/manifest.json` — PWA manifest
 
@@ -104,6 +113,12 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 ### MCP (Model Context Protocol)
 - `GET /api/mcp/:agentId` — Discovery endpoint (server info, tool list)
 - `POST /api/mcp/:agentId` — JSON-RPC 2.0 endpoint (methods: initialize, tools/list, tools/call, ping)
+
+### RAG Documents
+- `GET /api/agents/:id/documents` — List agent's uploaded docs
+- `POST /api/agents/:id/documents` — Upload file (multipart, field: "file", max 5MB, .txt/.md/.csv/.json)
+- `DELETE /api/agents/:id/documents/:docId` — Delete document
+- `GET /api/agents/:id/documents/search?q=` — Search documents by content
 
 ### Venue Data (all scoped by orgId)
 - `GET/POST/PATCH/:id/DELETE/:id /api/venue/menu` — Menu items

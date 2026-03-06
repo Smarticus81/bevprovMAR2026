@@ -3,7 +3,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Mic, Store, Box, Briefcase, Sparkles, ChevronRight } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "wouter";
-import { BevProLogo } from "@/components/BevProLogo";
+import { BevProLogo, BevProWordmark } from "@/components/BevProLogo";
 
 import champagneVideo from "@/assets/videos/champagne-bg.mp4";
 
@@ -134,17 +134,16 @@ export default function Home() {
           transition={{ duration: 1.5, ease: "easeOut" }}
           className="text-center mb-12"
         >
-          <h1
-            data-testid="text-hero-title"
-            className="text-[12vw] md:text-[9vw] font-medium tracking-tight leading-none text-glow text-white/90"
-          >
-            BevPro
-          </h1>
+          <div className="flex items-center justify-center gap-4 md:gap-6 mb-5">
+            <BevProLogo size={64} className="hidden md:block" />
+            <BevProLogo size={48} className="block md:hidden" />
+            <BevProWordmark className="text-white" size="text-5xl md:text-7xl" />
+          </div>
           <p
             data-testid="text-hero-subtitle"
-            className="text-white/50 text-sm md:text-base tracking-wide mt-4 max-w-lg mx-auto font-light"
+            className="text-white/50 text-sm md:text-base tracking-wide mt-4 max-w-xl mx-auto font-light"
           >
-            The voice app builder for event and wedding venues.
+            Voice-Powered POS, Inventory and assistants for your business.
           </p>
         </motion.div>
 

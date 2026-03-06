@@ -36,10 +36,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${
                   active
-                    ? "bg-white text-black"
-                    : "text-white/50 hover:bg-white/5 hover:text-white"
+                    ? "border border-white/30 text-white bg-white/[0.06]"
+                    : "text-white/40 hover:bg-white/[0.04] hover:text-white/70"
                 }`}
               >
                 <Icon size={18} />
@@ -72,7 +72,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
       <div className="lg:hidden fixed top-0 w-full bg-black/80 backdrop-blur-xl border-b border-white/10 z-40 px-4 py-3 flex items-center justify-between">
         <Link href="/dashboard" className="text-lg font-semibold text-white">BevPro</Link>
-        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-white">
+        <button data-testid="button-mobile-menu" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-white">
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
@@ -86,6 +86,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 <Link
                   key={item.href}
                   href={item.href}
+                  data-testid={`link-mobile-${item.label.toLowerCase().replace(/\s/g, "-")}`}
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center gap-3 px-4 py-3 rounded-xl text-base text-white/60 hover:bg-white/5 hover:text-white"
                 >
@@ -95,6 +96,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               );
             })}
             <button
+              data-testid="button-mobile-logout"
               onClick={() => { logout.mutate(); setMobileMenuOpen(false); }}
               className="flex items-center gap-3 px-4 py-3 rounded-xl text-base text-red-400 hover:bg-red-500/10 w-full"
             >

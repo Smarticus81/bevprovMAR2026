@@ -10,7 +10,7 @@ import { VoiceTestPanel } from "@/components/VoiceTestPanel";
 import { motion } from "framer-motion";
 import {
   Loader2, Save, ArrowLeft, CheckCircle2,
-  Mic, Wrench, Settings2, PlayCircle, ChevronRight, ExternalLink
+  Mic, Wrench, Settings2, PlayCircle, ExternalLink
 } from "lucide-react";
 
 const VOICES = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"] as const;
@@ -127,7 +127,7 @@ export default function AgentBuilder() {
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/dashboard">
-              <button className="flex items-center gap-1.5 text-white/50 hover:text-white text-sm transition-colors" data-testid="link-back-dashboard">
+              <button className="flex items-center gap-1.5 text-white/40 hover:text-white text-sm transition-colors" data-testid="link-back-dashboard">
                 <ArrowLeft size={16} />
                 Back
               </button>
@@ -142,8 +142,8 @@ export default function AgentBuilder() {
             <button
               data-testid="switch-activate"
               onClick={() => { setIsActive(!isActive); }}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                isActive ? "bg-green-500/20 text-green-400 border border-green-500/30" : "bg-white/5 text-white/40 border border-white/10"
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300 ${
+                isActive ? "border border-green-500/30 text-green-400 bg-transparent" : "border border-white/10 text-white/40 bg-transparent"
               }`}
             >
               {isActive ? "Active" : "Draft"}
@@ -152,7 +152,7 @@ export default function AgentBuilder() {
               data-testid="button-save-agent"
               onClick={() => saveMutation.mutate()}
               disabled={saveMutation.isPending}
-              className="flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full text-sm font-medium hover:bg-white/90 disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 border border-white/20 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-white hover:text-black disabled:opacity-50 transition-all duration-300"
             >
               {saveMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
               Save
@@ -160,7 +160,7 @@ export default function AgentBuilder() {
             <Link href={`/app/${id}`}>
               <button
                 data-testid="button-launch-agent"
-                className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-green-400 transition-colors"
+                className="flex items-center gap-2 border border-white/20 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-white hover:text-black transition-all duration-300"
               >
                 <ExternalLink size={14} />
                 Launch
@@ -179,10 +179,10 @@ export default function AgentBuilder() {
                 key={tab.id}
                 data-testid={`tab-${tab.id}`}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-300 ${
                   activeTab === tab.id
-                    ? "bg-white text-black"
-                    : "text-white/50 hover:text-white hover:bg-white/5"
+                    ? "border border-white/30 text-white bg-white/[0.06]"
+                    : "text-white/40 hover:text-white/70 hover:bg-white/[0.04]"
                 }`}
               >
                 <Icon size={15} />
@@ -194,78 +194,78 @@ export default function AgentBuilder() {
 
         {activeTab === "general" && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 space-y-6">
-              <h2 className="text-lg font-semibold">General</h2>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 space-y-6">
+              <h2 className="text-lg font-semibold text-white/90">General</h2>
               <div className="space-y-2">
-                <label className="text-sm text-white/60 block">Agent Name</label>
+                <label className="text-sm text-white/40 block">Agent Name</label>
                 <input
                   data-testid="input-agent-name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g., Front Bar POS"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-white/20"
+                  className="w-full bg-transparent border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-white/30 transition-colors"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm text-white/60 block">Description</label>
+                <label className="text-sm text-white/40 block">Description</label>
                 <textarea
                   data-testid="input-agent-description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Describe what this agent handles..."
                   rows={3}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 resize-none"
+                  className="w-full bg-transparent border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-white/30 transition-colors resize-none"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm text-white/60 block">Greeting Message</label>
+                <label className="text-sm text-white/40 block">Greeting Message</label>
                 <textarea
                   data-testid="input-greeting"
                   value={greeting}
                   onChange={(e) => setGreeting(e.target.value)}
                   placeholder="Hi! How can I help you today?"
                   rows={2}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 resize-none"
+                  className="w-full bg-transparent border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-white/30 transition-colors resize-none"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm text-white/60 block">Fallback Message</label>
+                <label className="text-sm text-white/40 block">Fallback Message</label>
                 <textarea
                   data-testid="input-fallback-message"
                   value={fallbackMessage}
                   onChange={(e) => setFallbackMessage(e.target.value)}
                   placeholder="Sorry, I didn't catch that. Could you say it again?"
                   rows={2}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-white/20 resize-none"
+                  className="w-full bg-transparent border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-white/30 transition-colors resize-none"
                 />
               </div>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 space-y-4">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 space-y-4">
               <div className="flex items-center gap-2">
-                <Wrench size={16} className="text-white/40" />
-                <h2 className="text-lg font-semibold">Included Tools</h2>
-                <span className="text-xs text-white/40 ml-auto">{availableTools.length} tools auto-enabled</span>
+                <Wrench size={16} className="text-white/30" />
+                <h2 className="text-lg font-semibold text-white/90">Included Tools</h2>
+                <span className="text-xs text-white/30 ml-auto">{availableTools.length} tools auto-enabled</span>
               </div>
-              <p className="text-sm text-white/40">
-                These tools are automatically enabled based on your agent type. They power the actions your agent can perform.
+              <p className="text-sm text-white/30">
+                These tools are automatically enabled based on your agent type.
               </p>
               {Object.entries(toolsByCategory).map(([category, tools]) => (
                 <div key={category} className="space-y-1.5">
-                  <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">{category}</h3>
+                  <h3 className="text-xs font-medium text-white/30 uppercase tracking-wider">{category}</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                     {tools.map((tool) => (
                       <div
                         key={tool.name}
                         data-testid={`info-tool-${tool.name}`}
-                        className="flex items-center gap-2 p-3 rounded-xl bg-white/[0.04] border border-white/5"
+                        className="flex items-center gap-2 p-3 rounded-xl border border-white/5 bg-transparent"
                       >
-                        <CheckCircle2 size={14} className="text-green-400 shrink-0" />
+                        <CheckCircle2 size={14} className="text-white/30 shrink-0" />
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-white/80 truncate">
+                          <p className="text-sm font-medium text-white/60 truncate">
                             {tool.name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
                           </p>
-                          <p className="text-xs text-white/30 truncate">{tool.description}</p>
+                          <p className="text-xs text-white/20 truncate">{tool.description}</p>
                         </div>
                       </div>
                     ))}
@@ -278,20 +278,20 @@ export default function AgentBuilder() {
 
         {activeTab === "voice" && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 space-y-6">
-              <h2 className="text-lg font-semibold">Voice</h2>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 space-y-6">
+              <h2 className="text-lg font-semibold text-white/90">Voice</h2>
               <div className="space-y-3">
-                <label className="text-sm text-white/60 block">Voice Model</label>
+                <label className="text-sm text-white/40 block">Voice Model</label>
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                   {VOICES.map((v) => (
                     <button
                       key={v}
                       data-testid={`button-voice-${v}`}
                       onClick={() => setVoice(v)}
-                      className={`px-3 py-2.5 rounded-xl text-sm font-medium text-center transition-all ${
+                      className={`px-3 py-2.5 rounded-xl text-sm font-medium text-center transition-all duration-300 ${
                         voice === v
-                          ? "bg-white text-black"
-                          : "bg-white/5 text-white/60 border border-white/10 hover:bg-white/10"
+                          ? "border border-white/30 text-white bg-white/[0.06]"
+                          : "border border-white/10 text-white/40 hover:text-white/70 hover:border-white/20"
                       }`}
                     >
                       {v.charAt(0).toUpperCase() + v.slice(1)}
@@ -300,17 +300,17 @@ export default function AgentBuilder() {
                 </div>
               </div>
               <div className="space-y-3">
-                <label className="text-sm text-white/60 block">Language</label>
+                <label className="text-sm text-white/40 block">Language</label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {LANGUAGES.map((l) => (
                     <button
                       key={l.value}
                       data-testid={`button-language-${l.value}`}
                       onClick={() => setLanguage(l.value)}
-                      className={`px-3 py-2.5 rounded-xl text-sm font-medium text-center transition-all ${
+                      className={`px-3 py-2.5 rounded-xl text-sm font-medium text-center transition-all duration-300 ${
                         language === l.value
-                          ? "bg-white text-black"
-                          : "bg-white/5 text-white/60 border border-white/10 hover:bg-white/10"
+                          ? "border border-white/30 text-white bg-white/[0.06]"
+                          : "border border-white/10 text-white/40 hover:text-white/70 hover:border-white/20"
                       }`}
                     >
                       {l.label}
@@ -320,8 +320,8 @@ export default function AgentBuilder() {
               </div>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm text-white/60">Speech Speed</label>
-                  <span className="text-sm text-white/80 font-medium">{speed < 1 ? "Slow" : speed > 1.3 ? "Fast" : speed > 1 ? "Slightly Fast" : "Normal"}</span>
+                  <label className="text-sm text-white/40">Speech Speed</label>
+                  <span className="text-sm text-white/60 font-medium">{speed < 1 ? "Slow" : speed > 1.3 ? "Fast" : speed > 1 ? "Slightly Fast" : "Normal"}</span>
                 </div>
                 <input
                   data-testid="slider-speed"
@@ -333,17 +333,16 @@ export default function AgentBuilder() {
                   onChange={(e) => setSpeed(Number(e.target.value))}
                   className="w-full accent-white"
                 />
-                <div className="flex justify-between text-xs text-white/30">
+                <div className="flex justify-between text-xs text-white/20">
                   <span>Slow</span>
                   <span>Normal</span>
                   <span>Fast</span>
                 </div>
-                <p className="text-xs text-white/30">Controls the pacing of the agent's speech through prompt instructions.</p>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm text-white/60">Max Conversation Length</label>
-                  <span className="text-sm text-white/80 font-medium">{maxConversationLength} turns</span>
+                  <label className="text-sm text-white/40">Max Conversation Length</label>
+                  <span className="text-sm text-white/60 font-medium">{maxConversationLength} turns</span>
                 </div>
                 <input
                   data-testid="slider-max-conversation"
@@ -354,7 +353,7 @@ export default function AgentBuilder() {
                   onChange={(e) => setMaxConversationLength(Number(e.target.value))}
                   className="w-full accent-white"
                 />
-                <div className="flex justify-between text-xs text-white/30">
+                <div className="flex justify-between text-xs text-white/20">
                   <span>1</span>
                   <span>25</span>
                   <span>50</span>
@@ -366,9 +365,9 @@ export default function AgentBuilder() {
 
         {activeTab === "test" && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 space-y-4">
-              <h2 className="text-lg font-semibold">Test Your Agent</h2>
-              <p className="text-sm text-white/40">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 space-y-4">
+              <h2 className="text-lg font-semibold text-white/90">Test Your Agent</h2>
+              <p className="text-sm text-white/30">
                 Start a live voice session to test how your agent responds. 
                 Make sure you've saved your configuration first.
               </p>

@@ -1,5 +1,6 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import bcrypt from "bcryptjs";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
@@ -46,6 +47,63 @@ export function setupAuth(app: Express) {
       }
     )
   );
+
+  const googleClientId = process.env.GOOGLE_CLIENT_ID;
+  const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const googleConfigured = !!(googleClientId && googleClientSecret);
+
+  if (googleConfigured) {
+    const callbackURL = process.env.REPLIT_DEV_DOMAIN
+      ? `https://${process.env.REPLIT_DEV_DOMAIN}/api/auth/google/callback`
+      : process.env.APP_URL
+      ? `${process.env.APP_URL}/api/auth/google/callback`
+      : "/api/auth/google/callback";
+
+    passport.use(
+      new GoogleStrategy(
+        {
+          clientID: googleClientId!,
+          clientSecret: googleClientSecret!,
+          callbackURL,
+          scope: ["profile", "email"],
+        },
+        async (_accessToken, _refreshToken, profile, done) => {
+          try {
+            const email = profile.emails?.[0]?.value;
+            if (!email) return done(null, false, { message: "No email from Google" });
+
+            let user = await storage.getUserByEmail(email);
+
+            if (!user) {
+              const displayName = profile.displayName || email.split("@")[0];
+              const slug = displayName.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + Date.now();
+              const org = await storage.createOrganization({
+                name: `${displayName}'s Venue`,
+                slug,
+                plan: "starter",
+              });
+
+              const randomPass = await bcrypt.hash(Math.random().toString(36), 12);
+              user = await storage.createUser({
+                email,
+                password: randomPass,
+                name: displayName,
+                role: "owner",
+                organizationId: org.id,
+              });
+
+              seedVenueData(org.id).catch((err) => console.error("Seed data error:", err));
+            }
+
+            return done(null, user);
+          } catch (err) {
+            return done(err as Error);
+          }
+        }
+      )
+    );
+    console.log("Google OAuth configured");
+  }
 
   passport.serializeUser((user: any, done) => done(null, user.id));
   passport.deserializeUser(async (id: number, done) => {
@@ -116,6 +174,21 @@ export function setupAuth(app: Express) {
       return res.json({ success: true });
     });
   });
+
+  app.get("/api/auth/config", (_req: Request, res: Response) => {
+    res.json({ googleEnabled: googleConfigured });
+  });
+
+  if (googleConfigured) {
+    app.get("/api/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
+
+    app.get("/api/auth/google/callback",
+      passport.authenticate("google", { failureRedirect: "/login?error=google" }),
+      (_req: Request, res: Response) => {
+        res.redirect("/dashboard");
+      }
+    );
+  }
 
   app.get("/api/auth/me", async (req: Request, res: Response) => {
     if (!req.isAuthenticated() || !req.user) {

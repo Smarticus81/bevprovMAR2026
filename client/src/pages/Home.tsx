@@ -3,6 +3,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Mic, Store, Box, Briefcase, Sparkles, ChevronRight } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "wouter";
+import { BevProLogo } from "@/components/BevProLogo";
 
 import champagneVideo from "@/assets/videos/champagne-bg.mp4";
 
@@ -47,38 +48,6 @@ const DEMO_CONVERSATIONS: Record<string, Array<{ role: "user" | "agent"; text: s
   ],
 };
 
-const PULSE_HEIGHTS = [24, 32, 20, 28, 22];
-
-function AudioPulse({ isActive }: { isActive: boolean }) {
-  return (
-    <div className="flex items-center justify-center gap-[3px] h-8" data-testid="audio-pulse">
-      {PULSE_HEIGHTS.map((h, i) => (
-        <motion.div
-          key={i}
-          className="w-[3px] rounded-full bg-white/40"
-          animate={
-            isActive
-              ? {
-                  height: [8, h, 8],
-                  opacity: [0.3, 0.7, 0.3],
-                }
-              : { height: 4, opacity: 0.15 }
-          }
-          transition={
-            isActive
-              ? {
-                  duration: 0.8 + i * 0.15,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: i * 0.1,
-                }
-              : { duration: 0.4 }
-          }
-        />
-      ))}
-    </div>
-  );
-}
 
 export default function Home() {
   const [activeAgent, setActiveAgent] = useState("bevone");
@@ -222,15 +191,15 @@ export default function Home() {
                   animate={{ opacity: 1 }}
                   className="flex justify-start"
                 >
-                  <div className="px-4 py-2.5">
-                    <AudioPulse isActive={true} />
+                  <div className="px-4 py-2">
+                    <BevProLogo size={28} className="text-white/40" animated={true} />
                   </div>
                 </motion.div>
               )}
 
               {!isTyping && displayed.length === 0 && (
                 <div className="flex items-center justify-center h-full pt-6">
-                  <AudioPulse isActive={false} />
+                  <BevProLogo size={40} className="text-white/10" />
                 </div>
               )}
             </div>

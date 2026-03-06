@@ -2,7 +2,8 @@ import { useParams } from "wouter";
 import { useVoiceSession, type TranscriptEntry } from "@/hooks/useVoiceSession";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { ArrowLeft, Mic, MicOff, PhoneOff, Wrench, ShoppingCart, DollarSign, CreditCard, User, Hash, Receipt, Trash2 } from "lucide-react";
+import { ArrowLeft, Mic, MicOff, PhoneOff, Wrench, ShoppingCart, DollarSign, CreditCard, User, Hash, Receipt } from "lucide-react";
+import { BevProLogo } from "@/components/BevProLogo";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState, useMemo } from "react";
 import type { OrderItem } from "@shared/schema";
@@ -296,14 +297,24 @@ function TranscriptPanel({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="h-full flex items-center justify-center min-h-[50vh]"
+              className="h-full flex items-center justify-center min-h-[30vh]"
             >
               <div className="text-center">
-                <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
-                  <Mic size={32} className="text-white/30" />
-                </div>
-                <p className="text-white/40 text-sm">Tap below to start a conversation</p>
+                <BevProLogo size={64} className="text-white/10 mx-auto mb-3" />
+                <p className="text-white/30 text-sm">Tap below to start</p>
               </div>
+            </motion.div>
+          )}
+
+          {voice.status === "connected" && voice.transcript.length === 0 && (
+            <motion.div
+              key="listening-pulse"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="h-full flex items-center justify-center min-h-[30vh]"
+            >
+              <BevProLogo size={80} className="text-white/20" animated={true} />
             </motion.div>
           )}
 
@@ -316,10 +327,10 @@ function TranscriptPanel({
               className={`mb-3 flex ${entry.role === "user" ? "justify-end" : "justify-start"}`}
             >
               {entry.role === "tool" ? (
-                <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl px-4 py-3 max-w-[85%]">
+                <div className="border border-white/10 rounded-2xl px-4 py-3 max-w-[85%] bg-white/[0.02]">
                   <div className="flex items-center gap-2 mb-1">
-                    <Wrench size={12} className="text-amber-400" />
-                    <span className="text-amber-400 text-xs font-medium">{entry.toolName}</span>
+                    <Wrench size={12} className="text-white/40" />
+                    <span className="text-white/40 text-xs font-medium">{entry.toolName}</span>
                   </div>
                   {entry.toolResult ? (
                     <div className="text-white/60 text-sm">
@@ -329,15 +340,15 @@ function TranscriptPanel({
                       }
                     </div>
                   ) : (
-                    <p className="text-white/40 text-xs animate-pulse">{entry.text}</p>
+                    <p className="text-white/30 text-xs animate-pulse">{entry.text}</p>
                   )}
                 </div>
               ) : (
                 <div
                   className={`max-w-[80%] px-4 py-3 rounded-2xl text-[15px] leading-relaxed ${
                     entry.role === "user"
-                      ? "bg-white text-black"
-                      : "bg-white/10 text-white"
+                      ? "bg-white/10 text-white/80"
+                      : "border border-white/10 text-white/60 bg-white/[0.02]"
                   }`}
                 >
                   {entry.text}
@@ -346,18 +357,31 @@ function TranscriptPanel({
             </motion.div>
           ))}
 
-          {voice.status === "connected" && voice.isListening && voice.transcript.length > 0 && (
+          {voice.status === "connected" && voice.isSpeaking && voice.transcript.length > 0 && (
+            <motion.div
+              key="speaking-pulse"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex justify-start mb-3"
+            >
+              <div className="border border-white/10 rounded-2xl px-4 py-3 bg-white/[0.02]">
+                <BevProLogo size={28} className="text-white/40" animated={true} />
+              </div>
+            </motion.div>
+          )}
+
+          {voice.status === "connected" && voice.isListening && !voice.isSpeaking && voice.transcript.length > 0 && (
             <motion.div
               key="listening-indicator"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="flex justify-start mb-3"
             >
-              <div className="bg-white/10 rounded-2xl px-4 py-3 flex items-center gap-2">
+              <div className="border border-white/10 rounded-2xl px-4 py-3 bg-white/[0.02] flex items-center gap-2">
                 <div className="flex gap-1">
-                  <div className="w-1.5 h-1.5 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <div className="w-1.5 h-1.5 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <div className="w-1.5 h-1.5 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                  <div className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <div className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <div className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                 </div>
               </div>
             </motion.div>
@@ -514,11 +538,21 @@ export default function AgentApp() {
               className="h-full flex items-center justify-center min-h-[50vh]"
             >
               <div className="text-center">
-                <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
-                  <Mic size={32} className="text-white/30" />
-                </div>
-                <p className="text-white/40 text-sm">Tap below to start a conversation</p>
+                <BevProLogo size={80} className="text-white/10 mx-auto mb-4" />
+                <p className="text-white/30 text-sm">Tap below to start a conversation</p>
               </div>
+            </motion.div>
+          )}
+
+          {voice.status === "connected" && voice.transcript.length === 0 && (
+            <motion.div
+              key="listening-pulse"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="h-full flex items-center justify-center min-h-[50vh]"
+            >
+              <BevProLogo size={100} className="text-white/20" animated={true} />
             </motion.div>
           )}
 
@@ -531,10 +565,10 @@ export default function AgentApp() {
               className={`mb-3 flex ${entry.role === "user" ? "justify-end" : "justify-start"}`}
             >
               {entry.role === "tool" ? (
-                <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl px-4 py-3 max-w-[85%]">
+                <div className="border border-white/10 rounded-2xl px-4 py-3 max-w-[85%] bg-white/[0.02]">
                   <div className="flex items-center gap-2 mb-1">
-                    <Wrench size={12} className="text-amber-400" />
-                    <span className="text-amber-400 text-xs font-medium">{entry.toolName}</span>
+                    <Wrench size={12} className="text-white/40" />
+                    <span className="text-white/40 text-xs font-medium">{entry.toolName}</span>
                   </div>
                   {entry.toolResult ? (
                     <div className="text-white/60 text-sm">
@@ -544,15 +578,15 @@ export default function AgentApp() {
                       }
                     </div>
                   ) : (
-                    <p className="text-white/40 text-xs animate-pulse">{entry.text}</p>
+                    <p className="text-white/30 text-xs animate-pulse">{entry.text}</p>
                   )}
                 </div>
               ) : (
                 <div
                   className={`max-w-[80%] px-4 py-3 rounded-2xl text-[15px] leading-relaxed ${
                     entry.role === "user"
-                      ? "bg-white text-black"
-                      : "bg-white/10 text-white"
+                      ? "bg-white/10 text-white/80"
+                      : "border border-white/10 text-white/60 bg-white/[0.02]"
                   }`}
                 >
                   {entry.text}
@@ -561,18 +595,31 @@ export default function AgentApp() {
             </motion.div>
           ))}
 
-          {voice.status === "connected" && voice.isListening && voice.transcript.length > 0 && (
+          {voice.status === "connected" && voice.isSpeaking && voice.transcript.length > 0 && (
+            <motion.div
+              key="speaking-pulse"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex justify-start mb-3"
+            >
+              <div className="border border-white/10 rounded-2xl px-4 py-3 bg-white/[0.02]">
+                <BevProLogo size={28} className="text-white/40" animated={true} />
+              </div>
+            </motion.div>
+          )}
+
+          {voice.status === "connected" && voice.isListening && !voice.isSpeaking && voice.transcript.length > 0 && (
             <motion.div
               key="listening-indicator"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="flex justify-start mb-3"
             >
-              <div className="bg-white/10 rounded-2xl px-4 py-3 flex items-center gap-2">
+              <div className="border border-white/10 rounded-2xl px-4 py-3 bg-white/[0.02] flex items-center gap-2">
                 <div className="flex gap-1">
-                  <div className="w-1.5 h-1.5 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <div className="w-1.5 h-1.5 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <div className="w-1.5 h-1.5 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                  <div className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <div className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <div className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                 </div>
               </div>
             </motion.div>

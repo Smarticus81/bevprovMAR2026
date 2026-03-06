@@ -2,6 +2,7 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { Bot, Store, LogOut, Menu, X, Database } from "lucide-react";
 import { useState } from "react";
+import { BevProLogo } from "@/components/BevProLogo";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Agents", icon: Bot },
@@ -18,7 +19,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-black text-white flex">
       <aside className="hidden lg:flex w-64 bg-black border-r border-white/10 flex-col fixed h-full z-30">
         <div className="p-6 border-b border-white/10">
-          <Link href="/dashboard" className="text-xl font-semibold text-white tracking-tight">
+          <Link href="/dashboard" className="flex items-center gap-2 text-xl font-semibold text-white tracking-tight">
+            <BevProLogo size={22} className="text-white/70" />
             BevPro
           </Link>
           {organization && (
@@ -71,7 +73,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="lg:hidden fixed top-0 w-full bg-black/80 backdrop-blur-xl border-b border-white/10 z-40 px-4 py-3 flex items-center justify-between">
-        <Link href="/dashboard" className="text-lg font-semibold text-white">BevPro</Link>
+        <Link href="/dashboard" className="flex items-center gap-2 text-lg font-semibold text-white">
+          <BevProLogo size={20} className="text-white/70" />
+          BevPro
+        </Link>
         <button data-testid="button-mobile-menu" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-white">
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>

@@ -6,7 +6,7 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 ## Architecture
 - **Frontend**: React + Vite + Tailwind CSS v4 + Framer Motion + Wouter routing
 - **Backend**: Express.js on port 5000, PostgreSQL with Drizzle ORM
-- **Auth**: Passport.js local strategy, bcryptjs, express-session + connect-pg-simple
+- **Auth**: Passport.js (local + Google OAuth20), bcryptjs, express-session + connect-pg-simple
 - **Voice**: OpenAI Realtime API via WebRTC (ephemeral tokens from `OPENAI_API_KEY`). Primary pipeline only — no fallback.
 - **AI (chat)**: OpenAI via Replit AI Integrations (`AI_INTEGRATIONS_OPENAI_API_KEY`, `AI_INTEGRATIONS_OPENAI_BASE_URL`) for chat completions
 - **Mobile**: Capacitor iOS app config + PWA fallback
@@ -50,7 +50,7 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 ## Key Files
 ### Server
 - `server/index.ts` — Express app setup
-- `server/auth.ts` — Passport.js auth, session management, seeds venue data on registration
+- `server/auth.ts` — Passport.js auth (local + Google OAuth20), session management, seeds venue data on registration
 - `server/routes.ts` — API routes (agents CRUD, venue data CRUD, waitlist)
 - `server/voice.ts` — Voice pipeline (WebRTC session, tool calls with orgId)
 - `server/tools.ts` — 21 real tool implementations + auto-enable logic + system prompt builder
@@ -59,9 +59,10 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 - `server/db.ts` — Database connection
 
 ### Client
-- `client/src/pages/Home.tsx` — Landing page with champagne video
-- `client/src/pages/Login.tsx` — Auth login page
-- `client/src/pages/Register.tsx` — Auth registration page
+- `client/src/components/BevProLogo.tsx` — Animated SVG waveform logo (BevProLogo + BevProBrand components)
+- `client/src/pages/Home.tsx` — Landing page with interactive demo simulator + BevPro logo pulse
+- `client/src/pages/Login.tsx` — Auth login page (+ conditional Google OAuth button)
+- `client/src/pages/Register.tsx` — Auth registration page (+ conditional Google OAuth button)
 - `client/src/pages/Dashboard.tsx` — Agent list with CRUD
 - `client/src/pages/AgentBuilder.tsx` — No-code agent configuration (3 tabs: General, Voice, Test), dark theme, auto-enabled tools displayed as info
 - `client/src/pages/AppStore.tsx` — iOS App Store-style agent marketplace
@@ -86,6 +87,9 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 - `POST /api/auth/login` — Login
 - `POST /api/auth/logout` — Logout
 - `GET /api/auth/me` — Current user + org
+- `GET /api/auth/config` — Auth config (googleEnabled boolean)
+- `GET /api/auth/google` — Google OAuth initiation (only when GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET set)
+- `GET /api/auth/google/callback` — Google OAuth callback
 
 ### Agents
 - `GET/POST /api/agents` — List/create agents
@@ -121,6 +125,29 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 - Pricing: Dark theme (bg-black, white text, glassmorphic tier cards)
 - Mobile app: Full black, iOS-native feel, safe area insets
 - Query keys: All agent queries use `["agents"]` key; venue data uses `["venue", "menu"]` etc.
+
+## Branding
+- **Logo**: BevProLogo.tsx — 7-bar animated waveform SVG; `animated` prop enables Framer Motion loop; `pulseIntensity` controls animation scale
+- **BevProBrand**: Logo + wordmark combo component
+- **Favicon**: SVG logo at `/logo.svg` (preferred) + PNG fallback
+- **PWA**: manifest.json references 192x192 and 512x512 icons
+
+## Google OAuth
+- Enabled when `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` environment variables are set
+- Uses passport-google-oauth20 strategy integrated with existing auth system
+- First-time Google users auto-create org + user + seed venue data
+- Login/Register pages show "Continue with Google" button only when configured
+- `/api/auth/config` endpoint returns `{ googleEnabled: boolean }`
+
+## iOS App Store Deployment
+Capacitor is configured (`com.bevpro.app`). To build and submit:
+1. **Prerequisites**: Mac with Xcode 15+, Apple Developer account ($99/yr), Node.js
+2. **Build**: `npm run build` → `npx cap sync ios` → `npx cap open ios`
+3. **Xcode config**: Set Bundle ID to `com.bevpro.app`, add Microphone usage description in Info.plist (`NSMicrophoneUsageDescription: "BevPro needs microphone access for voice agent interactions"`), set deployment target iOS 16+
+4. **Signing**: Add Apple Developer team, enable automatic signing, create provisioning profile
+5. **Icons**: Generate app icon set from logo.svg (1024x1024 required for App Store)
+6. **Submit**: Product → Archive → Distribute App → App Store Connect → fill metadata (screenshots, description, privacy policy URL) → Submit for Review
+7. **Key entitlements**: Microphone permission, HTTPS network access (already configured in Capacitor)
 
 ## Seed Data
 New registrations auto-get: 18 menu items, 15 inventory items, 5 suppliers, 5 staff members, 4 guest profiles

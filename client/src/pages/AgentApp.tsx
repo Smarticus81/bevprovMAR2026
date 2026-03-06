@@ -647,7 +647,7 @@ function VoiceControls({ voice, wakeWordConfig }: { voice: ReturnType<typeof use
           <div className="flex flex-col items-center gap-3">
             <motion.button
               data-testid="button-start-call"
-              onClick={voice.connect}
+              onClick={() => voice.connect()}
               whileTap={{ scale: 0.92 }}
               whileHover={{ scale: 1.04 }}
               className="relative w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-full bg-gradient-to-b from-[#D4B87A] to-[#C9A96E] flex items-center justify-center shadow-[0_0_40px_rgba(201,169,110,0.2),0_4px_16px_rgba(0,0,0,0.3)]"

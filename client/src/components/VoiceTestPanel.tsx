@@ -103,7 +103,7 @@ export function VoiceTestPanel({ agentId, agentName }: VoiceTestPanelProps) {
         {voice.status === "idle" || voice.status === "error" ? (
           <button
             data-testid="button-start-voice"
-            onClick={voice.connect}
+            onClick={() => voice.connect()}
             className="flex items-center gap-2 border border-white/20 text-white px-6 py-3 rounded-full text-sm font-medium hover:bg-white hover:text-black transition-all duration-300"
           >
             <Phone size={16} />

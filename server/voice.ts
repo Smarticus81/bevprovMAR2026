@@ -56,8 +56,9 @@ voice.post("/api/voice/session", requireAuth, async (req, res) => {
         voice: config.voice || "alloy",
         instructions: systemPrompt,
         tools: toolDefs,
+        max_response_output_tokens: 4096,
         input_audio_transcription: { model: "whisper-1" },
-        turn_detection: { type: "server_vad", threshold: 0.5, silence_duration_ms: 600 },
+        turn_detection: { type: "server_vad", threshold: 0.5, silence_duration_ms: 500, prefix_padding_ms: 300 },
       }),
     });
 

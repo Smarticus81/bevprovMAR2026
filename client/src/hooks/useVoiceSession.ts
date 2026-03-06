@@ -26,6 +26,16 @@ interface VoiceSessionState {
   returningToStandby: boolean;
 }
 
+interface PrewarmedSession {
+  token: string;
+  greeting: string | null;
+  fetchedAt: number;
+}
+
+const PREWARM_TTL_MS = 50_000;
+const WAKE_CHUNK_MS = 1500;
+const WAKE_GAP_MS = 50;
+
 function levenshteinDistance(a: string, b: string): number {
   const an = a.length;
   const bn = b.length;
@@ -90,12 +100,55 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
   const recordingLoopRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recordingInFlightRef = useRef<boolean>(false);
 
+  const prewarmedSessionRef = useRef<PrewarmedSession | null>(null);
+  const prewarmIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   useEffect(() => {
     wakeWordConfigRef.current = wakeWordConfig;
   }, [wakeWordConfig]);
 
   const addTranscript = useCallback((entry: TranscriptEntry) => {
     setState((s) => ({ ...s, transcript: [...s.transcript, entry] }));
+  }, []);
+
+  const prewarmSession = useCallback(async () => {
+    if (!agentId) return;
+    try {
+      const res = await fetch("/api/voice/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ agentId }),
+      });
+      if (res.ok) {
+        const session = await res.json();
+        if (session.token) {
+          prewarmedSessionRef.current = {
+            token: session.token,
+            greeting: session.greeting || null,
+            fetchedAt: Date.now(),
+          };
+        }
+      }
+    } catch {}
+  }, [agentId]);
+
+  const startPrewarmLoop = useCallback(() => {
+    if (prewarmIntervalRef.current) clearInterval(prewarmIntervalRef.current);
+    prewarmSession();
+    prewarmIntervalRef.current = setInterval(() => {
+      if (wakeWordActiveRef.current) {
+        prewarmSession();
+      }
+    }, PREWARM_TTL_MS);
+  }, [prewarmSession]);
+
+  const stopPrewarmLoop = useCallback(() => {
+    if (prewarmIntervalRef.current) {
+      clearInterval(prewarmIntervalRef.current);
+      prewarmIntervalRef.current = null;
+    }
+    prewarmedSessionRef.current = null;
   }, []);
 
   const stopWakeWordListening = useCallback(() => {
@@ -113,7 +166,8 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
       wakeMediaStreamRef.current.getTracks().forEach(t => t.stop());
       wakeMediaStreamRef.current = null;
     }
-  }, []);
+    stopPrewarmLoop();
+  }, [stopPrewarmLoop]);
 
   const disconnectVoice = useCallback(() => {
     if (dcRef.current) {
@@ -134,219 +188,242 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
     }
   }, []);
 
-  const connect = useCallback(async () => {
-    if (!agentId) return;
+  const connectWithSession = useCallback(async (token: string, greeting: string | null, existingStream?: MediaStream) => {
+    const pc = new RTCPeerConnection();
+    pcRef.current = pc;
 
-    stopWakeWordListening();
-    setState((s) => ({ ...s, status: "connecting", error: null, transcript: [], returningToStandby: false }));
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+      audioRef.current.autoplay = true;
+    }
 
-    try {
-      const tokenRes = await fetch("/api/voice/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ agentId }),
-      });
+    pc.ontrack = (event) => {
+      audioRef.current!.srcObject = event.streams[0];
+      setState((s) => ({ ...s, isSpeaking: true }));
+    };
 
-      if (!tokenRes.ok) {
-        const err = await tokenRes.json();
-        throw new Error(err.error || "Failed to create session");
-      }
-
-      const session = await tokenRes.json();
-      const token = session.token;
-      greetingRef.current = session.greeting || null;
-
-      if (!token) {
-        throw new Error("No session token received");
-      }
-
-      const pc = new RTCPeerConnection();
-      pcRef.current = pc;
-
-      if (!audioRef.current) {
-        audioRef.current = new Audio();
-        audioRef.current.autoplay = true;
-      }
-
-      pc.ontrack = (event) => {
-        audioRef.current!.srcObject = event.streams[0];
-        setState((s) => ({ ...s, isSpeaking: true }));
-      };
-
-      let stream: MediaStream;
+    let stream: MediaStream;
+    if (existingStream && existingStream.getAudioTracks().length > 0 && existingStream.getAudioTracks()[0].readyState === "live") {
+      stream = existingStream;
+    } else {
       try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       } catch (micErr: any) {
         throw new Error("Microphone access required. Please allow microphone permission and ensure a mic is connected.");
       }
-      mediaStreamRef.current = stream;
-      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+    }
+    mediaStreamRef.current = stream;
+    stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
-      const dc = pc.createDataChannel("oai-events");
-      dcRef.current = dc;
+    const dc = pc.createDataChannel("oai-events");
+    dcRef.current = dc;
+    greetingRef.current = greeting;
 
-      dc.onmessage = async (event) => {
-        const msg = JSON.parse(event.data);
+    dc.onmessage = async (event) => {
+      const msg = JSON.parse(event.data);
 
-        switch (msg.type) {
-          case "session.created":
-            setState((s) => ({ ...s, status: "connected", isListening: true }));
-            if (greetingRef.current && dc.readyState === "open") {
-              dc.send(JSON.stringify({
-                type: "response.create",
-                response: {
-                  modalities: ["text", "audio"],
-                  instructions: `Say exactly this greeting to the user: "${greetingRef.current}"`,
-                },
-              }));
-            }
-            break;
+      switch (msg.type) {
+        case "session.created":
+          setState((s) => ({ ...s, status: "connected", isListening: true }));
+          if (greetingRef.current && dc.readyState === "open") {
+            dc.send(JSON.stringify({
+              type: "response.create",
+              response: {
+                modalities: ["text", "audio"],
+                instructions: `Say exactly this greeting to the user: "${greetingRef.current}"`,
+              },
+            }));
+          }
+          break;
 
-          case "conversation.item.input_audio_transcription.completed":
-            if (msg.transcript) {
-              addTranscript({ role: "user", text: msg.transcript, timestamp: Date.now() });
-              const cfg = wakeWordConfigRef.current;
-              if (cfg?.enabled) {
-                const text = msg.transcript.toLowerCase();
-                for (const endPhrase of cfg.endPhrases) {
-                  if (phraseMatchesWithLevenshtein(text, endPhrase, cfg.levenshteinThreshold)) {
-                    setState((s) => ({ ...s, returningToStandby: true }));
-                    setTimeout(() => {
-                      disconnectVoice();
-                      startWakeWordListeningInternal();
-                    }, 1500);
-                    return;
-                  }
-                }
-                for (const shutdownPhrase of cfg.shutdownPhrases) {
-                  if (phraseMatchesWithLevenshtein(text, shutdownPhrase, cfg.levenshteinThreshold)) {
+        case "conversation.item.input_audio_transcription.completed":
+          if (msg.transcript) {
+            addTranscript({ role: "user", text: msg.transcript, timestamp: Date.now() });
+            const cfg = wakeWordConfigRef.current;
+            if (cfg?.enabled) {
+              const text = msg.transcript.toLowerCase();
+              for (const endPhrase of cfg.endPhrases) {
+                if (phraseMatchesWithLevenshtein(text, endPhrase, cfg.levenshteinThreshold)) {
+                  setState((s) => ({ ...s, returningToStandby: true }));
+                  setTimeout(() => {
                     disconnectVoice();
-                    stopWakeWordListening();
-                    setState({
-                      status: "idle",
-                      isListening: false,
-                      isSpeaking: false,
-                      transcript: [],
-                      latency: null,
-                      error: null,
-                      returningToStandby: false,
-                    });
-                    return;
-                  }
+                    startWakeWordListeningInternal();
+                  }, 1500);
+                  return;
+                }
+              }
+              for (const shutdownPhrase of cfg.shutdownPhrases) {
+                if (phraseMatchesWithLevenshtein(text, shutdownPhrase, cfg.levenshteinThreshold)) {
+                  disconnectVoice();
+                  stopWakeWordListening();
+                  setState({
+                    status: "idle",
+                    isListening: false,
+                    isSpeaking: false,
+                    transcript: [],
+                    latency: null,
+                    error: null,
+                    returningToStandby: false,
+                  });
+                  return;
                 }
               }
             }
-            break;
+          }
+          break;
 
-          case "response.audio_transcript.done":
-            if (msg.transcript) {
-              const lat = startTimeRef.current ? Date.now() - startTimeRef.current : null;
-              addTranscript({ role: "assistant", text: msg.transcript, timestamp: Date.now() });
-              setState((s) => ({ ...s, latency: lat, isSpeaking: false }));
-            }
-            break;
+        case "response.audio_transcript.done":
+          if (msg.transcript) {
+            const lat = startTimeRef.current ? Date.now() - startTimeRef.current : null;
+            addTranscript({ role: "assistant", text: msg.transcript, timestamp: Date.now() });
+            setState((s) => ({ ...s, latency: lat, isSpeaking: false }));
+          }
+          break;
 
-          case "input_audio_buffer.speech_started":
-            startTimeRef.current = Date.now();
-            setState((s) => ({ ...s, isListening: true }));
-            break;
+        case "input_audio_buffer.speech_started":
+          startTimeRef.current = Date.now();
+          setState((s) => ({ ...s, isListening: true }));
+          break;
 
-          case "input_audio_buffer.speech_stopped":
-            setState((s) => ({ ...s, isListening: false }));
-            break;
+        case "input_audio_buffer.speech_stopped":
+          setState((s) => ({ ...s, isListening: false }));
+          break;
 
-          case "response.function_call_arguments.done": {
-            const toolName = msg.name;
-            const toolArgs = JSON.parse(msg.arguments || "{}");
+        case "response.function_call_arguments.done": {
+          const toolName = msg.name;
+          const toolArgs = JSON.parse(msg.arguments || "{}");
+
+          addTranscript({
+            role: "tool",
+            text: `Calling ${toolName}...`,
+            timestamp: Date.now(),
+            toolName,
+          });
+
+          try {
+            const toolRes = await fetch("/api/voice/tool-call", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({ toolName, arguments: toolArgs, agentId }),
+            });
+            const toolResult = await toolRes.json();
 
             addTranscript({
               role: "tool",
-              text: `Calling ${toolName}...`,
+              text: JSON.stringify(toolResult.result, null, 2),
               timestamp: Date.now(),
               toolName,
+              toolResult: toolResult.result,
             });
 
-            try {
-              const toolRes = await fetch("/api/voice/tool-call", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ toolName, arguments: toolArgs, agentId }),
-              });
-              const toolResult = await toolRes.json();
-
-              addTranscript({
-                role: "tool",
-                text: JSON.stringify(toolResult.result, null, 2),
-                timestamp: Date.now(),
-                toolName,
-                toolResult: toolResult.result,
-              });
-
-              const responseEvent = {
-                type: "conversation.item.create",
-                item: {
-                  type: "function_call_output",
-                  call_id: msg.call_id,
-                  output: JSON.stringify(toolResult.result),
-                },
-              };
-              dc.send(JSON.stringify(responseEvent));
-              dc.send(JSON.stringify({ type: "response.create" }));
-            } catch (err) {
-              console.error("Tool call failed:", err);
-              const errorResponse = {
-                type: "conversation.item.create",
-                item: {
-                  type: "function_call_output",
-                  call_id: msg.call_id,
-                  output: JSON.stringify({ error: "Tool execution failed" }),
-                },
-              };
-              dc.send(JSON.stringify(errorResponse));
-              dc.send(JSON.stringify({ type: "response.create" }));
-            }
-            break;
+            const responseEvent = {
+              type: "conversation.item.create",
+              item: {
+                type: "function_call_output",
+                call_id: msg.call_id,
+                output: JSON.stringify(toolResult.result),
+              },
+            };
+            dc.send(JSON.stringify(responseEvent));
+            dc.send(JSON.stringify({ type: "response.create" }));
+          } catch (err) {
+            console.error("Tool call failed:", err);
+            const errorResponse = {
+              type: "conversation.item.create",
+              item: {
+                type: "function_call_output",
+                call_id: msg.call_id,
+                output: JSON.stringify({ error: "Tool execution failed" }),
+              },
+            };
+            dc.send(JSON.stringify(errorResponse));
+            dc.send(JSON.stringify({ type: "response.create" }));
           }
-
-          case "error":
-            console.error("Realtime error:", msg.error);
-            setState((s) => ({ ...s, error: msg.error?.message || "Voice error" }));
-            break;
+          break;
         }
-      };
 
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
+        case "error":
+          console.error("Realtime error:", msg.error);
+          setState((s) => ({ ...s, error: msg.error?.message || "Voice error" }));
+          break;
+      }
+    };
 
-      const sdpRes = await fetch("https://api.openai.com/v1/realtime?model=gpt-4o-mini-realtime-preview", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/sdp",
-        },
-        body: offer.sdp,
-      });
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
 
-      if (!sdpRes.ok) {
-        throw new Error("Failed to connect to OpenAI Realtime");
+    const sdpRes = await fetch("https://api.openai.com/v1/realtime?model=gpt-4o-mini-realtime-preview", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/sdp",
+      },
+      body: offer.sdp,
+    });
+
+    if (!sdpRes.ok) {
+      throw new Error("Failed to connect to OpenAI Realtime");
+    }
+
+    const answer = new RTCSessionDescription({
+      type: "answer",
+      sdp: await sdpRes.text(),
+    });
+    await pc.setRemoteDescription(answer);
+  }, [agentId, addTranscript, disconnectVoice]);
+
+  const connect = useCallback(async (reuseStream?: MediaStream) => {
+    if (!agentId) return;
+
+    const cachedSession = prewarmedSessionRef.current;
+    prewarmedSessionRef.current = null;
+
+    stopWakeWordListening();
+    setState((s) => ({ ...s, status: "connecting", error: null, transcript: [], returningToStandby: false }));
+
+    try {
+      let token: string;
+      let greeting: string | null;
+
+      if (cachedSession && (Date.now() - cachedSession.fetchedAt) < PREWARM_TTL_MS) {
+        token = cachedSession.token;
+        greeting = cachedSession.greeting;
+      } else {
+        const tokenRes = await fetch("/api/voice/session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ agentId }),
+        });
+
+        if (!tokenRes.ok) {
+          const err = await tokenRes.json();
+          throw new Error(err.error || "Failed to create session");
+        }
+
+        const session = await tokenRes.json();
+        token = session.token;
+        greeting = session.greeting || null;
+
+        if (!token) {
+          throw new Error("No session token received");
+        }
       }
 
-      const answer = new RTCSessionDescription({
-        type: "answer",
-        sdp: await sdpRes.text(),
-      });
-      await pc.setRemoteDescription(answer);
+      await connectWithSession(token, greeting, reuseStream);
     } catch (error: any) {
       console.error("Voice connection error:", error);
+      if (reuseStream) {
+        reuseStream.getTracks().forEach(t => t.stop());
+      }
       setState((s) => ({
         ...s,
         status: "error",
         error: error.message || "Connection failed",
       }));
     }
-  }, [agentId, addTranscript, stopWakeWordListening, disconnectVoice]);
+  }, [agentId, stopWakeWordListening, connectWithSession]);
 
   const startWakeWordListeningInternal = useCallback(() => {
     stopWakeWordListening();
@@ -362,6 +439,8 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
     }));
 
     wakeWordActiveRef.current = true;
+
+    startPrewarmLoop();
 
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
       if (!wakeWordActiveRef.current) {
@@ -417,10 +496,10 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
             return;
           }
 
-          if (chunks.length === 0 || new Blob(chunks).size < 1000) {
+          if (chunks.length === 0 || new Blob(chunks).size < 800) {
             recordingInFlightRef.current = false;
             if (wakeWordActiveRef.current) {
-              recordingLoopRef.current = setTimeout(recordAndCheck, 200);
+              recordingLoopRef.current = setTimeout(recordAndCheck, WAKE_GAP_MS);
             }
             return;
           }
@@ -446,8 +525,18 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
               const cfg = wakeWordConfigRef.current;
               if (cfg && text && phraseMatchesWithLevenshtein(text, cfg.phrase, cfg.levenshteinThreshold)) {
                 recordingInFlightRef.current = false;
-                stopWakeWordListening();
-                connect();
+                const wakeStream = wakeMediaStreamRef.current;
+                wakeWordActiveRef.current = false;
+                if (recordingLoopRef.current) {
+                  clearTimeout(recordingLoopRef.current);
+                  recordingLoopRef.current = null;
+                }
+                if (recorderRef.current) {
+                  try { recorderRef.current.stop(); } catch (_e) {}
+                  recorderRef.current = null;
+                }
+                wakeMediaStreamRef.current = null;
+                connect(wakeStream || undefined);
                 return;
               }
             }
@@ -457,7 +546,7 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
 
           recordingInFlightRef.current = false;
           if (wakeWordActiveRef.current) {
-            recordingLoopRef.current = setTimeout(recordAndCheck, 200);
+            recordingLoopRef.current = setTimeout(recordAndCheck, WAKE_GAP_MS);
           }
         };
 
@@ -466,18 +555,18 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
           if (recorder.state === "recording") {
             try { recorder.stop(); } catch (_e) {}
           }
-        }, 2500);
+        }, WAKE_CHUNK_MS);
       };
 
       recordAndCheck();
-    }).catch((err) => {
+    }).catch((_err) => {
       setState((s) => ({
         ...s,
         status: "error",
         error: "Microphone access required. Please allow microphone permissions.",
       }));
     });
-  }, [connect, stopWakeWordListening]);
+  }, [connect, stopWakeWordListening, startPrewarmLoop]);
 
   const startWakeWordListening = useCallback(() => {
     startWakeWordListeningInternal();

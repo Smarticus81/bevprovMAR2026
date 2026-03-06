@@ -7,7 +7,7 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 - **Frontend**: React + Vite + Tailwind CSS v4 + Framer Motion + Wouter routing
 - **Backend**: Express.js on port 5000, PostgreSQL with Drizzle ORM
 - **Auth**: Passport.js (local + Google OAuth20), bcryptjs, express-session + connect-pg-simple
-- **Voice**: OpenAI Realtime API via WebRTC (ephemeral tokens from `OPENAI_API_KEY`). Primary pipeline only — no fallback.
+- **Voice**: OpenAI Realtime API via WebRTC (ephemeral tokens from `OPENAI_API_KEY`). Primary pipeline only — no fallback. max_response_output_tokens: 4096 for multi-turn. VAD: 500ms silence, 300ms prefix padding. Wake word: 1.5s chunks, 50ms gap, session pre-warming (50s TTL), mic stream reuse for instant connection on detection.
 - **AI (chat)**: OpenAI via Replit AI Integrations (`AI_INTEGRATIONS_OPENAI_API_KEY`, `AI_INTEGRATIONS_OPENAI_BASE_URL`) for chat completions
 - **Mobile**: Capacitor iOS app config + PWA fallback
 - **Payments**: Stripe via Replit connector (stripe-replit-sync for webhook/schema/sync), products in stripe schema, org links via stripeCustomerId/stripeSubscriptionId

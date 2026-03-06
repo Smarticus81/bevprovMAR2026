@@ -53,37 +53,77 @@ function DataTable({ columns, data, onDelete, idKey = "id" }: {
   onDelete?: (id: number) => void;
   idKey?: string;
 }) {
+  if (data.length === 0) {
+    return (
+      <div className="py-16 text-center text-sm text-white/20" data-testid="data-table">
+        No data yet. Click "Add" to create your first entry.
+      </div>
+    );
+  }
+
   return (
-    <div className="overflow-x-auto -mx-1">
-      <table className="w-full" data-testid="data-table">
-        <thead>
-          <tr className="border-b border-white/[0.06]">
-            {columns.map((c) => <th key={c.key} className="text-left text-[10px] font-medium text-white/25 uppercase tracking-[0.15em] py-3 px-3">{c.label}</th>)}
-            {onDelete && <th className="w-10"></th>}
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((row) => (
-            <tr key={row[idKey]} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors group" data-testid={`row-${row[idKey]}`}>
-              {columns.map((c) => (
-                <td key={c.key} className="py-3 px-3 text-sm text-white/60">
-                  {c.render ? c.render(row[c.key], row) : row[c.key] ?? "—"}
-                </td>
-              ))}
-              {onDelete && (
-                <td className="py-3 px-2">
-                  <button data-testid={`button-delete-${row[idKey]}`} onClick={() => onDelete(row[idKey])} className="p-1.5 text-white/15 hover:text-red-400/70 transition-colors opacity-0 group-hover:opacity-100">
-                    <Trash2 size={13} />
-                  </button>
-                </td>
-              )}
+    <div data-testid="data-table">
+      <div className="hidden sm:block overflow-x-auto -mx-1">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-white/[0.06]">
+              {columns.map((c) => <th key={c.key} className="text-left text-[10px] font-medium text-white/25 uppercase tracking-[0.15em] py-3 px-3">{c.label}</th>)}
+              {onDelete && <th className="w-10"></th>}
             </tr>
-          ))}
-          {data.length === 0 && (
-            <tr><td colSpan={columns.length + 1} className="py-16 text-center text-sm text-white/20">No data yet. Click "Add" to create your first entry.</td></tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {data.map((row) => (
+              <tr key={row[idKey]} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors group" data-testid={`row-${row[idKey]}`}>
+                {columns.map((c) => (
+                  <td key={c.key} className="py-3 px-3 text-sm text-white/60">
+                    {c.render ? c.render(row[c.key], row) : row[c.key] ?? "—"}
+                  </td>
+                ))}
+                {onDelete && (
+                  <td className="py-3 px-2">
+                    <button data-testid={`button-delete-${row[idKey]}`} onClick={() => onDelete(row[idKey])} className="p-1.5 text-white/15 hover:text-red-400/70 transition-colors opacity-0 group-hover:opacity-100">
+                      <Trash2 size={13} />
+                    </button>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="sm:hidden space-y-2">
+        {data.map((row) => (
+          <div key={row[idKey]} data-testid={`row-${row[idKey]}`} className="border border-white/[0.06] bg-white/[0.02] p-4">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-white/80 truncate">
+                  {row[columns[0].key] ?? "—"}
+                </p>
+                {columns[1] && (
+                  <p className="text-xs text-white/40 mt-0.5">
+                    {columns[1].render ? columns[1].render(row[columns[1].key], row) : row[columns[1].key] ?? "—"}
+                  </p>
+                )}
+              </div>
+              {onDelete && (
+                <button data-testid={`button-delete-${row[idKey]}`} onClick={() => onDelete(row[idKey])} className="p-1.5 text-white/25 hover:text-red-400/70 transition-colors shrink-0">
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
+            {columns.slice(2).map((c) => {
+              const val = c.render ? c.render(row[c.key], row) : (row[c.key] ?? "—");
+              return (
+                <div key={c.key} className="flex items-center justify-between py-1.5 border-t border-white/[0.03]">
+                  <span className="text-[10px] uppercase tracking-[0.15em] text-white/20 font-medium">{c.label}</span>
+                  <span className="text-xs text-white/50">{val}</span>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

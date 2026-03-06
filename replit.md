@@ -14,7 +14,7 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 - **Multi-tenancy**: All data scoped by organizationId, enforced at storage and API layers
 - **Plan enforcement**: Starter (2 agents, 1 venue), Pro (unlimited agents, 3 venues), Enterprise (unlimited). Checked on POST /api/agents
 - **Theme**: Consistent dark theme (bg-black, glassmorphic cards) across all pages. Golden accent #C9A96E, underline inputs, no rounded-xl card grids
-- **Responsive**: All pages optimized for mobile (375px+). `h-[100dvh]` on AgentApp, `sm:` breakpoints for padding/typography, mobile hamburger in DashboardLayout, sticky step tabs in AgentBuilder
+- **Responsive**: All pages optimized for mobile (320px+). `h-[100dvh]` on AgentApp, `sm:` breakpoints for padding/typography. DashboardLayout: mobile hamburger with active state indicators, user info, and org name. VenueData: DataTable uses card layout on mobile, table on sm+. AppStore: single-column grid on small screens. AgentBuilder: sticky bottom step nav on mobile, 2-col voice grid. Dashboard: delete buttons always visible on touch (hover-only on desktop).
 
 ## Data Model (shared/schema.ts)
 ### Core

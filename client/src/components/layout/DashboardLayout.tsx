@@ -89,24 +89,47 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       </div>
 
       {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 bg-black z-30 pt-16">
+        <div className="lg:hidden fixed inset-0 bg-black/95 backdrop-blur-xl z-30 pt-16 animate-in fade-in duration-200">
           <nav className="p-4 space-y-0.5">
+            {organization && (
+              <div className="px-4 py-3 mb-2 border-b border-white/[0.06]">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-white/20 font-medium mb-1">Venue</p>
+                <p className="text-sm text-white/60 truncate">{organization.name}</p>
+              </div>
+            )}
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
+              const isActive = location === item.href || (item.href !== "/dashboard" && location.startsWith(item.href));
+              const isDashboardExact = item.href === "/dashboard" && (location === "/dashboard" || location.startsWith("/dashboard/agents")) && !location.startsWith("/dashboard/venue") && !location.startsWith("/dashboard/store") && !location.startsWith("/dashboard/billing");
+              const active = isActive || isDashboardExact;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   data-testid={`link-mobile-${item.label.toLowerCase().replace(/\s/g, "-")}`}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3.5 text-base text-white/50 hover:text-white transition-colors"
+                  className={`flex items-center gap-3 px-4 py-3.5 text-base transition-colors relative ${
+                    active ? "text-white bg-white/[0.04]" : "text-white/50 hover:text-white"
+                  }`}
                 >
-                  <Icon size={18} />
+                  {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-[#C9A96E]" />}
+                  <Icon size={18} className={active ? "text-[#C9A96E]" : ""} />
                   {item.label}
                 </Link>
               );
             })}
             <div className="h-px bg-white/[0.06] my-3" />
+            {user && (
+              <div className="flex items-center gap-3 px-4 py-3">
+                <div className="w-8 h-8 rounded-full bg-[#C9A96E]/15 text-[#C9A96E] flex items-center justify-center text-xs font-semibold">
+                  {user.name?.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm text-white/70 truncate">{user.name}</p>
+                  <p className="text-[11px] text-white/20 truncate">{user.email}</p>
+                </div>
+              </div>
+            )}
             <button
               data-testid="button-mobile-logout"
               onClick={() => { logout.mutate(); setMobileMenuOpen(false); }}

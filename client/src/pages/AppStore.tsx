@@ -143,14 +143,14 @@ function AppStorePage() {
                   <p className="text-sm text-white/40 mt-1.5 max-w-md leading-relaxed" data-testid="text-featured-description">
                     {AGENT_TYPE_DESCRIPTIONS["bevone"]}
                   </p>
-                  <div className="flex items-center gap-3 mt-4">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 text-[#C9A96E]/70 text-xs font-medium border border-[#C9A96E]/15 bg-[#C9A96E]/5">
+                  <div className="flex flex-wrap items-center gap-2 mt-4">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[#C9A96E]/70 text-[11px] font-medium border border-[#C9A96E]/15 bg-[#C9A96E]/5">
                       <Wrench className="w-3 h-3" /> 20+ Tools
                     </span>
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 text-[#C9A96E]/70 text-xs font-medium border border-[#C9A96E]/15 bg-[#C9A96E]/5">
-                      <Volume2 className="w-3 h-3" /> Voice Enabled
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[#C9A96E]/70 text-[11px] font-medium border border-[#C9A96E]/15 bg-[#C9A96E]/5">
+                      <Volume2 className="w-3 h-3" /> Voice
                     </span>
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 text-[#C9A96E]/70 text-xs font-medium border border-[#C9A96E]/15 bg-[#C9A96E]/5">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[#C9A96E]/70 text-[11px] font-medium border border-[#C9A96E]/15 bg-[#C9A96E]/5">
                       <Zap className="w-3 h-3" /> All-in-One
                     </span>
                   </div>
@@ -192,7 +192,7 @@ function AppStorePage() {
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="p-5 bg-white/[0.02] border border-white/[0.04] animate-pulse">
                   <div className="w-10 h-10 bg-white/10 mb-4" />
@@ -216,7 +216,7 @@ function AppStorePage() {
           ) : (
             <motion.div
               layout
-              className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
             >
               <AnimatePresence mode="popLayout">
                 {filteredItems.map((item, index) => {

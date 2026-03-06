@@ -271,7 +271,7 @@ export default function Dashboard() {
                         data-testid={`button-delete-${agent.id}`}
                         aria-label={`Delete ${agent.name}`}
                         onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(agent.id); }}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 text-white/15 hover:text-red-400/70 transition-all"
+                        className="sm:opacity-0 sm:group-hover:opacity-100 p-1.5 text-white/15 hover:text-red-400/70 transition-all"
                       >
                         <Trash2 size={13} />
                       </button>

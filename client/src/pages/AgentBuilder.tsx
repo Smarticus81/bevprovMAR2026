@@ -529,7 +529,7 @@ export default function AgentBuilder() {
                   <div className="space-y-10">
                     <div>
                       <label className="text-[11px] uppercase tracking-[0.15em] text-white/25 font-medium block mb-4">Voice</label>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {VOICES.map((v) => (
                           <button
                             key={v}
@@ -896,7 +896,7 @@ export default function AgentBuilder() {
               )}
             </AnimatePresence>
 
-            <div className="flex items-center justify-between mt-10 sm:mt-16 pt-4 sm:pt-6 border-t border-white/[0.04]">
+            <div className="flex items-center justify-between mt-10 sm:mt-16 pt-4 sm:pt-6 lg:relative fixed bottom-0 left-0 right-0 lg:bottom-auto lg:left-auto lg:right-auto bg-black/90 backdrop-blur-xl lg:bg-transparent lg:backdrop-blur-none px-4 py-3 sm:px-0 sm:py-0 border-t border-white/[0.06] lg:border-white/[0.04] z-30">
               <button
                 data-testid="button-prev-step"
                 onClick={() => canGoPrev && setCurrentStep(STEPS[currentStepIndex - 1].id)}
@@ -920,6 +920,7 @@ export default function AgentBuilder() {
                 <ArrowRight size={14} />
               </button>
             </div>
+            <div className="h-14 lg:hidden" />
           </div>
         </main>
       </div>

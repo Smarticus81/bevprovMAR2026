@@ -59,9 +59,14 @@ voice.post("/api/voice/session", requireAuth, async (req, res) => {
     });
 
     if (!response.ok) {
-      const err = await response.text();
-      console.error("Realtime session error:", err);
-      return res.status(502).json({ error: "Failed to create realtime session. Check your OpenAI API key and billing." });
+      const errText = await response.text();
+      console.error("Realtime session error:", response.status, errText);
+      let detail = "Failed to create realtime session";
+      try {
+        const errJson = JSON.parse(errText);
+        if (errJson.error?.message) detail = errJson.error.message;
+      } catch {}
+      return res.status(502).json({ error: detail });
     }
 
     const session = await response.json();

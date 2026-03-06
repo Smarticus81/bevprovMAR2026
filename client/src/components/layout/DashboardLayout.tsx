@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
-import { Bot, Store, LogOut, Menu, X, Database, ChevronRight, BookOpen } from "lucide-react";
+import { Bot, Store, LogOut, Menu, X, Database, ChevronRight, BookOpen, CreditCard } from "lucide-react";
 import { useState } from "react";
 import { BevProLogo, BevProWordmark } from "@/components/BevProLogo";
 
@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Agents", icon: Bot },
   { href: "/dashboard/venue", label: "Venue Data", icon: Database },
   { href: "/dashboard/store", label: "App Store", icon: Store },
+  { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
   { href: "/docs", label: "Documentation", icon: BookOpen },
 ];
 
@@ -33,7 +34,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = location === item.href || (item.href !== "/dashboard" && location.startsWith(item.href));
-            const isDashboardExact = item.href === "/dashboard" && (location === "/dashboard" || location.startsWith("/dashboard/agents")) && !location.startsWith("/dashboard/venue") && !location.startsWith("/dashboard/store");
+            const isDashboardExact = item.href === "/dashboard" && (location === "/dashboard" || location.startsWith("/dashboard/agents")) && !location.startsWith("/dashboard/venue") && !location.startsWith("/dashboard/store") && !location.startsWith("/dashboard/billing");
             const active = isActive || isDashboardExact;
             return (
               <Link

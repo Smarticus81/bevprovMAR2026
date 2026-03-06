@@ -104,6 +104,10 @@ export interface IStorage {
   updateSupplier(id: number, orgId: number, data: Partial<InsertSupplier>): Promise<Supplier | undefined>;
   deleteSupplier(id: number, orgId: number): Promise<boolean>;
 
+  updateOrganization(id: number, data: Partial<{ plan: string; stripeCustomerId: string; stripeSubscriptionId: string }>): Promise<Organization | undefined>;
+  getOrganizationByStripeCustomerId(customerId: string): Promise<Organization | undefined>;
+  getAgentCountByOrg(orgId: number): Promise<number>;
+
   getRevenueStats(orgId: number, startDate?: string, endDate?: string): Promise<{ revenue: number; orderCount: number; avgOrder: number }>;
 
   getRagDocuments(agentId: number, orgId: number): Promise<RagDocument[]>;
@@ -126,6 +130,21 @@ export class DatabaseStorage implements IStorage {
   async getOrganizationBySlug(slug: string): Promise<Organization | undefined> {
     const [result] = await db.select().from(organizations).where(eq(organizations.slug, slug));
     return result;
+  }
+
+  async updateOrganization(id: number, data: Partial<{ plan: string; stripeCustomerId: string; stripeSubscriptionId: string }>): Promise<Organization | undefined> {
+    const [result] = await db.update(organizations).set(data).where(eq(organizations.id, id)).returning();
+    return result;
+  }
+
+  async getOrganizationByStripeCustomerId(customerId: string): Promise<Organization | undefined> {
+    const [result] = await db.select().from(organizations).where(eq(organizations.stripeCustomerId, customerId));
+    return result;
+  }
+
+  async getAgentCountByOrg(orgId: number): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)::int` }).from(agents).where(eq(agents.organizationId, orgId));
+    return result[0]?.count ?? 0;
   }
 
   async createUser(user: InsertUser): Promise<User> {

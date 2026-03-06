@@ -1,7 +1,10 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/layout/Navbar";
-import { Check } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { Link } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import {
   Accordion,
   AccordionContent,
@@ -94,6 +97,46 @@ const FAQS = [
 ];
 
 export default function Pricing() {
+  const { isAuthenticated, organization } = useAuth();
+  const currentPlan = organization?.plan;
+
+  const { data: products = [] } = useQuery({
+    queryKey: ["billing", "products"],
+    queryFn: async () => {
+      const r = await fetch("/api/billing/products");
+      return r.json();
+    },
+  });
+
+  const checkoutMutation = useMutation({
+    mutationFn: async (priceId: string) => {
+      const r = await apiRequest("POST", "/api/billing/checkout", { priceId });
+      return r.json();
+    },
+    onSuccess: (data) => {
+      if (data.url) window.location.href = data.url;
+    },
+  });
+
+  const handleTierClick = (tier: typeof TIERS[0]) => {
+    if (tier.plan === "enterprise") return;
+    if (tier.plan === currentPlan) return;
+
+    if (isAuthenticated) {
+      const product = products.find((p: any) =>
+        p.metadata?.bevpro_plan === tier.plan ||
+        p.name?.toLowerCase().includes(tier.plan)
+      );
+      const price = product?.prices?.[0];
+      if (price) {
+        checkoutMutation.mutate(price.id);
+        return;
+      }
+    }
+
+    window.location.href = `/register?plan=${tier.plan}`;
+  };
+
   return (
     <div className="min-h-screen bg-black text-white font-sans">
       <Navbar />
@@ -114,64 +157,88 @@ export default function Pricing() {
         </motion.div>
 
         <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
-          {TIERS.map((tier, i) => (
-            <motion.div
-              key={tier.name}
-              data-testid={`card-pricing-${tier.plan}`}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: i * 0.1 }}
-              className={`relative rounded-2xl border p-8 flex flex-col ${
-                tier.highlighted
-                  ? "border-white/30 bg-white/[0.06]"
-                  : "border-white/10 bg-white/[0.02]"
-              }`}
-            >
-              {tier.highlighted && (
-                <span
-                  data-testid="badge-most-popular"
-                  className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white text-black text-xs font-semibold px-4 py-1 rounded-full"
-                >
-                  Most Popular
-                </span>
-              )}
-
-              <div className="mb-6">
-                <h3 data-testid={`text-tier-name-${tier.plan}`} className="text-lg font-semibold mb-1">
-                  {tier.name}
-                </h3>
-                <p className="text-white/40 text-sm font-light">{tier.description}</p>
-              </div>
-
-              <div className="mb-8">
-                <span data-testid={`text-tier-price-${tier.plan}`} className="text-4xl font-semibold tracking-tight">
-                  {tier.price}
-                </span>
-                {tier.period && <span className="text-white/40 text-sm">{tier.period}</span>}
-              </div>
-
-              <ul className="space-y-3 mb-8 flex-1">
-                {tier.features.map((feature) => (
-                  <li key={feature} className="flex items-center gap-3 text-sm text-white/70">
-                    <Check size={16} className="text-white/50 shrink-0" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-
-              <Link
-                href={tier.plan === "enterprise" ? "#" : `/register?plan=${tier.plan}`}
-                data-testid={`button-cta-${tier.plan}`}
-                className={`block text-center rounded-full py-3 text-sm font-medium transition-all duration-300 ${
+          {TIERS.map((tier, i) => {
+            const isCurrent = isAuthenticated && currentPlan === tier.plan;
+            return (
+              <motion.div
+                key={tier.name}
+                data-testid={`card-pricing-${tier.plan}`}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: i * 0.1 }}
+                className={`relative rounded-2xl border p-8 flex flex-col ${
                   tier.highlighted
-                    ? "bg-white text-black hover:bg-white/90"
-                    : "border border-white/20 text-white hover:bg-white hover:text-black"
+                    ? "border-white/30 bg-white/[0.06]"
+                    : "border-white/10 bg-white/[0.02]"
                 }`}
               >
-                {tier.cta}
-              </Link>
-            </motion.div>
-          ))}
+                {tier.highlighted && (
+                  <span
+                    data-testid="badge-most-popular"
+                    className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white text-black text-xs font-semibold px-4 py-1 rounded-full"
+                  >
+                    Most Popular
+                  </span>
+                )}
+
+                {isCurrent && (
+                  <span className="absolute -top-3 right-4 bg-[#C9A96E] text-black text-xs font-semibold px-3 py-1 rounded-full" data-testid={`badge-current-plan-${tier.plan}`}>
+                    Current Plan
+                  </span>
+                )}
+
+                <div className="mb-6">
+                  <h3 data-testid={`text-tier-name-${tier.plan}`} className="text-lg font-semibold mb-1">
+                    {tier.name}
+                  </h3>
+                  <p className="text-white/40 text-sm font-light">{tier.description}</p>
+                </div>
+
+                <div className="mb-8">
+                  <span data-testid={`text-tier-price-${tier.plan}`} className="text-4xl font-semibold tracking-tight">
+                    {tier.price}
+                  </span>
+                  {tier.period && <span className="text-white/40 text-sm">{tier.period}</span>}
+                </div>
+
+                <ul className="space-y-3 mb-8 flex-1">
+                  {tier.features.map((feature) => (
+                    <li key={feature} className="flex items-center gap-3 text-sm text-white/70">
+                      <Check size={16} className="text-white/50 shrink-0" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+
+                {isCurrent ? (
+                  <Link
+                    href="/dashboard/billing"
+                    data-testid={`button-manage-${tier.plan}`}
+                    className="block text-center rounded-full py-3 text-sm font-medium border border-[#C9A96E]/30 text-[#C9A96E] hover:bg-[#C9A96E]/10 transition-all duration-300"
+                  >
+                    Manage Subscription
+                  </Link>
+                ) : (
+                  <button
+                    onClick={() => handleTierClick(tier)}
+                    disabled={checkoutMutation.isPending}
+                    data-testid={`button-cta-${tier.plan}`}
+                    className={`block w-full text-center rounded-full py-3 text-sm font-medium transition-all duration-300 ${
+                      tier.highlighted
+                        ? "bg-white text-black hover:bg-white/90"
+                        : "border border-white/20 text-white hover:bg-white hover:text-black"
+                    } disabled:opacity-50`}
+                  >
+                    {checkoutMutation.isPending ? (
+                      <Loader2 size={16} className="animate-spin mx-auto" />
+                    ) : (
+                      tier.cta
+                    )}
+                  </button>
+                )}
+              </motion.div>
+            );
+          })}
         </div>
 
         <motion.div
@@ -206,7 +273,7 @@ export default function Pricing() {
         <div className="flex gap-6">
           <a href="#" className="hover:text-white transition-colors">Privacy</a>
           <a href="#" className="hover:text-white transition-colors">Terms</a>
-          <a href="#" className="hover:text-white transition-colors">Documentation</a>
+          <Link href="/docs" className="hover:text-white transition-colors">Documentation</Link>
         </div>
       </footer>
     </div>

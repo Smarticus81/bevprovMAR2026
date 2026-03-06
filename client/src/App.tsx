@@ -18,6 +18,7 @@ const AppStore = lazy(() => import("@/pages/AppStore"));
 const AgentApp = lazy(() => import("@/pages/AgentApp"));
 const VenueData = lazy(() => import("@/pages/VenueData"));
 const Documentation = lazy(() => import("@/pages/Documentation"));
+const Billing = lazy(() => import("@/pages/Billing"));
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -65,6 +66,9 @@ function Router() {
         </Route>
         <Route path="/dashboard/store">
           {() => <ProtectedRoute component={AppStore} />}
+        </Route>
+        <Route path="/dashboard/billing">
+          {() => <ProtectedRoute component={Billing} />}
         </Route>
         <Route path="/app/:agentId">
           {() => <ProtectedRoute component={AgentApp} />}

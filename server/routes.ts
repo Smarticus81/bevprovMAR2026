@@ -8,6 +8,15 @@ import { mcpRouter } from "./mcp";
 import { autoEnableToolsForAgent } from "./tools";
 import { z } from "zod";
 import multer from "multer";
+import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
+
+const PLAN_LIMITS: Record<string, { agents: number; venues: number }> = {
+  starter: { agents: 2, venues: 1 },
+  pro: { agents: Infinity, venues: 3 },
+  enterprise: { agents: Infinity, venues: Infinity },
+};
 
 export async function registerRoutes(
   httpServer: Server,
@@ -41,6 +50,20 @@ export async function registerRoutes(
     });
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+
+    const org = await storage.getOrganization(user.organizationId);
+    const plan = org?.plan || "starter";
+    const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.starter;
+    const agentCount = await storage.getAgentCountByOrg(user.organizationId);
+    if (agentCount >= limits.agents) {
+      return res.status(403).json({
+        error: `Your ${plan} plan allows up to ${limits.agents} agents. Upgrade to create more.`,
+        code: "PLAN_LIMIT_REACHED",
+        currentCount: agentCount,
+        limit: limits.agents,
+        plan,
+      });
+    }
 
     const agent = await storage.createAgent({
       ...parsed.data,
@@ -458,6 +481,210 @@ export async function registerRoutes(
     if (!query) return res.status(400).json({ error: "Query parameter 'q' is required" });
     const results = await storage.searchRagDocuments(agentId, user.organizationId, query);
     return res.json(results);
+  });
+
+  // ========== BILLING / STRIPE ==========
+
+  app.get("/api/billing/config", async (_req, res) => {
+    try {
+      const publishableKey = await getStripePublishableKey();
+      res.json({ publishableKey });
+    } catch (err: any) {
+      res.json({ publishableKey: null, error: err.message });
+    }
+  });
+
+  app.get("/api/billing/products", async (_req, res) => {
+    try {
+      const result = await db.execute(sql`
+        SELECT
+          p.id as product_id,
+          p.name as product_name,
+          p.description as product_description,
+          p.metadata as product_metadata,
+          pr.id as price_id,
+          pr.unit_amount,
+          pr.currency,
+          pr.recurring
+        FROM stripe.products p
+        LEFT JOIN stripe.prices pr ON pr.product = p.id AND pr.active = true
+        WHERE p.active = true
+        ORDER BY pr.unit_amount ASC
+      `);
+      const productsMap = new Map<string, any>();
+      for (const row of result.rows) {
+        const r = row as any;
+        if (!productsMap.has(r.product_id)) {
+          productsMap.set(r.product_id, {
+            id: r.product_id,
+            name: r.product_name,
+            description: r.product_description,
+            metadata: r.product_metadata,
+            prices: [],
+          });
+        }
+        if (r.price_id) {
+          productsMap.get(r.product_id).prices.push({
+            id: r.price_id,
+            unitAmount: r.unit_amount,
+            currency: r.currency,
+            recurring: r.recurring,
+          });
+        }
+      }
+      return res.json(Array.from(productsMap.values()));
+    } catch (err: any) {
+      console.error("Error listing products:", err.message);
+      return res.json([]);
+    }
+  });
+
+  app.get("/api/billing/subscription", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const org = await storage.getOrganization(user.organizationId);
+    if (!org) return res.status(404).json({ error: "Organization not found" });
+
+    if (!org.stripeSubscriptionId) {
+      return res.json({ subscription: null, plan: org.plan });
+    }
+
+    try {
+      const result = await db.execute(
+        sql`SELECT * FROM stripe.subscriptions WHERE id = ${org.stripeSubscriptionId}`
+      );
+      const subscription = result.rows[0] || null;
+      return res.json({ subscription, plan: org.plan });
+    } catch (err: any) {
+      return res.json({ subscription: null, plan: org.plan, error: err.message });
+    }
+  });
+
+  app.get("/api/billing/limits", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const org = await storage.getOrganization(user.organizationId);
+    const plan = org?.plan || "starter";
+    const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.starter;
+    const agentCount = await storage.getAgentCountByOrg(user.organizationId);
+    return res.json({
+      plan,
+      limits: {
+        agents: limits.agents === Infinity ? "unlimited" : limits.agents,
+        venues: limits.venues === Infinity ? "unlimited" : limits.venues,
+      },
+      usage: {
+        agents: agentCount,
+      },
+    });
+  });
+
+  app.post("/api/billing/checkout", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const { priceId } = req.body;
+    if (!priceId) return res.status(400).json({ error: "priceId is required" });
+
+    try {
+      const stripe = await getUncachableStripeClient();
+      const org = await storage.getOrganization(user.organizationId);
+      if (!org) return res.status(404).json({ error: "Organization not found" });
+
+      let customerId = org.stripeCustomerId;
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: user.email,
+          metadata: { organizationId: String(org.id), orgName: org.name },
+        });
+        customerId = customer.id;
+        await storage.updateOrganization(org.id, { stripeCustomerId: customerId });
+      }
+
+      const domain = process.env.REPLIT_DOMAINS?.split(",")[0];
+      const baseUrl = domain ? `https://${domain}` : "http://localhost:5000";
+
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        payment_method_types: ["card"],
+        line_items: [{ price: priceId, quantity: 1 }],
+        mode: "subscription",
+        success_url: `${baseUrl}/dashboard/billing?success=true`,
+        cancel_url: `${baseUrl}/dashboard/billing?canceled=true`,
+        metadata: { organizationId: String(org.id) },
+      });
+
+      return res.json({ url: session.url });
+    } catch (err: any) {
+      console.error("Checkout error:", err.message);
+      return res.status(500).json({ error: "Failed to create checkout session" });
+    }
+  });
+
+  app.post("/api/billing/portal", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const org = await storage.getOrganization(user.organizationId);
+    if (!org?.stripeCustomerId) {
+      return res.status(400).json({ error: "No billing account found. Subscribe to a plan first." });
+    }
+
+    try {
+      const stripe = await getUncachableStripeClient();
+      const domain = process.env.REPLIT_DOMAINS?.split(",")[0];
+      const baseUrl = domain ? `https://${domain}` : "http://localhost:5000";
+
+      const session = await stripe.billingPortal.sessions.create({
+        customer: org.stripeCustomerId,
+        return_url: `${baseUrl}/dashboard/billing`,
+      });
+
+      return res.json({ url: session.url });
+    } catch (err: any) {
+      console.error("Portal error:", err.message);
+      return res.status(500).json({ error: "Failed to create portal session" });
+    }
+  });
+
+  app.post("/api/billing/sync-subscription", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const org = await storage.getOrganization(user.organizationId);
+    if (!org?.stripeCustomerId) {
+      return res.json({ synced: false });
+    }
+
+    try {
+      const stripe = await getUncachableStripeClient();
+      const subscriptions = await stripe.subscriptions.list({
+        customer: org.stripeCustomerId,
+        status: "active",
+        limit: 1,
+      });
+
+      if (subscriptions.data.length > 0) {
+        const sub = subscriptions.data[0];
+        const priceId = sub.items.data[0]?.price?.id;
+        let newPlan = "starter";
+
+        if (priceId) {
+          const price = await stripe.prices.retrieve(priceId, { expand: ["product"] });
+          const product = price.product as any;
+          if (product?.metadata?.bevpro_plan) {
+            newPlan = product.metadata.bevpro_plan;
+          }
+        }
+
+        await storage.updateOrganization(org.id, {
+          plan: newPlan,
+          stripeSubscriptionId: sub.id,
+        });
+        return res.json({ synced: true, plan: newPlan, subscriptionId: sub.id });
+      } else {
+        await storage.updateOrganization(org.id, {
+          plan: "starter",
+          stripeSubscriptionId: null as any,
+        });
+        return res.json({ synced: true, plan: "starter" });
+      }
+    } catch (err: any) {
+      console.error("Sync subscription error:", err.message);
+      return res.status(500).json({ error: "Failed to sync subscription" });
+    }
   });
 
   return httpServer;

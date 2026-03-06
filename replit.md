@@ -10,7 +10,9 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 - **Voice**: OpenAI Realtime API via WebRTC (ephemeral tokens from `OPENAI_API_KEY`). Primary pipeline only — no fallback.
 - **AI (chat)**: OpenAI via Replit AI Integrations (`AI_INTEGRATIONS_OPENAI_API_KEY`, `AI_INTEGRATIONS_OPENAI_BASE_URL`) for chat completions
 - **Mobile**: Capacitor iOS app config + PWA fallback
+- **Payments**: Stripe via Replit connector (stripe-replit-sync for webhook/schema/sync), products in stripe schema, org links via stripeCustomerId/stripeSubscriptionId
 - **Multi-tenancy**: All data scoped by organizationId, enforced at storage and API layers
+- **Plan enforcement**: Starter (2 agents, 1 venue), Pro (unlimited agents, 3 venues), Enterprise (unlimited). Checked on POST /api/agents
 - **Theme**: Consistent dark theme (bg-black, glassmorphic cards) across all pages. Golden accent #C9A96E, underline inputs, no rounded-xl card grids
 - **Responsive**: All pages optimized for mobile (375px+). `h-[100dvh]` on AgentApp, `sm:` breakpoints for padding/typography, mobile hamburger in DashboardLayout, sticky step tabs in AgentBuilder
 
@@ -67,6 +69,9 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 - `server/mcp.ts` — MCP (Model Context Protocol) JSON-RPC 2.0 endpoint
 - `server/storage.ts` — Database storage interface with all CRUD methods + seedVenueData()
 - `server/db.ts` — Database connection
+- `server/stripeClient.ts` — Stripe SDK client (via Replit connector), publishable key, StripeSync singleton
+- `server/webhookHandlers.ts` — Stripe webhook processing
+- `server/seed-stripe.ts` — Stripe product/price creation script (idempotent)
 
 ### Client
 - `client/src/components/BevProLogo.tsx` — Animated SVG waveform logo (BevProLogo + BevProBrand components)
@@ -79,7 +84,8 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 - `client/src/pages/AgentApp.tsx` — Full-screen voice interface; voice-pos type shows split-screen POS UI with live order display
 - `client/src/pages/VenueData.tsx` — Venue data management (6 tabs: Menu, Inventory, Staff, Bookings, Guests, Suppliers)
 - `client/src/pages/Documentation.tsx` — Public documentation/help page at /docs with 6 sections (Getting Started, First Agent, Agent Types, Venue Data, Voice Agents, Bulk Import)
-- `client/src/pages/Pricing.tsx` — Pricing page (3 tiers, UI only)
+- `client/src/pages/Pricing.tsx` — Pricing page (3 tiers) with real Stripe checkout for logged-in users
+- `client/src/pages/Billing.tsx` — Subscription management: current plan, usage stats, upgrade/portal links
 - `client/src/hooks/useAuth.ts` — Auth hook
 - `client/src/hooks/useVoiceSession.ts` — WebRTC voice session hook (greeting, wake word detection, end/shutdown phrases)
 - `client/src/components/VoiceTestPanel.tsx` — Voice test widget for agent builder
@@ -134,6 +140,16 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 - `GET /api/venue/orders` — Orders (read-only)
 - `GET /api/venue/stats` — Revenue statistics
 - `POST /api/waitlist` — Landing page email capture
+
+### Billing / Stripe
+- `GET /api/billing/config` — Stripe publishable key
+- `GET /api/billing/products` — List Stripe products with prices (from stripe schema)
+- `GET /api/billing/subscription` — Get current org subscription (auth required)
+- `GET /api/billing/limits` — Get plan limits and usage (auth required)
+- `POST /api/billing/checkout` — Create Stripe checkout session for a priceId (auth required)
+- `POST /api/billing/portal` — Create Stripe customer portal session (auth required)
+- `POST /api/billing/sync-subscription` — Sync subscription status from Stripe (auth required)
+- `POST /api/stripe/webhook` — Stripe webhook handler (registered before express.json)
 
 ## Design
 - Font: Inter (Google Fonts)

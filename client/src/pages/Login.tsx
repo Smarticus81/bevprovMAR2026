@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Loader2, AlertCircle } from "lucide-react";
-import { BevProLogo } from "@/components/BevProLogo";
+import { BevProLogo, BevProWordmark } from "@/components/BevProLogo";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -58,7 +58,7 @@ export default function Login() {
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex flex-col items-center gap-3" data-testid="link-home">
             <BevProLogo size={40} className="text-white/60" />
-            <span className="text-2xl font-semibold tracking-tight text-white">BevPro</span>
+            <BevProWordmark className="text-2xl text-white" />
           </Link>
         </div>
 

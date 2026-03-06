@@ -90,7 +90,7 @@ export function BevProLogo({ size = 32, className = "", animated = false, pulseI
 
 export function BevProWordmark({ className = "" }: { className?: string }) {
   return (
-    <span className={`font-light tracking-wide lowercase ${className}`}>
+    <span className={`tracking-widest uppercase ${className}`} style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 500, letterSpacing: "0.18em" }}>
       bevpro
     </span>
   );

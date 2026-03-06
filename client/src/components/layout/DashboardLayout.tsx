@@ -5,11 +5,11 @@ import { useState } from "react";
 import { BevProLogo, BevProWordmark } from "@/components/BevProLogo";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Agents", icon: Bot },
-  { href: "/dashboard/venue", label: "Venue Data", icon: Database },
-  { href: "/dashboard/store", label: "App Store", icon: Store },
-  { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
-  { href: "/docs", label: "Documentation", icon: BookOpen },
+  { href: "/dashboard", label: "Agents", icon: Bot, description: "Manage your AI agents" },
+  { href: "/dashboard/venue", label: "Venue Data", icon: Database, description: "Menus, hours & venue info" },
+  { href: "/dashboard/store", label: "App Store", icon: Store, description: "Browse & install apps" },
+  { href: "/dashboard/billing", label: "Billing", icon: CreditCard, description: "Plans & payment" },
+  { href: "/docs", label: "Documentation", icon: BookOpen, description: "Guides & references" },
 ];
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -26,7 +26,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <BevProWordmark className="text-white" size="text-base" />
           </Link>
           {organization && (
-            <p className="text-[11px] text-white/25 mt-2 truncate tracking-wide">{organization.name}</p>
+            <p className="text-xs text-white/40 mt-2 truncate tracking-wide">{organization.name}</p>
           )}
         </div>
 
@@ -41,15 +41,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 key={item.href}
                 href={item.href}
                 data-testid={`link-nav-${item.label.toLowerCase().replace(/\s/g, "-")}`}
-                className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all duration-200 relative ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                   active
-                    ? "text-white bg-white/[0.04]"
-                    : "text-white/30 hover:text-white/50 hover:bg-white/[0.02]"
+                    ? "text-white bg-[#C9A96E]/10 border border-[#C9A96E]/20"
+                    : "text-white/40 hover:text-white/60 hover:bg-white/[0.04]"
                 }`}
               >
-                {active && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-[#C9A96E]" />
-                )}
                 <Icon size={16} className={active ? "text-[#C9A96E]" : ""} />
                 {item.label}
               </Link>
@@ -59,42 +56,42 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
         <div className="p-4 border-t border-white/[0.06]">
           <div className="flex items-center gap-3 px-2 py-2">
-            <div className="w-7 h-7 rounded-full bg-[#C9A96E]/15 text-[#C9A96E] flex items-center justify-center text-[11px] font-semibold">
+            <div className="w-8 h-8 rounded-full bg-[#C9A96E]/15 text-[#C9A96E] flex items-center justify-center text-xs font-semibold">
               {user?.name?.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white/70 truncate">{user?.name}</p>
-              <p className="text-[11px] text-white/20 truncate">{user?.email}</p>
+              <p className="text-sm font-medium text-white truncate">{user?.name}</p>
+              <p className="text-xs text-white/40 truncate">{user?.email}</p>
             </div>
           </div>
           <button
             data-testid="button-logout"
             onClick={() => logout.mutate()}
-            className="flex items-center gap-2 px-2 py-2 text-xs text-white/25 hover:text-red-400/80 transition-colors w-full mt-1 uppercase tracking-[0.1em]"
+            className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-white/50 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors w-full mt-2"
           >
-            <LogOut size={13} />
+            <LogOut size={16} />
             Sign Out
           </button>
         </div>
       </aside>
 
-      <div className="lg:hidden fixed top-0 w-full bg-black/90 backdrop-blur-xl border-b border-white/[0.06] z-40 px-4 py-3 flex items-center justify-between">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <BevProLogo size={20} />
-          <BevProWordmark className="text-white" size="text-sm" />
+      <div className="lg:hidden fixed top-0 w-full bg-black/90 backdrop-blur-xl border-b border-white/[0.06] z-40 px-5 py-4 flex items-center justify-between">
+        <Link href="/dashboard" className="flex items-center gap-2.5">
+          <BevProLogo size={22} />
+          <BevProWordmark className="text-white" size="text-base" />
         </Link>
-        <button data-testid="button-mobile-menu" aria-label={mobileMenuOpen ? "Close menu" : "Open menu"} onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-white/50">
-          {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+        <button data-testid="button-mobile-menu" aria-label={mobileMenuOpen ? "Close menu" : "Open menu"} onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-white/60 p-2 -mr-2 min-h-[44px] min-w-[44px] flex items-center justify-center">
+          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
 
       {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 bg-black/95 backdrop-blur-xl z-30 pt-16 animate-in fade-in duration-200">
-          <nav className="p-4 space-y-0.5">
+        <div className="lg:hidden fixed inset-0 bg-black/95 backdrop-blur-xl z-30 pt-[72px] animate-in fade-in duration-200">
+          <nav className="p-4 space-y-1">
             {organization && (
-              <div className="px-4 py-3 mb-2 border-b border-white/[0.06]">
-                <p className="text-[10px] uppercase tracking-[0.2em] text-white/20 font-medium mb-1">Venue</p>
-                <p className="text-sm text-white/60 truncate">{organization.name}</p>
+              <div className="px-4 py-3 mb-3 border-b border-white/[0.06]">
+                <p className="text-xs uppercase tracking-[0.15em] text-white/40 font-medium mb-1">Venue</p>
+                <p className="text-base text-white/70 truncate">{organization.name}</p>
               </div>
             )}
             {NAV_ITEMS.map((item) => {
@@ -108,41 +105,45 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   href={item.href}
                   data-testid={`link-mobile-${item.label.toLowerCase().replace(/\s/g, "-")}`}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3.5 text-base transition-colors relative ${
-                    active ? "text-white bg-white/[0.04]" : "text-white/50 hover:text-white"
+                  className={`flex items-center gap-4 px-4 py-4 rounded-lg text-base transition-colors min-h-[56px] ${
+                    active
+                      ? "text-white bg-[#C9A96E]/10 border border-[#C9A96E]/20"
+                      : "text-white/60 hover:text-white hover:bg-white/[0.04]"
                   }`}
                 >
-                  {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-[#C9A96E]" />}
-                  <Icon size={18} className={active ? "text-[#C9A96E]" : ""} />
-                  {item.label}
+                  <Icon size={22} className={active ? "text-[#C9A96E]" : "text-white/40"} />
+                  <div className="flex flex-col">
+                    <span className="text-[16px] font-medium leading-tight">{item.label}</span>
+                    <span className={`text-[13px] leading-tight mt-0.5 ${active ? "text-white/50" : "text-white/30"}`}>{item.description}</span>
+                  </div>
                 </Link>
               );
             })}
-            <div className="h-px bg-white/[0.06] my-3" />
+            <div className="h-px bg-white/[0.08] my-4" />
             {user && (
               <div className="flex items-center gap-3 px-4 py-3">
-                <div className="w-8 h-8 rounded-full bg-[#C9A96E]/15 text-[#C9A96E] flex items-center justify-center text-xs font-semibold">
+                <div className="w-10 h-10 rounded-full bg-[#C9A96E]/15 text-[#C9A96E] flex items-center justify-center text-sm font-semibold">
                   {user.name?.charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm text-white/70 truncate">{user.name}</p>
-                  <p className="text-[11px] text-white/20 truncate">{user.email}</p>
+                  <p className="text-base text-white truncate">{user.name}</p>
+                  <p className="text-sm text-white/40 truncate">{user.email}</p>
                 </div>
               </div>
             )}
             <button
               data-testid="button-mobile-logout"
               onClick={() => { logout.mutate(); setMobileMenuOpen(false); }}
-              className="flex items-center gap-3 px-4 py-3 text-sm text-white/25 hover:text-red-400/80 w-full uppercase tracking-[0.1em]"
+              className="flex items-center gap-3 px-4 py-4 text-base text-white/50 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors w-full min-h-[48px]"
             >
-              <LogOut size={16} />
+              <LogOut size={20} />
               Sign Out
             </button>
           </nav>
         </div>
       )}
 
-      <main className="flex-1 lg:ml-60 pt-14 lg:pt-0">
+      <main className="flex-1 lg:ml-60 pt-[72px] lg:pt-0">
         {children}
       </main>
     </div>

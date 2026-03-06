@@ -107,39 +107,39 @@ export default function Billing() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-16">
-        <div className="mb-8 sm:mb-12">
-          <p className="text-[10px] uppercase tracking-[0.25em] text-[#C9A96E]/50 font-medium mb-2 sm:mb-3">Account</p>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-14">
+        <div className="mb-6 sm:mb-8">
+          <p className="text-xs uppercase tracking-[0.25em] text-[#C9A96E]/60 font-medium mb-2 sm:mb-3">Account</p>
           <h1 className="text-2xl sm:text-3xl font-light text-white tracking-tight mb-2" data-testid="text-billing-title">Billing & Subscription</h1>
-          <p className="text-xs sm:text-sm text-white/30 max-w-lg">
+          <p className="text-sm text-white/50 max-w-lg">
             Manage your subscription, upgrade your plan, and view billing details.
           </p>
         </div>
 
         {successMsg && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 p-4 border border-emerald-500/20 bg-emerald-500/5 flex items-center gap-3">
-            <Check size={16} className="text-emerald-400" />
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 p-4 rounded-lg border border-emerald-500/20 bg-emerald-500/5 flex items-center gap-3">
+            <Check size={18} className="text-emerald-400" />
             <p className="text-sm text-emerald-400" data-testid="text-success-msg">{successMsg}</p>
           </motion.div>
         )}
 
         {cancelMsg && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 p-4 border border-amber-500/20 bg-amber-500/5 flex items-center gap-3">
-            <AlertCircle size={16} className="text-amber-400" />
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 p-4 rounded-lg border border-amber-500/20 bg-amber-500/5 flex items-center gap-3">
+            <AlertCircle size={18} className="text-amber-400" />
             <p className="text-sm text-amber-400">{cancelMsg}</p>
           </motion.div>
         )}
 
-        <div className="mb-10">
-          <p className="text-[10px] uppercase tracking-[0.15em] text-white/25 font-medium mb-4">Current Plan</p>
-          <div className="border border-white/[0.06] p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="mb-8">
+          <p className="text-xs uppercase tracking-[0.15em] text-white/40 font-medium mb-4">Current Plan</p>
+          <div className="border border-white/[0.08] rounded-lg p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white/[0.02]">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-white/[0.03]">
-                <PlanIcon size={20} className={planInfo.color} />
+              <div className="p-3.5 bg-[#C9A96E]/10 rounded-lg">
+                <PlanIcon size={24} className={planInfo.color} />
               </div>
               <div>
-                <h3 className="text-lg font-medium text-white" data-testid="text-current-plan">{planInfo.label} Plan</h3>
-                <p className="text-xs text-white/30 mt-0.5">
+                <h3 className="text-lg font-semibold text-white" data-testid="text-current-plan">{planInfo.label} Plan</h3>
+                <p className="text-sm text-white/50 mt-1">
                   {subscription?.subscription?.status === "active" ? "Active subscription" : currentPlan === "starter" ? "Free tier — no billing" : "No active subscription"}
                 </p>
               </div>
@@ -149,43 +149,43 @@ export default function Billing() {
                 data-testid="button-manage-billing"
                 onClick={() => portalMutation.mutate()}
                 disabled={portalMutation.isPending}
-                className="flex items-center gap-2 text-[#C9A96E] hover:text-[#D4B87A] text-sm font-medium transition-colors"
+                className="flex items-center gap-2 text-[#C9A96E] hover:text-[#D4B87A] text-sm font-medium transition-colors min-h-[44px] px-4 py-2 border border-[#C9A96E]/20 rounded-lg hover:border-[#C9A96E]/40"
               >
-                {portalMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />}
+                {portalMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <CreditCard size={16} />}
                 Manage Billing
-                <ExternalLink size={12} />
+                <ExternalLink size={14} />
               </button>
             )}
           </div>
         </div>
 
         {limits && (
-          <div className="mb-10">
-            <p className="text-[10px] uppercase tracking-[0.15em] text-white/25 font-medium mb-4">Usage</p>
+          <div className="mb-8">
+            <p className="text-xs uppercase tracking-[0.15em] text-white/40 font-medium mb-4">Usage</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="border border-white/[0.06] p-5">
-                <p className="text-[10px] uppercase tracking-[0.15em] text-white/25 font-medium mb-2">Agents</p>
+              <div className="border border-white/[0.08] rounded-lg p-6 bg-white/[0.02]">
+                <p className="text-xs uppercase tracking-[0.15em] text-white/40 font-medium mb-3">Agents</p>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-light text-white" data-testid="text-agent-usage">{limits.usage?.agents ?? 0}</span>
-                  <span className="text-sm text-white/20">/ {limits.limits?.agents === "unlimited" ? "∞" : limits.limits?.agents}</span>
+                  <span className="text-4xl font-light text-white" data-testid="text-agent-usage">{limits.usage?.agents ?? 0}</span>
+                  <span className="text-base text-white/40">/ {limits.limits?.agents === "unlimited" ? "∞" : limits.limits?.agents}</span>
                 </div>
                 {limits.limits?.agents !== "unlimited" && limits.usage?.agents >= limits.limits?.agents && (
-                  <p className="text-[10px] text-amber-400/70 mt-2">Limit reached — upgrade to create more agents</p>
+                  <p className="text-xs text-amber-400/80 mt-3">Limit reached — upgrade to create more agents</p>
                 )}
               </div>
-              <div className="border border-white/[0.06] p-5">
-                <p className="text-[10px] uppercase tracking-[0.15em] text-white/25 font-medium mb-2">Venues</p>
+              <div className="border border-white/[0.08] rounded-lg p-6 bg-white/[0.02]">
+                <p className="text-xs uppercase tracking-[0.15em] text-white/40 font-medium mb-3">Venues</p>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-light text-white">1</span>
-                  <span className="text-sm text-white/20">/ {limits.limits?.venues === "unlimited" ? "∞" : limits.limits?.venues}</span>
+                  <span className="text-4xl font-light text-white">1</span>
+                  <span className="text-base text-white/40">/ {limits.limits?.venues === "unlimited" ? "∞" : limits.limits?.venues}</span>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        <div className="mb-10">
-          <p className="text-[10px] uppercase tracking-[0.15em] text-white/25 font-medium mb-4">
+        <div className="mb-8">
+          <p className="text-xs uppercase tracking-[0.15em] text-white/40 font-medium mb-4">
             {currentPlan === "starter" ? "Upgrade Your Plan" : "Available Plans"}
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -203,44 +203,46 @@ export default function Billing() {
                 <div
                   key={planKey}
                   data-testid={`card-plan-${planKey}`}
-                  className={`border p-6 flex flex-col transition-colors ${
+                  className={`border rounded-lg p-6 flex flex-col transition-colors ${
                     isCurrent
-                      ? "border-[#C9A96E]/30 bg-[#C9A96E]/[0.03]"
-                      : "border-white/[0.06] hover:border-white/10"
+                      ? "border-[#C9A96E]/40 bg-[#C9A96E]/[0.06] ring-1 ring-[#C9A96E]/20"
+                      : "border-white/[0.08] hover:border-white/15 bg-white/[0.02]"
                   }`}
                 >
                   <div className="flex items-center gap-3 mb-4">
-                    <Icon size={18} className={info.color} />
-                    <h3 className="text-sm font-semibold text-white">{info.label}</h3>
+                    <div className={`p-2 rounded-lg ${isCurrent ? 'bg-[#C9A96E]/15' : 'bg-white/[0.04]'}`}>
+                      <Icon size={20} className={info.color} />
+                    </div>
+                    <h3 className="text-base font-semibold text-white">{info.label}</h3>
                     {isCurrent && (
-                      <span className="text-[9px] uppercase tracking-wider bg-[#C9A96E]/20 text-[#C9A96E] px-2 py-0.5 font-semibold" data-testid={`badge-current-${planKey}`}>Current</span>
+                      <span className="text-[10px] uppercase tracking-wider bg-[#C9A96E]/25 text-[#C9A96E] px-2.5 py-1 font-semibold rounded" data-testid={`badge-current-${planKey}`}>Current</span>
                     )}
                   </div>
 
-                  <div className="mb-4">
+                  <div className="mb-5">
                     {planKey === "enterprise" ? (
-                      <span className="text-xl font-light text-white">Custom</span>
+                      <span className="text-2xl font-light text-white">Custom</span>
                     ) : (
-                      <span className="text-xl font-light text-white">
+                      <span className="text-2xl font-light text-white">
                         ${planKey === "starter" ? "49" : "149"}
-                        <span className="text-xs text-white/30">/mo</span>
+                        <span className="text-sm text-white/40 ml-1">/mo</span>
                       </span>
                     )}
                   </div>
 
-                  <ul className="space-y-2 flex-1 mb-5">
+                  <ul className="space-y-3 flex-1 mb-6">
                     {info.features.map((f) => (
-                      <li key={f} className="flex items-center gap-2 text-xs text-white/40">
-                        <Check size={12} className="text-white/20 shrink-0" />
+                      <li key={f} className="flex items-center gap-2.5 text-sm text-white/60">
+                        <Check size={14} className="text-[#C9A96E]/50 shrink-0" />
                         {f}
                       </li>
                     ))}
                   </ul>
 
                   {isCurrent ? (
-                    <div className="text-center text-xs text-white/20 py-2.5">Active</div>
+                    <div className="text-center text-sm text-white/40 py-3 border border-white/[0.08] rounded-lg bg-white/[0.02] font-medium">Active</div>
                   ) : planKey === "enterprise" ? (
-                    <a href="mailto:sales@bevpro.ai" data-testid="button-contact-sales" className="block text-center border border-white/10 text-white/40 hover:text-white/60 hover:border-white/20 py-2.5 text-xs font-medium transition-colors">
+                    <a href="mailto:sales@bevpro.ai" data-testid="button-contact-sales" className="block text-center border border-white/10 text-white/50 hover:text-white/70 hover:border-white/20 py-3 text-sm font-medium transition-colors rounded-lg min-h-[44px] flex items-center justify-center">
                       Contact Sales
                     </a>
                   ) : price ? (
@@ -248,14 +250,14 @@ export default function Billing() {
                       data-testid={`button-upgrade-${planKey}`}
                       onClick={() => checkoutMutation.mutate(price.id)}
                       disabled={checkoutMutation.isPending}
-                      className="flex items-center justify-center gap-2 bg-[#C9A96E] text-black py-2.5 text-xs font-semibold hover:bg-[#D4B87A] disabled:opacity-40 transition-colors"
+                      className="flex items-center justify-center gap-2 bg-[#C9A96E] text-black py-3 text-sm font-semibold hover:bg-[#D4B87A] disabled:opacity-40 transition-colors rounded-lg min-h-[44px]"
                     >
                       {checkoutMutation.isPending ? (
-                        <Loader2 size={14} className="animate-spin" />
+                        <Loader2 size={16} className="animate-spin" />
                       ) : (
                         <>
-                          <ArrowUpRight size={14} />
-                          {currentPlan === "starter" ? "Upgrade" : "Switch"}
+                          <ArrowUpRight size={16} />
+                          {currentPlan === "starter" ? "Upgrade" : "Switch Plan"}
                         </>
                       )}
                     </button>
@@ -265,10 +267,10 @@ export default function Billing() {
                       onClick={() => {
                         window.location.href = `/register?plan=${planKey}`;
                       }}
-                      className="flex items-center justify-center gap-2 bg-[#C9A96E] text-black py-2.5 text-xs font-semibold hover:bg-[#D4B87A] transition-colors"
+                      className="flex items-center justify-center gap-2 bg-[#C9A96E] text-black py-3 text-sm font-semibold hover:bg-[#D4B87A] transition-colors rounded-lg min-h-[44px]"
                     >
-                      <ArrowUpRight size={14} />
-                      {currentPlan === "starter" ? "Upgrade" : "Switch"}
+                      <ArrowUpRight size={16} />
+                      {currentPlan === "starter" ? "Upgrade" : "Switch Plan"}
                     </button>
                   )}
                 </div>
@@ -277,12 +279,12 @@ export default function Billing() {
           </div>
         </div>
 
-        <div className="border border-white/[0.06] p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="border border-white/[0.08] rounded-lg p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white/[0.02]">
           <div>
-            <p className="text-sm text-white/60">Need help with your plan?</p>
-            <p className="text-xs text-white/25 mt-1">Contact our team for questions about billing, enterprise pricing, or plan changes.</p>
+            <p className="text-sm text-white/60 font-medium">Need help with your plan?</p>
+            <p className="text-sm text-white/40 mt-1">Contact our team for questions about billing, enterprise pricing, or plan changes.</p>
           </div>
-          <a href="mailto:support@bevpro.ai" className="text-[#C9A96E] text-sm hover:text-[#D4B87A] transition-colors">Contact Support</a>
+          <a href="mailto:support@bevpro.ai" className="text-[#C9A96E] text-sm hover:text-[#D4B87A] transition-colors font-medium min-h-[44px] flex items-center px-4 py-2 border border-[#C9A96E]/20 rounded-lg hover:border-[#C9A96E]/40">Contact Support</a>
         </div>
       </div>
     </DashboardLayout>

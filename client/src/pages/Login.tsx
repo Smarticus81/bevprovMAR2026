@@ -73,7 +73,7 @@ export default function Login() {
             <h1 className="text-2xl sm:text-3xl font-light text-white tracking-tight mb-2" data-testid="text-login-title">
               Welcome back
             </h1>
-            <p className="text-white/40 text-xs sm:text-sm mb-8 sm:mb-10">
+            <p className="text-white/50 text-sm sm:text-base mb-8 sm:mb-10">
               Sign in to manage your venue's voice agents
             </p>
 
@@ -82,7 +82,7 @@ export default function Login() {
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 data-testid="text-login-error"
-                className="flex items-center gap-2.5 p-3.5 rounded-lg bg-red-500/10 border border-red-500/15 text-red-400 text-sm mb-6"
+                className="flex items-center gap-2.5 p-4 rounded-lg bg-red-500/10 border border-red-500/15 text-red-400 text-base mb-6"
               >
                 <AlertCircle size={16} className="shrink-0" />
                 {serverError}
@@ -91,32 +91,32 @@ export default function Login() {
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div>
-                <label htmlFor="email" className="text-[11px] uppercase tracking-[0.15em] text-white/35 font-medium block mb-2">Email</label>
+                <label htmlFor="email" className="text-xs uppercase tracking-[0.15em] text-white/50 font-medium block mb-2">Email</label>
                 <input
                   id="email"
                   type="email"
                   data-testid="input-email"
                   placeholder="you@venue.com"
-                  className="w-full bg-white/[0.04] border-0 border-b border-white/10 rounded-none px-0 py-3 text-[15px] text-white placeholder:text-white/20 focus:outline-none focus:border-[#C9A96E]/50 transition-colors"
+                  className="w-full bg-white/[0.04] border-0 border-b border-white/10 rounded-none px-0 py-4 text-base text-white placeholder:text-white/30 focus:outline-none focus:border-[#C9A96E]/50 transition-colors"
                   {...register("email")}
                 />
                 {errors.email && (
-                  <p data-testid="text-email-error" className="text-red-400/80 text-xs mt-1.5">{errors.email.message}</p>
+                  <p data-testid="text-email-error" className="text-red-400 text-sm mt-2">{errors.email.message}</p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="password" className="text-[11px] uppercase tracking-[0.15em] text-white/35 font-medium block mb-2">Password</label>
+                <label htmlFor="password" className="text-xs uppercase tracking-[0.15em] text-white/50 font-medium block mb-2">Password</label>
                 <input
                   id="password"
                   type="password"
                   data-testid="input-password"
                   placeholder="••••••••"
-                  className="w-full bg-white/[0.04] border-0 border-b border-white/10 rounded-none px-0 py-3 text-[15px] text-white placeholder:text-white/20 focus:outline-none focus:border-[#C9A96E]/50 transition-colors"
+                  className="w-full bg-white/[0.04] border-0 border-b border-white/10 rounded-none px-0 py-4 text-base text-white placeholder:text-white/30 focus:outline-none focus:border-[#C9A96E]/50 transition-colors"
                   {...register("password")}
                 />
                 {errors.password && (
-                  <p data-testid="text-password-error" className="text-red-400/80 text-xs mt-1.5">{errors.password.message}</p>
+                  <p data-testid="text-password-error" className="text-red-400 text-sm mt-2">{errors.password.message}</p>
                 )}
               </div>
 
@@ -125,7 +125,7 @@ export default function Login() {
                   type="submit"
                   data-testid="button-login"
                   disabled={login.isPending}
-                  className="w-full flex items-center justify-center gap-2 bg-[#C9A96E] text-black py-3.5 text-sm font-semibold tracking-wide uppercase hover:bg-[#D4B87A] disabled:opacity-50 transition-all duration-300"
+                  className="w-full flex items-center justify-center gap-2 bg-[#C9A96E] text-black py-4 text-base font-semibold tracking-wide uppercase hover:bg-[#D4B87A] disabled:opacity-50 transition-all duration-300"
                 >
                   {login.isPending ? (
                     <Loader2 size={16} className="animate-spin" />
@@ -149,7 +149,7 @@ export default function Login() {
                 <a
                   href="/api/auth/google"
                   data-testid="button-google-login"
-                  className="flex items-center justify-center gap-3 w-full border border-white/10 text-white/70 py-3 text-sm font-medium hover:bg-white/5 hover:text-white transition-all duration-300"
+                  className="flex items-center justify-center gap-3 w-full border border-white/10 text-white/70 py-4 text-base font-medium hover:bg-white/5 hover:text-white transition-all duration-300"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
@@ -162,7 +162,7 @@ export default function Login() {
               </>
             )}
 
-            <p className="mt-10 text-sm text-white/30">
+            <p className="mt-10 text-base text-white/40">
               Don't have an account?{" "}
               <Link href="/register" data-testid="link-register" className="text-white/60 hover:text-white transition-colors">
                 Create one

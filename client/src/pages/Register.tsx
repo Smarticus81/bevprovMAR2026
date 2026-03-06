@@ -91,7 +91,7 @@ export default function Register() {
             <h1 className="text-3xl font-light text-white tracking-tight mb-2">
               Get started
             </h1>
-            <p className="text-white/40 text-sm mb-8">
+            <p className="text-white/50 text-base mb-8">
               Set up your venue and start building voice agents
             </p>
 
@@ -100,7 +100,7 @@ export default function Register() {
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 data-testid="text-register-error"
-                className="flex items-center gap-2.5 p-3.5 rounded-lg bg-red-500/10 border border-red-500/15 text-red-400 text-sm mb-6"
+                className="flex items-center gap-2.5 p-4 rounded-lg bg-red-500/10 border border-red-500/15 text-red-400 text-base mb-6"
               >
                 <AlertCircle size={16} className="shrink-0" />
                 {serverError}
@@ -109,65 +109,65 @@ export default function Register() {
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               <div>
-                <label htmlFor="venueName" className="text-[11px] uppercase tracking-[0.15em] text-white/35 font-medium block mb-2">Venue Name</label>
+                <label htmlFor="venueName" className="text-xs uppercase tracking-[0.15em] text-white/50 font-medium block mb-2">Venue Name</label>
                 <input
                   id="venueName"
                   data-testid="input-venue-name"
                   placeholder="The Grand Ballroom"
-                  className="w-full bg-white/[0.04] border-0 border-b border-white/10 rounded-none px-0 py-3 text-[15px] text-white placeholder:text-white/20 focus:outline-none focus:border-[#C9A96E]/50 transition-colors"
+                  className="w-full bg-white/[0.04] border-0 border-b border-white/10 rounded-none px-0 py-4 text-base text-white placeholder:text-white/30 focus:outline-none focus:border-[#C9A96E]/50 transition-colors"
                   {...register("venueName")}
                 />
                 {errors.venueName && (
-                  <p data-testid="text-venue-error" className="text-red-400/80 text-xs mt-1.5">{errors.venueName.message}</p>
+                  <p data-testid="text-venue-error" className="text-red-400 text-sm mt-2">{errors.venueName.message}</p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="name" className="text-[11px] uppercase tracking-[0.15em] text-white/35 font-medium block mb-2">Full Name</label>
+                <label htmlFor="name" className="text-xs uppercase tracking-[0.15em] text-white/50 font-medium block mb-2">Full Name</label>
                 <input
                   id="name"
                   data-testid="input-name"
                   placeholder="Jane Smith"
-                  className="w-full bg-white/[0.04] border-0 border-b border-white/10 rounded-none px-0 py-3 text-[15px] text-white placeholder:text-white/20 focus:outline-none focus:border-[#C9A96E]/50 transition-colors"
+                  className="w-full bg-white/[0.04] border-0 border-b border-white/10 rounded-none px-0 py-4 text-base text-white placeholder:text-white/30 focus:outline-none focus:border-[#C9A96E]/50 transition-colors"
                   {...register("name")}
                 />
                 {errors.name && (
-                  <p data-testid="text-name-error" className="text-red-400/80 text-xs mt-1.5">{errors.name.message}</p>
+                  <p data-testid="text-name-error" className="text-red-400 text-sm mt-2">{errors.name.message}</p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="email" className="text-[11px] uppercase tracking-[0.15em] text-white/35 font-medium block mb-2">Email</label>
+                <label htmlFor="email" className="text-xs uppercase tracking-[0.15em] text-white/50 font-medium block mb-2">Email</label>
                 <input
                   id="email"
                   data-testid="input-email"
                   type="email"
                   placeholder="jane@venue.com"
-                  className="w-full bg-white/[0.04] border-0 border-b border-white/10 rounded-none px-0 py-3 text-[15px] text-white placeholder:text-white/20 focus:outline-none focus:border-[#C9A96E]/50 transition-colors"
+                  className="w-full bg-white/[0.04] border-0 border-b border-white/10 rounded-none px-0 py-4 text-base text-white placeholder:text-white/30 focus:outline-none focus:border-[#C9A96E]/50 transition-colors"
                   {...register("email")}
                 />
                 {errors.email && (
-                  <p data-testid="text-email-error" className="text-red-400/80 text-xs mt-1.5">{errors.email.message}</p>
+                  <p data-testid="text-email-error" className="text-red-400 text-sm mt-2">{errors.email.message}</p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="password" className="text-[11px] uppercase tracking-[0.15em] text-white/35 font-medium block mb-2">Password</label>
+                <label htmlFor="password" className="text-xs uppercase tracking-[0.15em] text-white/50 font-medium block mb-2">Password</label>
                 <input
                   id="password"
                   data-testid="input-password"
                   type="password"
                   placeholder="••••••••"
-                  className="w-full bg-white/[0.04] border-0 border-b border-white/10 rounded-none px-0 py-3 text-[15px] text-white placeholder:text-white/20 focus:outline-none focus:border-[#C9A96E]/50 transition-colors"
+                  className="w-full bg-white/[0.04] border-0 border-b border-white/10 rounded-none px-0 py-4 text-base text-white placeholder:text-white/30 focus:outline-none focus:border-[#C9A96E]/50 transition-colors"
                   {...register("password")}
                 />
                 {errors.password && (
-                  <p data-testid="text-password-error" className="text-red-400/80 text-xs mt-1.5">{errors.password.message}</p>
+                  <p data-testid="text-password-error" className="text-red-400 text-sm mt-2">{errors.password.message}</p>
                 )}
               </div>
 
               <div className="pt-1">
-                <label className="text-[11px] uppercase tracking-[0.15em] text-white/35 font-medium block mb-3">Plan</label>
+                <label className="text-xs uppercase tracking-[0.15em] text-white/50 font-medium block mb-3">Plan</label>
                 <div className="flex gap-2">
                   {PLANS.map((plan) => (
                     <button
@@ -186,8 +186,8 @@ export default function Register() {
                           <Check size={10} className="text-[#C9A96E]" />
                         </div>
                       )}
-                      <div className="text-sm font-medium">{plan.name}</div>
-                      <div className="text-[11px] mt-0.5 opacity-60">
+                      <div className="text-base font-medium">{plan.name}</div>
+                      <div className="text-xs mt-0.5 opacity-60">
                         {plan.price}<span className="opacity-50">{plan.period}</span>
                       </div>
                     </button>
@@ -200,7 +200,7 @@ export default function Register() {
                   type="submit"
                   data-testid="button-register"
                   disabled={registerUser.isPending}
-                  className="w-full flex items-center justify-center gap-2 bg-[#C9A96E] text-black py-3.5 text-sm font-semibold tracking-wide uppercase hover:bg-[#D4B87A] disabled:opacity-50 transition-all duration-300"
+                  className="w-full flex items-center justify-center gap-2 bg-[#C9A96E] text-black py-4 text-base font-semibold tracking-wide uppercase hover:bg-[#D4B87A] disabled:opacity-50 transition-all duration-300"
                 >
                   {registerUser.isPending ? (
                     <Loader2 size={16} className="animate-spin" />
@@ -224,7 +224,7 @@ export default function Register() {
                 <a
                   href="/api/auth/google"
                   data-testid="button-google-register"
-                  className="flex items-center justify-center gap-3 w-full border border-white/10 text-white/70 py-3 text-sm font-medium hover:bg-white/5 hover:text-white transition-all duration-300"
+                  className="flex items-center justify-center gap-3 w-full border border-white/10 text-white/70 py-4 text-base font-medium hover:bg-white/5 hover:text-white transition-all duration-300"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
@@ -237,7 +237,7 @@ export default function Register() {
               </>
             )}
 
-            <p className="mt-8 text-sm text-white/30">
+            <p className="mt-8 text-base text-white/40">
               Already have an account?{" "}
               <Link href="/login" data-testid="link-login" className="text-white/60 hover:text-white transition-colors">
                 Sign in

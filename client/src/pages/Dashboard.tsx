@@ -61,35 +61,35 @@ export default function Dashboard() {
   return (
     <DashboardLayout>
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-16">
-        <div className="mb-8 sm:mb-12">
-          <p className="text-[10px] uppercase tracking-[0.25em] text-[#C9A96E]/50 font-medium mb-2 sm:mb-3">
+        <div className="mb-6 sm:mb-10">
+          <p className="text-xs uppercase tracking-[0.25em] text-[#C9A96E]/60 font-medium mb-2 sm:mb-3">
             {organization?.name || "Your Venue"}
           </p>
           <h1 className="text-2xl sm:text-3xl font-light text-white tracking-tight mb-2" data-testid="text-dashboard-title">
             Voice Agents
           </h1>
-          <p className="text-xs sm:text-sm text-white/30 max-w-md">
+          <p className="text-sm text-white/40 max-w-md">
             Build and manage voice assistants for your venue.
           </p>
         </div>
 
         {!isLoading && agents.length > 0 && (
-          <div className="flex flex-wrap items-center gap-4 sm:gap-6 mb-6 sm:mb-10 pb-6 sm:pb-8 border-b border-white/[0.04]">
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6 mb-6 sm:mb-8 pb-6 sm:pb-8 border-b border-white/[0.06]">
             <div>
               <p className="text-xl sm:text-2xl font-light text-white">{agents.length}</p>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-white/20 mt-1">Total</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-white/40 mt-1">Total</p>
             </div>
-            <div className="w-px h-8 bg-white/[0.06]" />
+            <div className="w-px h-8 bg-white/[0.08]" />
             <div>
               <p className="text-xl sm:text-2xl font-light text-emerald-400">{activeCount}</p>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-white/20 mt-1">Active</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-white/40 mt-1">Active</p>
             </div>
             {draftCount > 0 && (
               <>
-                <div className="w-px h-8 bg-white/[0.06]" />
+                <div className="w-px h-8 bg-white/[0.08]" />
                 <div>
-                  <p className="text-xl sm:text-2xl font-light text-white/40">{draftCount}</p>
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-white/20 mt-1">Drafts</p>
+                  <p className="text-xl sm:text-2xl font-light text-white/50">{draftCount}</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/40 mt-1">Drafts</p>
                 </div>
               </>
             )}
@@ -97,9 +97,9 @@ export default function Dashboard() {
             <button
               data-testid="button-create-agent"
               onClick={() => setShowCreate(true)}
-              className="flex items-center gap-2 bg-[#C9A96E] text-black px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold hover:bg-[#D4B87A] transition-all duration-300"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#C9A96E] text-black px-5 py-3 text-sm font-semibold hover:bg-[#D4B87A] transition-all duration-300"
             >
-              <Plus size={14} />
+              <Plus size={16} />
               New Agent
             </button>
           </div>
@@ -118,31 +118,31 @@ export default function Dashboard() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 12 }}
-                className="bg-[#0A0A0A] w-full max-w-lg border border-white/[0.08]"
+                className="bg-[#0A0A0A] w-full max-w-lg border border-white/[0.08] rounded-lg"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="p-4 sm:p-6 border-b border-white/[0.06]">
-                  <h2 className="text-base sm:text-lg font-light text-white">Create Voice Agent</h2>
-                  <p className="text-xs text-white/25 mt-1">Choose a type and give your agent a name.</p>
+                <div className="p-5 sm:p-6 border-b border-white/[0.06]">
+                  <h2 className="text-lg sm:text-xl font-light text-white">Create Voice Agent</h2>
+                  <p className="text-sm text-white/40 mt-1">Choose a type and give your agent a name.</p>
                 </div>
 
-                <div className="p-4 sm:p-6 space-y-5 sm:space-y-6">
+                <div className="p-5 sm:p-6 space-y-6">
                   <div>
-                    <label className="text-[11px] uppercase tracking-[0.15em] text-white/25 font-medium block mb-3">Agent Name</label>
+                    <label className="text-xs uppercase tracking-[0.15em] text-white/50 font-medium block mb-3">Agent Name</label>
                     <input
                       data-testid="input-agent-name"
                       type="text"
                       value={newAgentName}
                       onChange={(e) => setNewAgentName(e.target.value)}
                       placeholder="e.g., Front Bar POS"
-                      className="w-full bg-transparent border-0 border-b border-white/10 px-0 py-3 text-[15px] text-white placeholder:text-white/15 focus:outline-none focus:border-[#C9A96E]/40 transition-colors"
+                      className="w-full bg-white/[0.04] border border-white/10 rounded px-4 py-3.5 text-base text-white placeholder:text-white/25 focus:outline-none focus:border-[#C9A96E]/50 transition-colors"
                       autoFocus
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] uppercase tracking-[0.15em] text-white/25 font-medium block mb-3">Agent Type</label>
-                    <div className="space-y-0.5">
+                    <label className="text-xs uppercase tracking-[0.15em] text-white/50 font-medium block mb-3">Agent Type</label>
+                    <div className="space-y-1.5">
                       {Object.entries(AGENT_TYPE_META).map(([type, meta]) => {
                         const Icon = meta.icon;
                         const selected = newAgentType === type;
@@ -151,17 +151,17 @@ export default function Dashboard() {
                             key={type}
                             data-testid={`button-type-${type}`}
                             onClick={() => setNewAgentType(type)}
-                            className={`w-full flex items-center gap-3 px-3 py-3 text-left transition-all duration-200 relative ${
+                            className={`w-full flex items-center gap-3 px-4 py-3.5 text-left transition-all duration-200 relative rounded ${
                               selected
-                                ? "bg-white/[0.04] text-white"
-                                : "text-white/30 hover:text-white/50 hover:bg-white/[0.02]"
+                                ? "bg-[#C9A96E]/10 border border-[#C9A96E]/30 text-white"
+                                : "bg-white/[0.02] border border-white/[0.06] text-white/50 hover:text-white/70 hover:bg-white/[0.04]"
                             }`}
                           >
-                            {selected && (
-                              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-[#C9A96E]" />
-                            )}
-                            <Icon size={16} className={selected ? "text-[#C9A96E]" : "text-white/15"} />
+                            <Icon size={18} className={selected ? "text-[#C9A96E]" : "text-white/25"} />
                             <span className="text-sm font-medium">{meta.label}</span>
+                            {selected && (
+                              <div className="ml-auto w-2 h-2 rounded-full bg-[#C9A96E]" />
+                            )}
                           </button>
                         );
                       })}
@@ -169,10 +169,10 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between p-4 sm:p-6 border-t border-white/[0.06]">
+                <div className="flex items-center justify-between p-5 sm:p-6 border-t border-white/[0.06]">
                   <button
                     onClick={() => setShowCreate(false)}
-                    className="text-sm text-white/25 hover:text-white/50 transition-colors"
+                    className="text-sm text-white/40 hover:text-white/60 transition-colors px-4 py-2"
                     data-testid="button-cancel-create"
                   >
                     Cancel
@@ -181,7 +181,7 @@ export default function Dashboard() {
                     data-testid="button-confirm-create"
                     onClick={() => createMutation.mutate({ name: newAgentName, type: newAgentType })}
                     disabled={!newAgentName.trim() || createMutation.isPending}
-                    className="flex items-center gap-2 bg-[#C9A96E] text-black px-5 py-2 text-sm font-semibold hover:bg-[#D4B87A] disabled:opacity-40 transition-all duration-300"
+                    className="flex items-center gap-2 bg-[#C9A96E] text-black px-6 py-3 text-sm font-semibold hover:bg-[#D4B87A] disabled:opacity-40 transition-all duration-300 rounded"
                   >
                     {createMutation.isPending ? "Creating..." : "Create Agent"}
                     <ArrowRight size={14} />
@@ -193,33 +193,36 @@ export default function Dashboard() {
         </AnimatePresence>
 
         {isLoading ? (
-          <div className="space-y-0">
+          <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="py-6 border-b border-white/[0.04] animate-pulse">
-                <div className="h-4 w-40 bg-white/[0.04] mb-2" />
-                <div className="h-3 w-24 bg-white/[0.02]" />
+              <div key={i} className="p-5 border border-white/[0.06] rounded-lg animate-pulse">
+                <div className="h-5 w-40 bg-white/[0.06] rounded mb-3" />
+                <div className="h-4 w-24 bg-white/[0.04] rounded" />
               </div>
             ))}
           </div>
         ) : agents.length === 0 ? (
-          <div className="py-20">
-            <div className="max-w-sm">
-              <h2 className="text-xl font-light text-white mb-2">No agents yet</h2>
-              <p className="text-sm text-white/25 mb-8 leading-relaxed">
-                Create your first voice agent to start automating your venue operations — from taking orders to managing inventory.
+          <div className="py-16 text-center sm:text-left">
+            <div className="max-w-md mx-auto sm:mx-0">
+              <div className="w-14 h-14 rounded-full bg-[#C9A96E]/10 flex items-center justify-center mb-5">
+                <Sparkles size={24} className="text-[#C9A96E]" />
+              </div>
+              <h2 className="text-xl sm:text-2xl font-light text-white mb-3">Ready to get started?</h2>
+              <p className="text-sm text-white/40 mb-8 leading-relaxed">
+                Create your first voice agent and start automating your venue — from taking orders to managing inventory. It only takes a minute.
               </p>
               <button
                 data-testid="button-create-first-agent"
                 onClick={() => setShowCreate(true)}
-                className="flex items-center gap-2 bg-[#C9A96E] text-black px-5 py-2.5 text-sm font-semibold hover:bg-[#D4B87A] transition-all duration-300"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#C9A96E] text-black px-6 py-3.5 text-base font-semibold hover:bg-[#D4B87A] transition-all duration-300 rounded"
               >
-                <Plus size={14} />
+                <Plus size={18} />
                 Create Your First Agent
               </button>
             </div>
           </div>
         ) : (
-          <div>
+          <div className="space-y-3">
             {agents.map((agent: any, index: number) => {
               const meta = AGENT_TYPE_META[agent.type] || AGENT_TYPE_META.bevone;
               const Icon = meta.icon;
@@ -237,45 +240,54 @@ export default function Dashboard() {
                     tabIndex={0}
                     onClick={() => navigate(`/dashboard/agents/${agent.id}`)}
                     onKeyDown={(e) => { if (e.key === "Enter") navigate(`/dashboard/agents/${agent.id}`); }}
-                    className="flex items-center gap-3 sm:gap-4 py-4 sm:py-5 border-b border-white/[0.04] hover:bg-white/[0.015] transition-all duration-200 -mx-2 sm:-mx-3 px-2 sm:px-3 cursor-pointer group"
+                    className="border border-white/[0.08] rounded-lg p-4 sm:p-5 hover:bg-white/[0.03] hover:border-white/[0.12] transition-all duration-200 cursor-pointer group"
                   >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <span className={`${isActive ? "text-[#C9A96E]" : "text-white/15"} transition-colors`}>
-                        <Icon size={18} />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-[15px] font-medium text-white/80 truncate group-hover:text-white transition-colors">
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-lg flex items-center justify-center shrink-0 ${
+                        isActive ? "bg-[#C9A96E]/10" : "bg-white/[0.04]"
+                      }`}>
+                        <Icon size={20} className={isActive ? "text-[#C9A96E]" : "text-white/30"} />
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2.5 mb-1">
+                          <h3 className="text-base font-medium text-white truncate group-hover:text-white transition-colors">
                             {agent.name}
                           </h3>
-                          <span className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.15em] font-medium ${
-                            isActive ? "text-emerald-400/70" : "text-white/20"
+                          <span className={`inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.1em] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                            isActive
+                              ? "bg-emerald-400/15 text-emerald-400"
+                              : "bg-white/[0.06] text-white/40"
                           }`}>
-                            <span className={`w-1 h-1 rounded-full ${isActive ? "bg-emerald-400" : "bg-white/20"}`} />
+                            <span className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-emerald-400" : "bg-white/30"}`} />
                             {agent.status}
                           </span>
                         </div>
-                        <p className="text-xs text-white/20 mt-0.5">{meta.shortLabel}</p>
+                        <p className="text-[13px] text-white/40">{meta.shortLabel}</p>
+                        {agent.description && (
+                          <p className="text-sm text-white/30 mt-1 truncate">{agent.description}</p>
+                        )}
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        data-testid={`button-launch-${agent.id}`}
-                        onClick={(e) => { e.stopPropagation(); window.location.href = `/app/${agent.id}`; }}
-                        className="text-[11px] uppercase tracking-[0.1em] text-white/20 hover:text-[#C9A96E] px-2 py-1 transition-colors"
-                      >
-                        Launch
-                      </button>
-                      <button
-                        data-testid={`button-delete-${agent.id}`}
-                        aria-label={`Delete ${agent.name}`}
-                        onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(agent.id); }}
-                        className="sm:opacity-0 sm:group-hover:opacity-100 p-1.5 text-white/15 hover:text-red-400/70 transition-all"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                      <ChevronRight size={14} className="text-white/10 group-hover:text-white/25 transition-colors" />
+                      <div className="flex items-center gap-2 shrink-0 self-center">
+                        <button
+                          data-testid={`button-launch-${agent.id}`}
+                          onClick={(e) => { e.stopPropagation(); window.location.href = `/app/${agent.id}`; }}
+                          className="hidden sm:flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.05em] text-[#C9A96E]/80 hover:text-[#C9A96E] bg-[#C9A96E]/10 hover:bg-[#C9A96E]/15 px-3 py-2 rounded transition-colors"
+                        >
+                          <ExternalLink size={13} />
+                          Launch
+                        </button>
+                        <button
+                          data-testid={`button-delete-${agent.id}`}
+                          aria-label={`Delete ${agent.name}`}
+                          onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(agent.id); }}
+                          className="p-2 text-white/20 hover:text-red-400/80 hover:bg-red-400/10 rounded transition-all"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                        <ChevronRight size={16} className="text-white/15 group-hover:text-white/30 transition-colors" />
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -285,9 +297,9 @@ export default function Dashboard() {
             <button
               data-testid="button-create-agent-bottom"
               onClick={() => setShowCreate(true)}
-              className="flex items-center gap-2 text-white/20 hover:text-white/40 text-sm py-5 transition-colors"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 text-white/40 hover:text-white/60 border border-dashed border-white/[0.08] hover:border-white/[0.15] rounded-lg text-sm py-4 transition-colors mt-2"
             >
-              <Plus size={14} />
+              <Plus size={16} />
               Add another agent
             </button>
           </div>

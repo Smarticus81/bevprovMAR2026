@@ -415,7 +415,7 @@ export default function AgentBuilder() {
         </header>
 
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-2xl mx-auto px-6 py-10 lg:py-16">
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-16">
             <AnimatePresence mode="wait">
               {currentStep === "identity" && (
                 <motion.div
@@ -919,7 +919,7 @@ export default function AgentBuilder() {
               )}
             </AnimatePresence>
 
-            <div className="flex items-center justify-between mt-16 pt-6 border-t border-white/[0.04]">
+            <div className="flex items-center justify-between mt-10 sm:mt-16 pt-4 sm:pt-6 border-t border-white/[0.04]">
               <button
                 data-testid="button-prev-step"
                 onClick={() => canGoPrev && setCurrentStep(STEPS[currentStepIndex - 1].id)}

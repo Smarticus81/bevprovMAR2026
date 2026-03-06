@@ -60,44 +60,44 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-3xl mx-auto px-6 py-10 lg:py-16">
-        <div className="mb-12">
-          <p className="text-[10px] uppercase tracking-[0.25em] text-[#C9A96E]/50 font-medium mb-3">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-16">
+        <div className="mb-8 sm:mb-12">
+          <p className="text-[10px] uppercase tracking-[0.25em] text-[#C9A96E]/50 font-medium mb-2 sm:mb-3">
             {organization?.name || "Your Venue"}
           </p>
-          <h1 className="text-3xl font-light text-white tracking-tight mb-2" data-testid="text-dashboard-title">
+          <h1 className="text-2xl sm:text-3xl font-light text-white tracking-tight mb-2" data-testid="text-dashboard-title">
             Voice Agents
           </h1>
-          <p className="text-sm text-white/30 max-w-md">
-            Build and manage voice assistants for your venue. Each agent handles a specific part of your operations.
+          <p className="text-xs sm:text-sm text-white/30 max-w-md">
+            Build and manage voice assistants for your venue.
           </p>
         </div>
 
         {!isLoading && agents.length > 0 && (
-          <div className="flex items-center gap-6 mb-10 pb-8 border-b border-white/[0.04]">
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6 mb-6 sm:mb-10 pb-6 sm:pb-8 border-b border-white/[0.04]">
             <div>
-              <p className="text-2xl font-light text-white">{agents.length}</p>
+              <p className="text-xl sm:text-2xl font-light text-white">{agents.length}</p>
               <p className="text-[10px] uppercase tracking-[0.2em] text-white/20 mt-1">Total</p>
             </div>
             <div className="w-px h-8 bg-white/[0.06]" />
             <div>
-              <p className="text-2xl font-light text-emerald-400">{activeCount}</p>
+              <p className="text-xl sm:text-2xl font-light text-emerald-400">{activeCount}</p>
               <p className="text-[10px] uppercase tracking-[0.2em] text-white/20 mt-1">Active</p>
             </div>
             {draftCount > 0 && (
               <>
                 <div className="w-px h-8 bg-white/[0.06]" />
                 <div>
-                  <p className="text-2xl font-light text-white/40">{draftCount}</p>
+                  <p className="text-xl sm:text-2xl font-light text-white/40">{draftCount}</p>
                   <p className="text-[10px] uppercase tracking-[0.2em] text-white/20 mt-1">Drafts</p>
                 </div>
               </>
             )}
-            <div className="flex-1" />
+            <div className="flex-1 min-w-0" />
             <button
               data-testid="button-create-agent"
               onClick={() => setShowCreate(true)}
-              className="flex items-center gap-2 bg-[#C9A96E] text-black px-4 py-2 text-sm font-semibold hover:bg-[#D4B87A] transition-all duration-300"
+              className="flex items-center gap-2 bg-[#C9A96E] text-black px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold hover:bg-[#D4B87A] transition-all duration-300"
             >
               <Plus size={14} />
               New Agent
@@ -121,12 +121,12 @@ export default function Dashboard() {
                 className="bg-[#0A0A0A] w-full max-w-lg border border-white/[0.08]"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="p-6 border-b border-white/[0.06]">
-                  <h2 className="text-lg font-light text-white">Create Voice Agent</h2>
-                  <p className="text-xs text-white/25 mt-1">Choose a type and give your agent a name to get started.</p>
+                <div className="p-4 sm:p-6 border-b border-white/[0.06]">
+                  <h2 className="text-base sm:text-lg font-light text-white">Create Voice Agent</h2>
+                  <p className="text-xs text-white/25 mt-1">Choose a type and give your agent a name.</p>
                 </div>
 
-                <div className="p-6 space-y-6">
+                <div className="p-4 sm:p-6 space-y-5 sm:space-y-6">
                   <div>
                     <label className="text-[11px] uppercase tracking-[0.15em] text-white/25 font-medium block mb-3">Agent Name</label>
                     <input
@@ -169,7 +169,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between p-6 border-t border-white/[0.06]">
+                <div className="flex items-center justify-between p-4 sm:p-6 border-t border-white/[0.06]">
                   <button
                     onClick={() => setShowCreate(false)}
                     className="text-sm text-white/25 hover:text-white/50 transition-colors"
@@ -237,7 +237,7 @@ export default function Dashboard() {
                     tabIndex={0}
                     onClick={() => navigate(`/dashboard/agents/${agent.id}`)}
                     onKeyDown={(e) => { if (e.key === "Enter") navigate(`/dashboard/agents/${agent.id}`); }}
-                    className="flex items-center gap-4 py-5 border-b border-white/[0.04] hover:bg-white/[0.015] transition-all duration-200 -mx-3 px-3 cursor-pointer group"
+                    className="flex items-center gap-3 sm:gap-4 py-4 sm:py-5 border-b border-white/[0.04] hover:bg-white/[0.015] transition-all duration-200 -mx-2 sm:-mx-3 px-2 sm:px-3 cursor-pointer group"
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <span className={`${isActive ? "text-[#C9A96E]" : "text-white/15"} transition-colors`}>

@@ -11,7 +11,8 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 - **AI (chat)**: OpenAI via Replit AI Integrations (`AI_INTEGRATIONS_OPENAI_API_KEY`, `AI_INTEGRATIONS_OPENAI_BASE_URL`) for chat completions
 - **Mobile**: Capacitor iOS app config + PWA fallback
 - **Multi-tenancy**: All data scoped by organizationId, enforced at storage and API layers
-- **Theme**: Consistent dark theme (bg-black, glassmorphic cards) across all pages
+- **Theme**: Consistent dark theme (bg-black, glassmorphic cards) across all pages. Golden accent #C9A96E, underline inputs, no rounded-xl card grids
+- **Responsive**: All pages optimized for mobile (375px+). `h-[100dvh]` on AgentApp, `sm:` breakpoints for padding/typography, mobile hamburger in DashboardLayout, sticky step tabs in AgentBuilder
 
 ## Data Model (shared/schema.ts)
 ### Core
@@ -70,7 +71,7 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 ### Client
 - `client/src/components/BevProLogo.tsx` — Animated SVG waveform logo (BevProLogo + BevProBrand components)
 - `client/src/pages/Home.tsx` — Landing page with interactive demo simulator + BevPro logo pulse
-- `client/src/pages/Login.tsx` — Auth login page (+ conditional Google OAuth button)
+- `client/src/pages/Login.tsx` — Cinematic login page with Brighton Abbey glass chapel background, left-aligned underline form, golden CTA, floating venue glass card on desktop
 - `client/src/pages/Register.tsx` — Cinematic split registration page with venue background image, left-aligned form, golden (#C9A96E) accent
 - `client/src/pages/Dashboard.tsx` — Agent list as status rows (not card grid), summary stats, golden accent CTA
 - `client/src/pages/AgentBuilder.tsx` — Guided step-by-step agent configuration with left sidebar (Identity → Voice & Behavior → Connections → Test & Launch), progressive disclosure, narrative flow

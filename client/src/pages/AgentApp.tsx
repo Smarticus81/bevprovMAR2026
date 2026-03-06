@@ -157,22 +157,22 @@ function extractPosState(transcript: TranscriptEntry[]): PosState {
 function PosDisplay({ posState }: { posState: PosState }) {
   return (
     <div className="h-full flex flex-col bg-black/50 backdrop-blur-sm" data-testid="pos-display">
-      <div className="px-5 py-4 border-b border-white/10">
+      <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-white/10">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <ShoppingCart size={18} className="text-amber-400" />
-            <h2 className="text-sm font-semibold text-white" data-testid="text-pos-title">Current Order</h2>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <ShoppingCart size={16} className="text-amber-400 sm:w-[18px] sm:h-[18px]" />
+            <h2 className="text-xs sm:text-sm font-semibold text-white" data-testid="text-pos-title">Current Order</h2>
           </div>
-          <div className="flex items-center gap-3 text-xs text-white/40">
+          <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs text-white/40">
             {posState.tabId && (
               <span className="flex items-center gap-1" data-testid="text-tab-id">
-                <Hash size={12} />
+                <Hash size={10} className="sm:w-3 sm:h-3" />
                 Tab #{posState.tabId}
               </span>
             )}
             {posState.orderId && (
               <span className="flex items-center gap-1" data-testid="text-order-id">
-                <Receipt size={12} />
+                <Receipt size={10} className="sm:w-3 sm:h-3" />
                 Order #{posState.orderId}
               </span>
             )}
@@ -180,21 +180,21 @@ function PosDisplay({ posState }: { posState: PosState }) {
         </div>
 
         {(posState.customerName || posState.tableNumber) && (
-          <div className="flex items-center gap-3 mt-2 text-xs text-white/50">
+          <div className="flex items-center gap-2 sm:gap-3 mt-1.5 sm:mt-2 text-[10px] sm:text-xs text-white/50">
             {posState.customerName && (
-              <span className="flex items-center gap-1" data-testid="text-customer-name">
-                <User size={12} />
+              <span className="flex items-center gap-1 truncate" data-testid="text-customer-name">
+                <User size={10} className="shrink-0 sm:w-3 sm:h-3" />
                 {posState.customerName}
               </span>
             )}
             {posState.tableNumber && (
-              <span data-testid="text-table-number">Table {posState.tableNumber}</span>
+              <span data-testid="text-table-number" className="shrink-0">Table {posState.tableNumber}</span>
             )}
           </div>
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 py-3">
+      <div className="flex-1 overflow-y-auto px-3 sm:px-5 py-2 sm:py-3">
         {posState.orderItems.length === 0 ? (
           <div className="h-full flex items-center justify-center" data-testid="pos-empty-state">
             <div className="text-center">
@@ -229,7 +229,7 @@ function PosDisplay({ posState }: { posState: PosState }) {
         )}
       </div>
 
-      <div className="border-t border-white/10 px-5 py-4 space-y-2" data-testid="pos-totals">
+      <div className="border-t border-white/10 px-3 sm:px-5 py-3 sm:py-4 space-y-1.5 sm:space-y-2" data-testid="pos-totals">
         <div className="flex justify-between text-sm text-white/60">
           <span>Subtotal</span>
           <span data-testid="text-subtotal">${posState.subtotal.toFixed(2)}</span>
@@ -463,18 +463,18 @@ function FileUploadButton({ agentId }: { agentId: number }) {
 
 function VoiceControls({ voice, wakeWordConfig }: { voice: ReturnType<typeof useVoiceSession>; wakeWordConfig?: WakeWordConfig }) {
   return (
-    <div className="shrink-0 flex flex-col items-center gap-3 pb-8 pt-4">
+    <div className="shrink-0 flex flex-col items-center gap-2 sm:gap-3 pb-4 sm:pb-8 pt-3 sm:pt-4">
       {voice.status === "wake-listening" ? (
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-2 sm:gap-3">
           <motion.div
             animate={{ scale: [1, 1.15, 1] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            className="w-20 h-20 rounded-full bg-white/10 border border-white/20 flex items-center justify-center"
+            className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/10 border border-white/20 flex items-center justify-center"
             data-testid="indicator-wake-listening"
           >
-            <Volume2 size={32} className="text-white/60" />
+            <Volume2 size={28} className="text-white/60 sm:w-8 sm:h-8" />
           </motion.div>
-          <p className="text-white/50 text-sm" data-testid="text-wake-listening">
+          <p className="text-white/50 text-xs sm:text-sm" data-testid="text-wake-listening">
             Listening for '{wakeWordConfig?.phrase || "hey bev"}'...
           </p>
           <motion.button
@@ -487,21 +487,21 @@ function VoiceControls({ voice, wakeWordConfig }: { voice: ReturnType<typeof use
           </motion.button>
         </div>
       ) : voice.returningToStandby ? (
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center">
-            <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+        <div className="flex flex-col items-center gap-2 sm:gap-3">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/10 flex items-center justify-center">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           </div>
-          <p className="text-white/50 text-sm" data-testid="text-returning-standby">Returning to standby...</p>
+          <p className="text-white/50 text-xs sm:text-sm" data-testid="text-returning-standby">Returning to standby...</p>
         </div>
       ) : voice.status === "idle" || voice.status === "error" ? (
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-2 sm:gap-3">
           <motion.button
             data-testid="button-start-call"
             onClick={voice.connect}
             whileTap={{ scale: 0.92 }}
-            className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-[0_0_60px_rgba(255,255,255,0.15)]"
+            className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white flex items-center justify-center shadow-[0_0_60px_rgba(255,255,255,0.15)]"
           >
-            <Mic size={32} className="text-black" />
+            <Mic size={28} className="text-black sm:w-8 sm:h-8" />
           </motion.button>
           {wakeWordConfig?.enabled && (
             <motion.button
@@ -516,32 +516,32 @@ function VoiceControls({ voice, wakeWordConfig }: { voice: ReturnType<typeof use
           )}
         </div>
       ) : voice.status === "connecting" ? (
-        <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center">
-          <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/10 flex items-center justify-center">
+          <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
         </div>
       ) : (
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 sm:gap-6">
           <motion.button
             data-testid="button-mute"
             onClick={voice.toggleMute}
             whileTap={{ scale: 0.9 }}
-            className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${
+            className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-colors ${
               voice.isListening ? "bg-white/10 text-white" : "bg-red-500/20 text-red-400"
             }`}
           >
-            {voice.isListening ? <Mic size={22} /> : <MicOff size={22} />}
+            {voice.isListening ? <Mic size={20} /> : <MicOff size={20} />}
           </motion.button>
 
           <motion.button
             data-testid="button-end-call"
             onClick={voice.disconnect}
             whileTap={{ scale: 0.9 }}
-            className="w-20 h-20 rounded-full bg-red-500 flex items-center justify-center shadow-[0_0_40px_rgba(239,68,68,0.3)]"
+            className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-red-500 flex items-center justify-center shadow-[0_0_40px_rgba(239,68,68,0.3)]"
           >
-            <PhoneOff size={28} className="text-white" />
+            <PhoneOff size={24} className="text-white sm:w-7 sm:h-7" />
           </motion.button>
 
-          <div className="w-14 h-14" />
+          <div className="w-12 h-12 sm:w-14 sm:h-14" />
         </div>
       )}
 
@@ -594,37 +594,35 @@ export default function AgentApp() {
 
   if (isVoicePos) {
     return (
-      <div className="min-h-screen bg-black text-white flex flex-col" style={{ paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-        <header className="flex items-center justify-between px-5 py-4 shrink-0 border-b border-white/10">
-          <Link href="/dashboard">
-            <button className="flex items-center gap-1.5 text-white/50 hover:text-white text-sm transition-colors" data-testid="button-back">
-              <ArrowLeft size={18} />
-              Back
-            </button>
+      <div className="h-[100dvh] bg-black text-white flex flex-col" style={{ paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+        <header className="flex items-center justify-between px-3 sm:px-5 py-3 sm:py-4 shrink-0 border-b border-white/10">
+          <Link href="/dashboard" className="flex items-center gap-1 text-white/50 hover:text-white text-sm transition-colors shrink-0" data-testid="button-back">
+            <ArrowLeft size={16} />
+            <span className="hidden sm:inline">Back</span>
           </Link>
-          <div className="text-center">
-            <h1 className="text-sm font-medium" data-testid="text-agent-name">{agent?.name || "Voice POS"}</h1>
+          <div className="text-center min-w-0 flex-1">
+            <h1 className="text-sm font-medium truncate px-2" data-testid="text-agent-name">{agent?.name || "Voice POS"}</h1>
             {voice.status === "connected" && voice.latency !== null && (
-              <p className="text-xs text-white/30">{voice.latency}ms</p>
+              <p className="text-[10px] text-white/30">{voice.latency}ms</p>
             )}
           </div>
-          <div className="w-16 flex justify-end">
+          <div className="w-10 sm:w-16 flex justify-end shrink-0">
             {agentConfig?.fileUploadEnabled && <FileUploadButton agentId={id} />}
           </div>
         </header>
 
         {voice.error && (
-          <div className="px-5 py-2">
+          <div className="px-3 sm:px-5 py-2">
             <p className="text-red-400 text-xs text-center" data-testid="text-voice-error">{voice.error}</p>
           </div>
         )}
 
-        <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-          <div className="md:w-[380px] lg:w-[420px] md:border-r border-b md:border-b-0 border-white/10 h-[40vh] md:h-auto" data-testid="pos-panel">
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
+          <div className="md:w-[340px] lg:w-[420px] md:border-r border-b md:border-b-0 border-white/10 h-[35vh] sm:h-[40vh] md:h-auto overflow-hidden" data-testid="pos-panel">
             <PosDisplay posState={posState} />
           </div>
 
-          <div className="flex-1 flex flex-col overflow-hidden" data-testid="voice-panel">
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0" data-testid="voice-panel">
             <TranscriptPanel voice={voice} scrollRef={scrollRef} />
           </div>
         </div>
@@ -635,26 +633,24 @@ export default function AgentApp() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col" style={{ paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-      <header className="flex items-center justify-between px-5 py-4 shrink-0">
-        <Link href="/dashboard">
-          <button className="flex items-center gap-1.5 text-white/50 hover:text-white text-sm transition-colors" data-testid="button-back">
-            <ArrowLeft size={18} />
-            Back
-          </button>
+    <div className="h-[100dvh] bg-black text-white flex flex-col" style={{ paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+      <header className="flex items-center justify-between px-3 sm:px-5 py-3 sm:py-4 shrink-0">
+        <Link href="/dashboard" className="flex items-center gap-1 text-white/50 hover:text-white text-sm transition-colors shrink-0" data-testid="button-back">
+          <ArrowLeft size={16} />
+          <span className="hidden sm:inline">Back</span>
         </Link>
-        <div className="text-center">
-          <h1 className="text-sm font-medium" data-testid="text-agent-name">{agent?.name || "Voice Agent"}</h1>
+        <div className="text-center min-w-0 flex-1">
+          <h1 className="text-sm font-medium truncate px-2" data-testid="text-agent-name">{agent?.name || "Voice Agent"}</h1>
           {voice.status === "connected" && voice.latency !== null && (
-            <p className="text-xs text-white/30">{voice.latency}ms</p>
+            <p className="text-[10px] text-white/30">{voice.latency}ms</p>
           )}
         </div>
-        <div className="w-16 flex justify-end">
+        <div className="w-10 sm:w-16 flex justify-end shrink-0">
           {agentConfig?.fileUploadEnabled && <FileUploadButton agentId={id} />}
         </div>
       </header>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 pb-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 sm:px-5 pb-4 min-h-0">
         <AnimatePresence mode="popLayout">
           {voice.status === "idle" && (
             <motion.div
@@ -662,10 +658,10 @@ export default function AgentApp() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="h-full flex items-center justify-center min-h-[50vh]"
+              className="h-full flex items-center justify-center min-h-[40vh] sm:min-h-[50vh]"
             >
               <div className="text-center">
-                <BevProLogo size={80} className="text-white/10 mx-auto mb-4" />
+                <BevProLogo size={64} className="text-white/10 mx-auto mb-4 sm:w-[80px] sm:h-[80px]" />
                 <p className="text-white/30 text-sm">Tap below to start a conversation</p>
               </div>
             </motion.div>
@@ -677,9 +673,9 @@ export default function AgentApp() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="h-full flex items-center justify-center min-h-[50vh]"
+              className="h-full flex items-center justify-center min-h-[40vh] sm:min-h-[50vh]"
             >
-              <BevProLogo size={100} className="text-white/20" animated={true} />
+              <BevProLogo size={80} className="text-white/20" animated={true} />
             </motion.div>
           )}
 

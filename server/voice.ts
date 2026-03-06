@@ -2,7 +2,7 @@ import { Router } from "express";
 import { requireAuth } from "./auth";
 import { storage } from "./storage";
 import { openai } from "./replit_integrations/audio/client";
-import { executeToolCall, getOpenAIToolDefinitions, buildSystemPrompt } from "./tools";
+import { executeToolCall, getOpenAIToolDefinitions, buildSystemPrompt, autoEnableToolsForAgent } from "./tools";
 
 const voice = Router();
 
@@ -21,7 +21,10 @@ voice.post("/api/voice/session", requireAuth, async (req, res) => {
     const agent = await storage.getAgentById(agentId, user.organizationId);
     if (!agent) return res.status(404).json({ error: "Agent not found" });
 
-    const tools = await storage.getToolsByAgent(agent.id);
+    let tools = await storage.getToolsByAgent(agent.id);
+    if (tools.length === 0) {
+      tools = await autoEnableToolsForAgent(agent.id, agent.type);
+    }
     const config = (agent.config || {}) as any;
     const systemPrompt = buildSystemPrompt(agent);
     const toolDefs = getOpenAIToolDefinitions(tools);
@@ -61,6 +64,7 @@ voice.post("/api/voice/session", requireAuth, async (req, res) => {
       tools: toolDefs.map((t: any) => t.name),
       agentName: agent.name,
       agentType: agent.type,
+      greeting: config.greeting || null,
     });
   } catch (error: any) {
     console.error("Voice session error:", error);

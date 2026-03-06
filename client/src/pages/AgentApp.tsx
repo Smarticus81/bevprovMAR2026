@@ -1,10 +1,423 @@
 import { useParams } from "wouter";
-import { useVoiceSession } from "@/hooks/useVoiceSession";
+import { useVoiceSession, type TranscriptEntry } from "@/hooks/useVoiceSession";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { ArrowLeft, Mic, MicOff, PhoneOff, Wrench } from "lucide-react";
+import { ArrowLeft, Mic, MicOff, PhoneOff, Wrench, ShoppingCart, DollarSign, CreditCard, User, Hash, Receipt, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
+import type { OrderItem } from "@shared/schema";
+
+interface PosState {
+  orderItems: OrderItem[];
+  subtotal: number;
+  tax: number;
+  total: number;
+  customerName: string | null;
+  tableNumber: number | null;
+  tabId: number | null;
+  orderId: number | null;
+  paymentStatus: "unpaid" | "paid" | "processing";
+  paymentMethod: string | null;
+  lastAction: string | null;
+}
+
+function extractPosState(transcript: TranscriptEntry[]): PosState {
+  const state: PosState = {
+    orderItems: [],
+    subtotal: 0,
+    tax: 0,
+    total: 0,
+    customerName: null,
+    tableNumber: null,
+    tabId: null,
+    orderId: null,
+    paymentStatus: "unpaid",
+    paymentMethod: null,
+    lastAction: null,
+  };
+
+  for (const entry of transcript) {
+    if (entry.role !== "tool" || !entry.toolResult) continue;
+    const r = entry.toolResult;
+
+    switch (entry.toolName) {
+      case "voice_ordering": {
+        if (r.items) {
+          state.orderItems = r.items.map((i: any) => ({
+            name: i.name,
+            quantity: i.quantity,
+            price: i.price,
+          }));
+        }
+        if (r.orderId) state.orderId = r.orderId;
+        if (r.table && r.table !== "bar") state.tableNumber = r.table;
+        if (r.total) {
+          const t = parseFloat(String(r.total).replace("$", ""));
+          state.subtotal = t;
+          state.tax = t * 0.08;
+          state.total = t + state.tax;
+        }
+        state.lastAction = "Order placed";
+        break;
+      }
+
+      case "tab_management": {
+        if (r.tabId) state.tabId = r.tabId;
+        if (r.customer) state.customerName = r.customer;
+
+        if (r.items && Array.isArray(r.items)) {
+          state.orderItems = r.items.map((i: any) => ({
+            name: i.name,
+            quantity: i.quantity,
+            price: i.price,
+          }));
+        }
+
+        if (r.added) {
+          const existing = state.orderItems.find((i) => i.name === r.added);
+          if (existing) {
+            existing.quantity += r.quantity || 1;
+          } else {
+            const price = r.lineTotal
+              ? parseFloat(String(r.lineTotal).replace("$", "")) / (r.quantity || 1)
+              : 0;
+            state.orderItems.push({
+              name: r.added,
+              quantity: r.quantity || 1,
+              price,
+            });
+          }
+        }
+
+        if (r.tabTotal) {
+          const t = parseFloat(String(r.tabTotal).replace("$", ""));
+          state.subtotal = t;
+          state.tax = t * 0.08;
+          state.total = t + state.tax;
+        } else if (r.total) {
+          const t = parseFloat(String(r.total).replace("$", ""));
+          state.subtotal = t;
+          state.tax = t * 0.08;
+          state.total = t + state.tax;
+        }
+
+        if (r.status === "closed") {
+          state.lastAction = "Tab closed";
+        } else if (r.added) {
+          state.lastAction = `Added ${r.quantity || 1}x ${r.added}`;
+        } else {
+          state.lastAction = "Tab updated";
+        }
+        break;
+      }
+
+      case "menu_lookup": {
+        state.lastAction = "Menu lookup";
+        break;
+      }
+
+      case "payment_processing": {
+        if (r.status === "paid") {
+          state.paymentStatus = "paid";
+          state.paymentMethod = r.method || null;
+          state.orderId = r.orderId || state.orderId;
+          if (r.amount) {
+            const t = parseFloat(String(r.amount).replace("$", ""));
+            state.subtotal = t;
+            state.tax = t * 0.08;
+            state.total = t + state.tax;
+          }
+        }
+        state.lastAction = "Payment processed";
+        break;
+      }
+
+      case "split_checks": {
+        state.lastAction = `Split ${r.splitCount || 2} ways`;
+        break;
+      }
+
+      case "customer_lookup": {
+        if (r.name) state.customerName = r.name;
+        state.lastAction = "Customer found";
+        break;
+      }
+
+      case "receipt_generation": {
+        state.lastAction = "Receipt generated";
+        break;
+      }
+    }
+  }
+
+  return state;
+}
+
+function PosDisplay({ posState }: { posState: PosState }) {
+  return (
+    <div className="h-full flex flex-col bg-black/50 backdrop-blur-sm" data-testid="pos-display">
+      <div className="px-5 py-4 border-b border-white/10">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ShoppingCart size={18} className="text-amber-400" />
+            <h2 className="text-sm font-semibold text-white" data-testid="text-pos-title">Current Order</h2>
+          </div>
+          <div className="flex items-center gap-3 text-xs text-white/40">
+            {posState.tabId && (
+              <span className="flex items-center gap-1" data-testid="text-tab-id">
+                <Hash size={12} />
+                Tab #{posState.tabId}
+              </span>
+            )}
+            {posState.orderId && (
+              <span className="flex items-center gap-1" data-testid="text-order-id">
+                <Receipt size={12} />
+                Order #{posState.orderId}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {(posState.customerName || posState.tableNumber) && (
+          <div className="flex items-center gap-3 mt-2 text-xs text-white/50">
+            {posState.customerName && (
+              <span className="flex items-center gap-1" data-testid="text-customer-name">
+                <User size={12} />
+                {posState.customerName}
+              </span>
+            )}
+            {posState.tableNumber && (
+              <span data-testid="text-table-number">Table {posState.tableNumber}</span>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-5 py-3">
+        {posState.orderItems.length === 0 ? (
+          <div className="h-full flex items-center justify-center" data-testid="pos-empty-state">
+            <div className="text-center">
+              <ShoppingCart size={40} className="text-white/10 mx-auto mb-3" />
+              <p className="text-white/30 text-sm">No items yet</p>
+              <p className="text-white/20 text-xs mt-1">Order items will appear here as the voice agent processes them</p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2" data-testid="pos-items-list">
+            {posState.orderItems.map((item, idx) => (
+              <motion.div
+                key={`${item.name}-${idx}`}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.2 }}
+                className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-white/5 hover:bg-white/8 transition-colors"
+                data-testid={`pos-item-${idx}`}
+              >
+                <div className="flex-1">
+                  <p className="text-sm text-white font-medium" data-testid={`text-item-name-${idx}`}>{item.name}</p>
+                  <p className="text-xs text-white/40">
+                    ${item.price.toFixed(2)} × {item.quantity}
+                  </p>
+                </div>
+                <p className="text-sm text-white font-medium" data-testid={`text-item-total-${idx}`}>
+                  ${(item.price * item.quantity).toFixed(2)}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="border-t border-white/10 px-5 py-4 space-y-2" data-testid="pos-totals">
+        <div className="flex justify-between text-sm text-white/60">
+          <span>Subtotal</span>
+          <span data-testid="text-subtotal">${posState.subtotal.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between text-sm text-white/60">
+          <span>Tax (8%)</span>
+          <span data-testid="text-tax">${posState.tax.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between text-base font-semibold text-white pt-1 border-t border-white/10">
+          <span>Total</span>
+          <span data-testid="text-total">${posState.total.toFixed(2)}</span>
+        </div>
+
+        <div className="pt-2">
+          <div className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium ${
+            posState.paymentStatus === "paid"
+              ? "bg-emerald-500/20 text-emerald-400"
+              : posState.paymentStatus === "processing"
+              ? "bg-amber-500/20 text-amber-400"
+              : "bg-white/5 text-white/40"
+          }`} data-testid="text-payment-status">
+            {posState.paymentStatus === "paid" ? (
+              <>
+                <CreditCard size={14} />
+                Paid{posState.paymentMethod ? ` via ${posState.paymentMethod}` : ""}
+              </>
+            ) : posState.paymentStatus === "processing" ? (
+              <>
+                <DollarSign size={14} />
+                Processing...
+              </>
+            ) : (
+              <>
+                <DollarSign size={14} />
+                Awaiting Payment
+              </>
+            )}
+          </div>
+        </div>
+
+        {posState.lastAction && (
+          <p className="text-xs text-white/30 text-center pt-1" data-testid="text-last-action">
+            Last: {posState.lastAction}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TranscriptPanel({
+  voice,
+  scrollRef,
+}: {
+  voice: ReturnType<typeof useVoiceSession>;
+  scrollRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  return (
+    <div className="h-full flex flex-col">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 pb-4 pt-2" data-testid="transcript-panel">
+        <AnimatePresence mode="popLayout">
+          {voice.status === "idle" && (
+            <motion.div
+              key="idle"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="h-full flex items-center justify-center min-h-[50vh]"
+            >
+              <div className="text-center">
+                <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
+                  <Mic size={32} className="text-white/30" />
+                </div>
+                <p className="text-white/40 text-sm">Tap below to start a conversation</p>
+              </div>
+            </motion.div>
+          )}
+
+          {voice.transcript.map((entry, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
+              className={`mb-3 flex ${entry.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              {entry.role === "tool" ? (
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl px-4 py-3 max-w-[85%]">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Wrench size={12} className="text-amber-400" />
+                    <span className="text-amber-400 text-xs font-medium">{entry.toolName}</span>
+                  </div>
+                  {entry.toolResult ? (
+                    <div className="text-white/60 text-sm">
+                      {typeof entry.toolResult === "object" && entry.toolResult.message
+                        ? entry.toolResult.message
+                        : <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(entry.toolResult, null, 2)}</pre>
+                      }
+                    </div>
+                  ) : (
+                    <p className="text-white/40 text-xs animate-pulse">{entry.text}</p>
+                  )}
+                </div>
+              ) : (
+                <div
+                  className={`max-w-[80%] px-4 py-3 rounded-2xl text-[15px] leading-relaxed ${
+                    entry.role === "user"
+                      ? "bg-white text-black"
+                      : "bg-white/10 text-white"
+                  }`}
+                >
+                  {entry.text}
+                </div>
+              )}
+            </motion.div>
+          ))}
+
+          {voice.status === "connected" && voice.isListening && voice.transcript.length > 0 && (
+            <motion.div
+              key="listening-indicator"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex justify-start mb-3"
+            >
+              <div className="bg-white/10 rounded-2xl px-4 py-3 flex items-center gap-2">
+                <div className="flex gap-1">
+                  <div className="w-1.5 h-1.5 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <div className="w-1.5 h-1.5 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <div className="w-1.5 h-1.5 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+function VoiceControls({ voice }: { voice: ReturnType<typeof useVoiceSession> }) {
+  return (
+    <div className="shrink-0 flex flex-col items-center gap-3 pb-8 pt-4">
+      {voice.status === "idle" || voice.status === "error" ? (
+        <motion.button
+          data-testid="button-start-call"
+          onClick={voice.connect}
+          whileTap={{ scale: 0.92 }}
+          className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-[0_0_60px_rgba(255,255,255,0.15)]"
+        >
+          <Mic size={32} className="text-black" />
+        </motion.button>
+      ) : voice.status === "connecting" ? (
+        <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+        </div>
+      ) : (
+        <div className="flex items-center gap-6">
+          <motion.button
+            data-testid="button-mute"
+            onClick={voice.toggleMute}
+            whileTap={{ scale: 0.9 }}
+            className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${
+              voice.isListening ? "bg-white/10 text-white" : "bg-red-500/20 text-red-400"
+            }`}
+          >
+            {voice.isListening ? <Mic size={22} /> : <MicOff size={22} />}
+          </motion.button>
+
+          <motion.button
+            data-testid="button-end-call"
+            onClick={voice.disconnect}
+            whileTap={{ scale: 0.9 }}
+            className="w-20 h-20 rounded-full bg-red-500 flex items-center justify-center shadow-[0_0_40px_rgba(239,68,68,0.3)]"
+          >
+            <PhoneOff size={28} className="text-white" />
+          </motion.button>
+
+          <div className="w-14 h-14" />
+        </div>
+      )}
+
+      <p className="text-white/30 text-xs">
+        {voice.status === "idle" ? "Tap to start" :
+         voice.status === "connecting" ? "Connecting..." :
+         voice.isListening ? "Listening..." : "Muted"}
+      </p>
+    </div>
+  );
+}
 
 export default function AgentApp() {
   const { agentId } = useParams<{ agentId: string }>();
@@ -22,11 +435,55 @@ export default function AgentApp() {
     enabled: !!agentId,
   });
 
+  const isVoicePos = agent?.type === "voice-pos";
+
+  const posState = useMemo(() => extractPosState(voice.transcript), [voice.transcript]);
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [voice.transcript]);
+
+  if (isVoicePos) {
+    return (
+      <div className="min-h-screen bg-black text-white flex flex-col" style={{ paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+        <header className="flex items-center justify-between px-5 py-4 shrink-0 border-b border-white/10">
+          <Link href="/dashboard">
+            <button className="flex items-center gap-1.5 text-white/50 hover:text-white text-sm transition-colors" data-testid="button-back">
+              <ArrowLeft size={18} />
+              Back
+            </button>
+          </Link>
+          <div className="text-center">
+            <h1 className="text-sm font-medium" data-testid="text-agent-name">{agent?.name || "Voice POS"}</h1>
+            {voice.status === "connected" && voice.latency !== null && (
+              <p className="text-xs text-white/30">{voice.latency}ms</p>
+            )}
+          </div>
+          <div className="w-16" />
+        </header>
+
+        {voice.error && (
+          <div className="px-5 py-2">
+            <p className="text-red-400 text-xs text-center" data-testid="text-voice-error">{voice.error}</p>
+          </div>
+        )}
+
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+          <div className="md:w-[380px] lg:w-[420px] md:border-r border-b md:border-b-0 border-white/10 h-[40vh] md:h-auto" data-testid="pos-panel">
+            <PosDisplay posState={posState} />
+          </div>
+
+          <div className="flex-1 flex flex-col overflow-hidden" data-testid="voice-panel">
+            <TranscriptPanel voice={voice} scrollRef={scrollRef} />
+          </div>
+        </div>
+
+        <VoiceControls voice={voice} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col" style={{ paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
@@ -129,52 +586,7 @@ export default function AgentApp() {
         </div>
       )}
 
-      <div className="shrink-0 flex flex-col items-center gap-3 pb-8 pt-4">
-        {voice.status === "idle" || voice.status === "error" ? (
-          <motion.button
-            data-testid="button-start-call"
-            onClick={voice.connect}
-            whileTap={{ scale: 0.92 }}
-            className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-[0_0_60px_rgba(255,255,255,0.15)]"
-          >
-            <Mic size={32} className="text-black" />
-          </motion.button>
-        ) : voice.status === "connecting" ? (
-          <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center">
-            <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          </div>
-        ) : (
-          <div className="flex items-center gap-6">
-            <motion.button
-              data-testid="button-mute"
-              onClick={voice.toggleMute}
-              whileTap={{ scale: 0.9 }}
-              className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${
-                voice.isListening ? "bg-white/10 text-white" : "bg-red-500/20 text-red-400"
-              }`}
-            >
-              {voice.isListening ? <Mic size={22} /> : <MicOff size={22} />}
-            </motion.button>
-
-            <motion.button
-              data-testid="button-end-call"
-              onClick={voice.disconnect}
-              whileTap={{ scale: 0.9 }}
-              className="w-20 h-20 rounded-full bg-red-500 flex items-center justify-center shadow-[0_0_40px_rgba(239,68,68,0.3)]"
-            >
-              <PhoneOff size={28} className="text-white" />
-            </motion.button>
-
-            <div className="w-14 h-14" />
-          </div>
-        )}
-
-        <p className="text-white/30 text-xs">
-          {voice.status === "idle" ? "Tap to start" :
-           voice.status === "connecting" ? "Connecting..." :
-           voice.isListening ? "Listening..." : "Muted"}
-        </p>
-      </div>
+      <VoiceControls voice={voice} />
     </div>
   );
 }

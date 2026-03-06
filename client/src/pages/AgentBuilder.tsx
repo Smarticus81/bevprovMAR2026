@@ -3,14 +3,14 @@ import { useParams, Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { getToolsForAgentType } from "@/lib/agentTools";
-import type { Agent, AgentConfig, AgentTool } from "@shared/schema";
+import type { Agent, AgentConfig } from "@shared/schema";
 import { AGENT_TYPE_LABELS } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { VoiceTestPanel } from "@/components/VoiceTestPanel";
 import { motion } from "framer-motion";
 import {
   Loader2, Save, ArrowLeft, CheckCircle2,
-  Mic, Wrench, Settings2, PlayCircle, ChevronRight
+  Mic, Wrench, Settings2, PlayCircle, ChevronRight, ExternalLink
 } from "lucide-react";
 
 const VOICES = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"] as const;
@@ -28,7 +28,6 @@ const LANGUAGES = [
 const TABS = [
   { id: "general", label: "General", icon: Settings2 },
   { id: "voice", label: "Voice", icon: Mic },
-  { id: "tools", label: "Tools", icon: Wrench },
   { id: "test", label: "Test", icon: PlayCircle },
 ] as const;
 
@@ -49,7 +48,6 @@ export default function AgentBuilder() {
   const [greeting, setGreeting] = useState("");
   const [fallbackMessage, setFallbackMessage] = useState("");
   const [maxConversationLength, setMaxConversationLength] = useState(10);
-  const [enabledTools, setEnabledTools] = useState<Record<string, boolean>>({});
   const [isActive, setIsActive] = useState(false);
 
   const { data: agent, isLoading } = useQuery<Agent>({
@@ -57,16 +55,6 @@ export default function AgentBuilder() {
     queryFn: async () => {
       const res = await fetch(`/api/agents/${id}`, { credentials: "include" });
       if (!res.ok) throw new Error("Agent not found");
-      return res.json();
-    },
-    enabled: !!id,
-  });
-
-  const { data: savedTools } = useQuery<AgentTool[]>({
-    queryKey: ["agents", id, "tools"],
-    queryFn: async () => {
-      const res = await fetch(`/api/agents/${id}/tools`, { credentials: "include" });
-      if (!res.ok) return [];
       return res.json();
     },
     enabled: !!id,
@@ -87,16 +75,6 @@ export default function AgentBuilder() {
     }
   }, [agent]);
 
-  useEffect(() => {
-    if (savedTools && agent) {
-      const toolMap: Record<string, boolean> = {};
-      const available = getToolsForAgentType(agent.type);
-      available.forEach((t) => { toolMap[t.name] = false; });
-      savedTools.forEach((t) => { toolMap[t.toolName] = t.enabled; });
-      setEnabledTools(toolMap);
-    }
-  }, [savedTools, agent]);
-
   const saveMutation = useMutation({
     mutationFn: async () => {
       await apiRequest("PATCH", `/api/agents/${id}`, {
@@ -107,11 +85,6 @@ export default function AgentBuilder() {
           voice, language, speed, greeting, fallbackMessage, maxConversationLength,
         },
       });
-      const tools = Object.entries(enabledTools).map(([toolName, enabled]) => {
-        const def = getToolsForAgentType(agent!.type).find((t) => t.name === toolName);
-        return { agentId: Number(id), toolName, toolCategory: def?.category || "Unknown", enabled, config: {} };
-      });
-      await apiRequest("PUT", `/api/agents/${id}/tools`, { tools });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["agents"] });
@@ -147,7 +120,6 @@ export default function AgentBuilder() {
     acc[tool.category].push(tool);
     return acc;
   }, {});
-  const enabledCount = Object.values(enabledTools).filter(Boolean).length;
 
   return (
     <div className="min-h-screen bg-black text-white font-sans">
@@ -185,6 +157,15 @@ export default function AgentBuilder() {
               {saveMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
               Save
             </button>
+            <Link href={`/app/${id}`}>
+              <button
+                data-testid="button-launch-agent"
+                className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-green-400 transition-colors"
+              >
+                <ExternalLink size={14} />
+                Launch
+              </button>
+            </Link>
           </div>
         </div>
       </header>
@@ -259,6 +240,39 @@ export default function AgentBuilder() {
                 />
               </div>
             </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <Wrench size={16} className="text-white/40" />
+                <h2 className="text-lg font-semibold">Included Tools</h2>
+                <span className="text-xs text-white/40 ml-auto">{availableTools.length} tools auto-enabled</span>
+              </div>
+              <p className="text-sm text-white/40">
+                These tools are automatically enabled based on your agent type. They power the actions your agent can perform.
+              </p>
+              {Object.entries(toolsByCategory).map(([category, tools]) => (
+                <div key={category} className="space-y-1.5">
+                  <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">{category}</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                    {tools.map((tool) => (
+                      <div
+                        key={tool.name}
+                        data-testid={`info-tool-${tool.name}`}
+                        className="flex items-center gap-2 p-3 rounded-xl bg-white/[0.04] border border-white/5"
+                      >
+                        <CheckCircle2 size={14} className="text-green-400 shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-white/80 truncate">
+                            {tool.name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                          </p>
+                          <p className="text-xs text-white/30 truncate">{tool.description}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </motion.div>
         )}
 
@@ -306,6 +320,28 @@ export default function AgentBuilder() {
               </div>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
+                  <label className="text-sm text-white/60">Speech Speed</label>
+                  <span className="text-sm text-white/80 font-medium">{speed < 1 ? "Slow" : speed > 1.3 ? "Fast" : speed > 1 ? "Slightly Fast" : "Normal"}</span>
+                </div>
+                <input
+                  data-testid="slider-speed"
+                  type="range"
+                  min={0.5}
+                  max={1.5}
+                  step={0.1}
+                  value={speed}
+                  onChange={(e) => setSpeed(Number(e.target.value))}
+                  className="w-full accent-white"
+                />
+                <div className="flex justify-between text-xs text-white/30">
+                  <span>Slow</span>
+                  <span>Normal</span>
+                  <span>Fast</span>
+                </div>
+                <p className="text-xs text-white/30">Controls the pacing of the agent's speech through prompt instructions.</p>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
                   <label className="text-sm text-white/60">Max Conversation Length</label>
                   <span className="text-sm text-white/80 font-medium">{maxConversationLength} turns</span>
                 </div>
@@ -328,55 +364,6 @@ export default function AgentBuilder() {
           </motion.div>
         )}
 
-        {activeTab === "tools" && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Tools</h2>
-                <span className="text-sm text-white/40">{enabledCount} / {availableTools.length} enabled</span>
-              </div>
-              <p className="text-sm text-white/40">
-                These are the actions your agent can perform during a voice conversation.
-                Enable the ones relevant to your venue.
-              </p>
-              {Object.entries(toolsByCategory).map(([category, tools]) => (
-                <div key={category} className="space-y-2">
-                  <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">{category}</h3>
-                  {tools.map((tool) => {
-                    const enabled = enabledTools[tool.name] || false;
-                    return (
-                      <button
-                        key={tool.name}
-                        data-testid={`switch-tool-${tool.name}`}
-                        onClick={() => setEnabledTools((prev) => ({ ...prev, [tool.name]: !enabled }))}
-                        className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all text-left ${
-                          enabled
-                            ? "border-white/20 bg-white/[0.06]"
-                            : "border-white/5 bg-white/[0.02] hover:border-white/10"
-                        }`}
-                      >
-                        <div>
-                          <p className={`text-sm font-medium ${enabled ? "text-white" : "text-white/50"}`}>
-                            {tool.name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
-                          </p>
-                          <p className="text-xs text-white/30 mt-0.5">{tool.description}</p>
-                        </div>
-                        <div className={`w-10 h-6 rounded-full transition-colors flex items-center px-0.5 ${
-                          enabled ? "bg-green-500" : "bg-white/10"
-                        }`}>
-                          <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                            enabled ? "translate-x-4" : "translate-x-0"
-                          }`} />
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
         {activeTab === "test" && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 space-y-4">
@@ -385,11 +372,6 @@ export default function AgentBuilder() {
                 Start a live voice session to test how your agent responds. 
                 Make sure you've saved your configuration first.
               </p>
-              {enabledCount === 0 && (
-                <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-4">
-                  <p className="text-sm text-amber-400">No tools enabled. Your agent won't be able to perform any actions. Go to the Tools tab to enable some.</p>
-                </div>
-              )}
             </div>
             <VoiceTestPanel agentId={parseInt(id!)} agentName={name} />
           </motion.div>

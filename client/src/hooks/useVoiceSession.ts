@@ -32,6 +32,7 @@ export function useVoiceSession(agentId: number | null) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const startTimeRef = useRef<number>(0);
+  const greetingRef = useRef<string | null>(null);
 
   const addTranscript = useCallback((entry: TranscriptEntry) => {
     setState((s) => ({ ...s, transcript: [...s.transcript, entry] }));
@@ -57,6 +58,7 @@ export function useVoiceSession(agentId: number | null) {
 
       const session = await tokenRes.json();
       const token = session.token;
+      greetingRef.current = session.greeting || null;
 
       if (!token) {
         throw new Error("No session token received");
@@ -93,6 +95,15 @@ export function useVoiceSession(agentId: number | null) {
         switch (msg.type) {
           case "session.created":
             setState((s) => ({ ...s, status: "connected", isListening: true }));
+            if (greetingRef.current && dc.readyState === "open") {
+              dc.send(JSON.stringify({
+                type: "response.create",
+                response: {
+                  modalities: ["text", "audio"],
+                  instructions: `Say exactly this greeting to the user: "${greetingRef.current}"`,
+                },
+              }));
+            }
             break;
 
           case "conversation.item.input_audio_transcription.completed":

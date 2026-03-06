@@ -4,6 +4,8 @@ import { storage } from "./storage";
 import { insertWaitlistSchema, AGENT_TYPES } from "@shared/schema";
 import { requireAuth } from "./auth";
 import { voiceRouter } from "./voice";
+import { mcpRouter } from "./mcp";
+import { autoEnableToolsForAgent } from "./tools";
 import { z } from "zod";
 
 export async function registerRoutes(
@@ -12,6 +14,7 @@ export async function registerRoutes(
 ): Promise<Server> {
 
   app.use(voiceRouter);
+  app.use(mcpRouter);
 
   app.post("/api/waitlist", async (req, res) => {
     const parsed = insertWaitlistSchema.safeParse(req.body);
@@ -49,6 +52,9 @@ export async function registerRoutes(
         greeting: "Hello! How can I help you today?",
       },
     });
+
+    await autoEnableToolsForAgent(agent.id, parsed.data.type);
+
     return res.status(201).json(agent);
   });
 

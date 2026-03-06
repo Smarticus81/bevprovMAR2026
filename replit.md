@@ -1,7 +1,7 @@
 # BevPro — Voice Agent Builder for Venues
 
 ## Overview
-BevPro is a multi-tenant, no-code voice agent builder platform for event and wedding venue owners. Venue owners can create 5 types of voice agents (POS Integration, Agentic Voice POS, Inventory Manager, Venue Agent, and BevOne all-in-one). Features full voice pipeline with tool calling via OpenAI Realtime API + WebRTC, with automatic fallback to STT→Chat→TTS.
+BevPro is a multi-tenant, no-code voice agent builder platform for event and wedding venue owners. Venue owners can create 5 types of voice agents (POS Integration, Agentic Voice POS, Inventory Manager, Venue Agent, and BevOne all-in-one). Features full voice pipeline with tool calling via OpenAI Realtime API + WebRTC. Tools are auto-enabled on agent creation. MCP endpoint available for external tool access.
 
 ## Architecture
 - **Frontend**: React + Vite + Tailwind CSS v4 + Framer Motion + Wouter routing
@@ -52,8 +52,9 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 - `server/index.ts` — Express app setup
 - `server/auth.ts` — Passport.js auth, session management, seeds venue data on registration
 - `server/routes.ts` — API routes (agents CRUD, venue data CRUD, waitlist)
-- `server/voice.ts` — Voice pipeline (WebRTC session, tool calls with orgId, fallback STT/Chat/TTS)
-- `server/tools.ts` — 21 real tool implementations against PostgreSQL (no mocks)
+- `server/voice.ts` — Voice pipeline (WebRTC session, tool calls with orgId)
+- `server/tools.ts` — 21 real tool implementations + auto-enable logic + system prompt builder
+- `server/mcp.ts` — MCP (Model Context Protocol) JSON-RPC 2.0 endpoint
 - `server/storage.ts` — Database storage interface with all CRUD methods + seedVenueData()
 - `server/db.ts` — Database connection
 
@@ -62,13 +63,13 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 - `client/src/pages/Login.tsx` — Auth login page
 - `client/src/pages/Register.tsx` — Auth registration page
 - `client/src/pages/Dashboard.tsx` — Agent list with CRUD
-- `client/src/pages/AgentBuilder.tsx` — No-code agent configuration (4 tabs: General, Voice, Tools, Test), dark theme
+- `client/src/pages/AgentBuilder.tsx` — No-code agent configuration (3 tabs: General, Voice, Test), dark theme, auto-enabled tools displayed as info
 - `client/src/pages/AppStore.tsx` — iOS App Store-style agent marketplace
-- `client/src/pages/AgentApp.tsx` — Full-screen mobile voice interface (auth-protected)
+- `client/src/pages/AgentApp.tsx` — Full-screen voice interface; voice-pos type shows split-screen POS UI with live order display
 - `client/src/pages/VenueData.tsx` — Venue data management (6 tabs: Menu, Inventory, Staff, Bookings, Guests, Suppliers)
 - `client/src/pages/Pricing.tsx` — Pricing page (3 tiers, UI only)
 - `client/src/hooks/useAuth.ts` — Auth hook
-- `client/src/hooks/useVoiceSession.ts` — WebRTC voice session hook with fallback chain
+- `client/src/hooks/useVoiceSession.ts` — WebRTC voice session hook (sends greeting at session start)
 - `client/src/components/VoiceTestPanel.tsx` — Voice test widget for agent builder
 - `client/src/components/layout/DashboardLayout.tsx` — Dashboard sidebar layout (Agents, Venue Data, App Store)
 - `client/src/components/layout/Navbar.tsx` — Landing page navbar
@@ -95,6 +96,10 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 - `POST /api/voice/session` — Create WebRTC session (ephemeral token via OPENAI_API_KEY)
 - `POST /api/voice/tool-call` — Execute tool call (with orgId)
 - `POST /api/voice/chat` — Chat completions with tool calling (via Replit AI integration)
+
+### MCP (Model Context Protocol)
+- `GET /api/mcp/:agentId` — Discovery endpoint (server info, tool list)
+- `POST /api/mcp/:agentId` — JSON-RPC 2.0 endpoint (methods: initialize, tools/list, tools/call, ping)
 
 ### Venue Data (all scoped by orgId)
 - `GET/POST/PATCH/:id/DELETE/:id /api/venue/menu` — Menu items

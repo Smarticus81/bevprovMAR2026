@@ -1,4 +1,4 @@
-import type { Agent, AgentTool, AgentConfig } from "@shared/schema";
+import type { Agent, AgentTool, AgentConfig, InsertAgentTool } from "@shared/schema";
 import { storage } from "./storage";
 
 export interface ToolCallRequest {
@@ -9,6 +9,53 @@ export interface ToolCallRequest {
 export interface ToolCallResult {
   success: boolean;
   result: unknown;
+}
+
+interface ToolCatalogEntry {
+  name: string;
+  category: string;
+  agentTypes: string[];
+}
+
+const TOOL_CATALOG: ToolCatalogEntry[] = [
+  { name: "square_pos_sync", category: "POS", agentTypes: ["pos-integration", "voice-pos", "bevone"] },
+  { name: "toast_pos_sync", category: "POS", agentTypes: ["pos-integration", "voice-pos", "bevone"] },
+  { name: "payment_processing", category: "POS", agentTypes: ["pos-integration", "voice-pos", "bevone"] },
+  { name: "receipt_generation", category: "POS", agentTypes: ["pos-integration", "voice-pos", "bevone"] },
+  { name: "tab_management", category: "POS", agentTypes: ["pos-integration", "voice-pos", "bevone"] },
+  { name: "menu_lookup", category: "POS", agentTypes: ["pos-integration", "voice-pos", "bevone"] },
+  { name: "voice_ordering", category: "Voice POS", agentTypes: ["voice-pos", "bevone"] },
+  { name: "split_checks", category: "Voice POS", agentTypes: ["voice-pos", "bevone"] },
+  { name: "customer_lookup", category: "Voice POS", agentTypes: ["voice-pos", "bevone"] },
+  { name: "stock_tracking", category: "Inventory", agentTypes: ["inventory", "bevone"] },
+  { name: "low_stock_alerts", category: "Inventory", agentTypes: ["inventory", "bevone"] },
+  { name: "supplier_management", category: "Inventory", agentTypes: ["inventory", "bevone"] },
+  { name: "waste_tracking", category: "Inventory", agentTypes: ["inventory", "bevone"] },
+  { name: "auto_reorder", category: "Inventory", agentTypes: ["inventory", "bevone"] },
+  { name: "inventory_pos_sync", category: "Inventory", agentTypes: ["inventory", "bevone"] },
+  { name: "calendar_booking", category: "Operations", agentTypes: ["venue-admin", "bevone"] },
+  { name: "staff_scheduling", category: "Operations", agentTypes: ["venue-admin", "bevone"] },
+  { name: "financial_reports", category: "Operations", agentTypes: ["venue-admin", "bevone"] },
+  { name: "guest_management", category: "Operations", agentTypes: ["venue-admin", "bevone"] },
+  { name: "vendor_coordination", category: "Operations", agentTypes: ["venue-admin", "bevone"] },
+  { name: "task_assignments", category: "Operations", agentTypes: ["venue-admin", "bevone"] },
+];
+
+export function getToolsForAgentType(agentType: string): ToolCatalogEntry[] {
+  return TOOL_CATALOG.filter((tool) => tool.agentTypes.includes(agentType));
+}
+
+export async function autoEnableToolsForAgent(agentId: number, agentType: string): Promise<AgentTool[]> {
+  const tools = getToolsForAgentType(agentType);
+  if (tools.length === 0) return [];
+  const toolInserts: InsertAgentTool[] = tools.map((t) => ({
+    agentId,
+    toolName: t.name,
+    toolCategory: t.category,
+    enabled: true,
+    config: {},
+  }));
+  return await storage.setAgentTools(agentId, toolInserts);
 }
 
 const TOOL_DEFINITIONS: Record<string, { description: string; parameters: Record<string, unknown> }> = {
@@ -683,6 +730,29 @@ export function buildSystemPrompt(agent: Agent): string {
   prompt += "\nBe concise, friendly, and professional. When using tools, briefly explain what you're doing.";
   prompt += "\nAlways confirm actions before processing payments, placing orders, or making bookings.";
   prompt += "\nWhen looking up items, use the exact data returned by the tools — never make up prices or availability.";
+
+  if (config.language && config.language !== "en") {
+    const languageNames: Record<string, string> = {
+      es: "Spanish", fr: "French", de: "German", it: "Italian",
+      pt: "Portuguese", ja: "Japanese", zh: "Chinese",
+    };
+    const langName = languageNames[config.language] || config.language;
+    prompt += `\n\nIMPORTANT: Respond in ${langName}. All your spoken and text responses must be in ${langName}.`;
+  }
+
+  if (config.speed && config.speed !== 1) {
+    if (config.speed < 1) {
+      prompt += `\n\nSpeak slowly and clearly. Take your time with each response. Use a calm, measured pace.`;
+    } else if (config.speed > 1.3) {
+      prompt += `\n\nSpeak quickly and efficiently. Be brief and to the point. Keep responses short and snappy.`;
+    } else if (config.speed > 1) {
+      prompt += `\n\nSpeak at a slightly faster than normal pace. Be concise in your responses.`;
+    }
+  }
+
+  if (config.maxConversationLength) {
+    prompt += `\n\nLimit conversations to approximately ${config.maxConversationLength} exchanges. After reaching this limit, politely wrap up the conversation and suggest the customer reach out again if they need more help.`;
+  }
 
   if (config.greeting) {
     prompt += `\n\nGreet users with: "${config.greeting}"`;

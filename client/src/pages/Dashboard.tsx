@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useState } from "react";
 import { Link } from "wouter";
-import { Plus, Mic, Store, Box, Briefcase, Sparkles, MoreVertical, Trash2, Bot } from "lucide-react";
+import { Plus, Mic, Store, Box, Briefcase, Sparkles, MoreVertical, Trash2, Bot, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const AGENT_TYPE_META: Record<string, { label: string; icon: any; color: string }> = {
@@ -202,7 +202,17 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <h3 className="font-semibold text-white mb-1">{agent.name}</h3>
-                    <p className="text-xs text-white/40">{meta.label}</p>
+                    <p className="text-xs text-white/40 mb-3">{meta.label}</p>
+                    <Link href={`/app/${agent.id}`}>
+                      <button
+                        data-testid={`button-launch-${agent.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-1.5 bg-green-500/20 text-green-400 border border-green-500/30 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-green-500/30 transition-colors"
+                      >
+                        <ExternalLink size={12} />
+                        Launch
+                      </button>
+                    </Link>
                   </div>
                 </Link>
               );

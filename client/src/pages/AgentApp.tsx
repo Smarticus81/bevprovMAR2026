@@ -2,7 +2,7 @@ import { useParams } from "wouter";
 import { useVoiceSession, type TranscriptEntry, type WakeWordConfig } from "@/hooks/useVoiceSession";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { ArrowLeft, Mic, MicOff, PhoneOff, Wrench, ShoppingCart, DollarSign, CreditCard, User, Hash, Receipt, Volume2, Upload, FileText, Loader2, X } from "lucide-react";
+import { ArrowLeft, Mic, MicOff, PhoneOff, Wrench, ShoppingCart, DollarSign, CreditCard, User, Hash, Receipt, Volume2, Upload, FileText, Loader2, X, Wifi, WifiOff, Clock } from "lucide-react";
 import { BevProLogo } from "@/components/BevProLogo";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState, useMemo } from "react";
@@ -154,73 +154,157 @@ function extractPosState(transcript: TranscriptEntry[]): PosState {
   return state;
 }
 
+const AGENT_TYPE_LABELS: Record<string, string> = {
+  "pos-integration": "POS Integration",
+  "voice-pos": "Voice POS",
+  "inventory": "Inventory Manager",
+  "venue": "Venue Agent",
+  "bevone": "BevOne",
+};
+
+function StatusPill({ status, latency }: { status: string; latency: number | null }) {
+  const isConnected = status === "connected";
+  const isConnecting = status === "connecting";
+  return (
+    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-wide ${
+      isConnected ? "bg-emerald-500/15 text-emerald-400" :
+      isConnecting ? "bg-amber-500/15 text-amber-400" :
+      status === "error" ? "bg-red-500/15 text-red-400" :
+      "bg-white/[0.06] text-white/40"
+    }`} data-testid="status-pill">
+      <div className={`w-1.5 h-1.5 rounded-full ${
+        isConnected ? "bg-emerald-400" :
+        isConnecting ? "bg-amber-400 animate-pulse" :
+        status === "error" ? "bg-red-400" :
+        "bg-white/30"
+      }`} />
+      {isConnected ? "Live" : isConnecting ? "Connecting" : status === "error" ? "Error" : "Ready"}
+      {isConnected && latency !== null && (
+        <span className="text-white/30 ml-0.5">{latency}ms</span>
+      )}
+    </div>
+  );
+}
+
+function AgentHeader({
+  agent,
+  agentConfig,
+  voice,
+  id,
+}: {
+  agent: any;
+  agentConfig: AgentConfig | null;
+  voice: ReturnType<typeof useVoiceSession>;
+  id: number;
+}) {
+  const typeLabel = AGENT_TYPE_LABELS[agent?.type] || agent?.type || "";
+  return (
+    <header className="shrink-0 border-b border-white/[0.06] bg-black/40 backdrop-blur-md" data-testid="agent-header">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4">
+        <Link
+          href="/dashboard"
+          className="flex items-center gap-2 text-white/50 hover:text-white transition-colors min-w-[44px] min-h-[44px] -ml-2 pl-2"
+          data-testid="button-back"
+        >
+          <ArrowLeft size={18} />
+          <span className="hidden sm:inline text-sm">Back</span>
+        </Link>
+
+        <div className="text-center min-w-0 flex-1 px-3">
+          <h1 className="text-base sm:text-lg font-semibold truncate text-white" data-testid="text-agent-name">
+            {agent?.name || "Voice Agent"}
+          </h1>
+          {typeLabel && (
+            <p className="text-[11px] sm:text-xs text-[#C9A96E]/70 font-medium tracking-wide uppercase mt-0.5">
+              {typeLabel}
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {agentConfig?.fileUploadEnabled && <FileUploadButton agentId={id} />}
+          <StatusPill status={voice.status} latency={voice.latency} />
+        </div>
+      </div>
+    </header>
+  );
+}
+
 function PosDisplay({ posState }: { posState: PosState }) {
   return (
-    <div className="h-full flex flex-col bg-black/50 backdrop-blur-sm" data-testid="pos-display">
-      <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-white/10">
+    <div className="h-full flex flex-col" data-testid="pos-display">
+      <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-white/[0.06]">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <ShoppingCart size={16} className="text-amber-400 sm:w-[18px] sm:h-[18px]" />
-            <h2 className="text-xs sm:text-sm font-semibold text-white" data-testid="text-pos-title">Current Order</h2>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-[#C9A96E]/10 flex items-center justify-center">
+              <ShoppingCart size={16} className="text-[#C9A96E]" />
+            </div>
+            <h2 className="text-sm sm:text-base font-semibold text-white" data-testid="text-pos-title">Current Order</h2>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs text-white/40">
+          <div className="flex items-center gap-3 text-xs text-white/40">
             {posState.tabId && (
-              <span className="flex items-center gap-1" data-testid="text-tab-id">
-                <Hash size={10} className="sm:w-3 sm:h-3" />
-                Tab #{posState.tabId}
+              <span className="flex items-center gap-1 bg-white/[0.04] px-2 py-0.5 rounded" data-testid="text-tab-id">
+                <Hash size={11} />
+                Tab {posState.tabId}
               </span>
             )}
             {posState.orderId && (
-              <span className="flex items-center gap-1" data-testid="text-order-id">
-                <Receipt size={10} className="sm:w-3 sm:h-3" />
-                Order #{posState.orderId}
+              <span className="flex items-center gap-1 bg-white/[0.04] px-2 py-0.5 rounded" data-testid="text-order-id">
+                <Receipt size={11} />
+                #{posState.orderId}
               </span>
             )}
           </div>
         </div>
 
         {(posState.customerName || posState.tableNumber) && (
-          <div className="flex items-center gap-2 sm:gap-3 mt-1.5 sm:mt-2 text-[10px] sm:text-xs text-white/50">
+          <div className="flex items-center gap-3 mt-2 text-xs text-white/50">
             {posState.customerName && (
-              <span className="flex items-center gap-1 truncate" data-testid="text-customer-name">
-                <User size={10} className="shrink-0 sm:w-3 sm:h-3" />
+              <span className="flex items-center gap-1.5 truncate" data-testid="text-customer-name">
+                <User size={12} className="shrink-0 text-[#C9A96E]/60" />
                 {posState.customerName}
               </span>
             )}
             {posState.tableNumber && (
-              <span data-testid="text-table-number" className="shrink-0">Table {posState.tableNumber}</span>
+              <span data-testid="text-table-number" className="shrink-0 bg-white/[0.04] px-2 py-0.5 rounded">
+                Table {posState.tableNumber}
+              </span>
             )}
           </div>
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 sm:px-5 py-2 sm:py-3">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-3">
         {posState.orderItems.length === 0 ? (
           <div className="h-full flex items-center justify-center" data-testid="pos-empty-state">
-            <div className="text-center">
-              <ShoppingCart size={40} className="text-white/10 mx-auto mb-3" />
-              <p className="text-white/30 text-sm">No items yet</p>
-              <p className="text-white/20 text-xs mt-1">Order items will appear here as the voice agent processes them</p>
+            <div className="text-center py-8">
+              <div className="w-14 h-14 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mx-auto mb-3">
+                <ShoppingCart size={24} className="text-white/15" />
+              </div>
+              <p className="text-white/30 text-sm font-medium">No items yet</p>
+              <p className="text-white/20 text-xs mt-1 max-w-[200px] mx-auto leading-relaxed">
+                Order items will appear here as you speak
+              </p>
             </div>
           </div>
         ) : (
-          <div className="space-y-2" data-testid="pos-items-list">
+          <div className="space-y-1.5" data-testid="pos-items-list">
             {posState.orderItems.map((item, idx) => (
               <motion.div
                 key={`${item.name}-${idx}`}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.2 }}
-                className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-white/5 hover:bg-white/8 transition-colors"
+                className="flex items-center justify-between py-3 px-3.5 rounded-lg bg-white/[0.03] border border-white/[0.04] hover:bg-white/[0.05] transition-colors"
                 data-testid={`pos-item-${idx}`}
               >
-                <div className="flex-1">
-                  <p className="text-sm text-white font-medium" data-testid={`text-item-name-${idx}`}>{item.name}</p>
-                  <p className="text-xs text-white/40">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[15px] text-white font-medium truncate" data-testid={`text-item-name-${idx}`}>{item.name}</p>
+                  <p className="text-xs text-white/40 mt-0.5">
                     ${item.price.toFixed(2)} × {item.quantity}
                   </p>
                 </div>
-                <p className="text-sm text-white font-medium" data-testid={`text-item-total-${idx}`}>
+                <p className="text-[15px] text-white font-semibold ml-3 tabular-nums" data-testid={`text-item-total-${idx}`}>
                   ${(item.price * item.quantity).toFixed(2)}
                 </p>
               </motion.div>
@@ -229,41 +313,42 @@ function PosDisplay({ posState }: { posState: PosState }) {
         )}
       </div>
 
-      <div className="border-t border-white/10 px-3 sm:px-5 py-3 sm:py-4 space-y-1.5 sm:space-y-2" data-testid="pos-totals">
-        <div className="flex justify-between text-sm text-white/60">
+      <div className="border-t border-white/[0.06] px-4 sm:px-5 py-4 space-y-2 bg-white/[0.02]" data-testid="pos-totals">
+        <div className="flex justify-between text-sm text-white/50">
           <span>Subtotal</span>
-          <span data-testid="text-subtotal">${posState.subtotal.toFixed(2)}</span>
+          <span className="tabular-nums" data-testid="text-subtotal">${posState.subtotal.toFixed(2)}</span>
         </div>
-        <div className="flex justify-between text-sm text-white/60">
+        <div className="flex justify-between text-sm text-white/50">
           <span>Tax (8%)</span>
-          <span data-testid="text-tax">${posState.tax.toFixed(2)}</span>
+          <span className="tabular-nums" data-testid="text-tax">${posState.tax.toFixed(2)}</span>
         </div>
-        <div className="flex justify-between text-base font-semibold text-white pt-1 border-t border-white/10">
+        <div className="h-px bg-white/[0.08] my-1" />
+        <div className="flex justify-between text-lg font-bold text-white">
           <span>Total</span>
-          <span data-testid="text-total">${posState.total.toFixed(2)}</span>
+          <span className="tabular-nums" data-testid="text-total">${posState.total.toFixed(2)}</span>
         </div>
 
         <div className="pt-2">
-          <div className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium ${
+          <div className={`flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-semibold transition-colors ${
             posState.paymentStatus === "paid"
-              ? "bg-emerald-500/20 text-emerald-400"
+              ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
               : posState.paymentStatus === "processing"
-              ? "bg-amber-500/20 text-amber-400"
-              : "bg-white/5 text-white/40"
+              ? "bg-amber-500/15 text-amber-400 border border-amber-500/20"
+              : "bg-white/[0.03] text-white/35 border border-white/[0.06]"
           }`} data-testid="text-payment-status">
             {posState.paymentStatus === "paid" ? (
               <>
-                <CreditCard size={14} />
+                <CreditCard size={16} />
                 Paid{posState.paymentMethod ? ` via ${posState.paymentMethod}` : ""}
               </>
             ) : posState.paymentStatus === "processing" ? (
               <>
-                <DollarSign size={14} />
-                Processing...
+                <Loader2 size={16} className="animate-spin" />
+                Processing Payment...
               </>
             ) : (
               <>
-                <DollarSign size={14} />
+                <DollarSign size={16} />
                 Awaiting Payment
               </>
             )}
@@ -271,12 +356,65 @@ function PosDisplay({ posState }: { posState: PosState }) {
         </div>
 
         {posState.lastAction && (
-          <p className="text-xs text-white/30 text-center pt-1" data-testid="text-last-action">
-            Last: {posState.lastAction}
+          <p className="text-xs text-white/25 text-center pt-1 flex items-center justify-center gap-1.5" data-testid="text-last-action">
+            <Clock size={10} />
+            {posState.lastAction}
           </p>
         )}
       </div>
     </div>
+  );
+}
+
+function TranscriptBubble({ entry, index }: { entry: TranscriptEntry; index: number }) {
+  if (entry.role === "tool") {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2 }}
+        className="flex justify-center mb-3"
+      >
+        <div className="border border-white/[0.06] rounded-lg px-4 py-2.5 max-w-[90%] bg-white/[0.02]">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-5 h-5 rounded bg-[#C9A96E]/10 flex items-center justify-center">
+              <Wrench size={10} className="text-[#C9A96E]/60" />
+            </div>
+            <span className="text-white/40 text-xs font-medium">{entry.toolName}</span>
+          </div>
+          {entry.toolResult ? (
+            <div className="text-white/55 text-sm leading-relaxed">
+              {typeof entry.toolResult === "object" && entry.toolResult.message
+                ? entry.toolResult.message
+                : <pre className="text-xs whitespace-pre-wrap font-mono text-white/40">{JSON.stringify(entry.toolResult, null, 2)}</pre>
+              }
+            </div>
+          ) : (
+            <p className="text-white/30 text-xs animate-pulse">{entry.text}</p>
+          )}
+        </div>
+      </motion.div>
+    );
+  }
+
+  const isUser = entry.role === "user";
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25 }}
+      className={`mb-3 flex ${isUser ? "justify-end" : "justify-start"}`}
+    >
+      <div
+        className={`max-w-[82%] px-4 py-3 text-[15px] leading-relaxed ${
+          isUser
+            ? "bg-[#C9A96E]/15 text-white/90 rounded-2xl rounded-br-md border border-[#C9A96E]/10"
+            : "bg-white/[0.04] text-white/75 rounded-2xl rounded-bl-md border border-white/[0.06]"
+        }`}
+      >
+        {entry.text}
+      </div>
+    </motion.div>
   );
 }
 
@@ -289,7 +427,7 @@ function TranscriptPanel({
 }) {
   return (
     <div className="h-full flex flex-col">
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 pb-4 pt-2" data-testid="transcript-panel">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 pb-4 pt-3" data-testid="transcript-panel">
         <AnimatePresence mode="popLayout">
           {voice.status === "idle" && (
             <motion.div
@@ -300,8 +438,8 @@ function TranscriptPanel({
               className="h-full flex items-center justify-center min-h-[30vh]"
             >
               <div className="text-center">
-                <BevProLogo size={64} className="text-white/10 mx-auto mb-3" />
-                <p className="text-white/30 text-sm">Tap below to start</p>
+                <BevProLogo size={56} className="text-white/10 mx-auto mb-4" />
+                <p className="text-white/25 text-sm">Conversation will appear here</p>
               </div>
             </motion.div>
           )}
@@ -314,47 +452,15 @@ function TranscriptPanel({
               exit={{ opacity: 0 }}
               className="h-full flex items-center justify-center min-h-[30vh]"
             >
-              <BevProLogo size={80} className="text-white/20" animated={true} />
+              <div className="text-center">
+                <BevProLogo size={64} className="text-[#C9A96E]/30" animated={true} />
+                <p className="text-white/30 text-sm mt-4">Listening...</p>
+              </div>
             </motion.div>
           )}
 
           {voice.transcript.map((entry, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
-              className={`mb-3 flex ${entry.role === "user" ? "justify-end" : "justify-start"}`}
-            >
-              {entry.role === "tool" ? (
-                <div className="border border-white/10 rounded-2xl px-4 py-3 max-w-[85%] bg-white/[0.02]">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Wrench size={12} className="text-white/40" />
-                    <span className="text-white/40 text-xs font-medium">{entry.toolName}</span>
-                  </div>
-                  {entry.toolResult ? (
-                    <div className="text-white/60 text-sm">
-                      {typeof entry.toolResult === "object" && entry.toolResult.message
-                        ? entry.toolResult.message
-                        : <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(entry.toolResult, null, 2)}</pre>
-                      }
-                    </div>
-                  ) : (
-                    <p className="text-white/30 text-xs animate-pulse">{entry.text}</p>
-                  )}
-                </div>
-              ) : (
-                <div
-                  className={`max-w-[80%] px-4 py-3 rounded-2xl text-[15px] leading-relaxed ${
-                    entry.role === "user"
-                      ? "bg-white/10 text-white/80"
-                      : "border border-white/10 text-white/60 bg-white/[0.02]"
-                  }`}
-                >
-                  {entry.text}
-                </div>
-              )}
-            </motion.div>
+            <TranscriptBubble key={i} entry={entry} index={i} />
           ))}
 
           {voice.status === "connected" && voice.isSpeaking && voice.transcript.length > 0 && (
@@ -364,8 +470,8 @@ function TranscriptPanel({
               animate={{ opacity: 1 }}
               className="flex justify-start mb-3"
             >
-              <div className="border border-white/10 rounded-2xl px-4 py-3 bg-white/[0.02]">
-                <BevProLogo size={28} className="text-white/40" animated={true} />
+              <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl rounded-bl-md px-4 py-3">
+                <BevProLogo size={24} className="text-[#C9A96E]/50" animated={true} />
               </div>
             </motion.div>
           )}
@@ -377,12 +483,22 @@ function TranscriptPanel({
               animate={{ opacity: 1 }}
               className="flex justify-start mb-3"
             >
-              <div className="border border-white/10 rounded-2xl px-4 py-3 bg-white/[0.02] flex items-center gap-2">
-                <div className="flex gap-1">
-                  <div className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <div className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <div className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-                </div>
+              <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl rounded-bl-md px-5 py-3.5 flex items-center gap-1.5">
+                <motion.div
+                  className="w-2 h-2 bg-[#C9A96E]/40 rounded-full"
+                  animate={{ scale: [1, 1.4, 1], opacity: [0.4, 0.8, 0.4] }}
+                  transition={{ duration: 1.2, repeat: Infinity, delay: 0 }}
+                />
+                <motion.div
+                  className="w-2 h-2 bg-[#C9A96E]/40 rounded-full"
+                  animate={{ scale: [1, 1.4, 1], opacity: [0.4, 0.8, 0.4] }}
+                  transition={{ duration: 1.2, repeat: Infinity, delay: 0.2 }}
+                />
+                <motion.div
+                  className="w-2 h-2 bg-[#C9A96E]/40 rounded-full"
+                  animate={{ scale: [1, 1.4, 1], opacity: [0.4, 0.8, 0.4] }}
+                  transition={{ duration: 1.2, repeat: Infinity, delay: 0.4 }}
+                />
               </div>
             </motion.div>
           )}
@@ -441,17 +557,16 @@ function FileUploadButton({ agentId }: { agentId: number }) {
         data-testid="button-upload-file"
         onClick={() => fileInputRef.current?.click()}
         disabled={uploading}
-        className="flex items-center gap-1.5 text-white/50 hover:text-white text-sm transition-colors disabled:opacity-50"
+        className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/[0.04] border border-white/[0.06] text-white/50 hover:text-white hover:bg-white/[0.08] transition-colors disabled:opacity-50"
       >
-        {uploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-        <span className="hidden sm:inline">Upload</span>
+        {uploading ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
       </button>
       {uploadResult && (
         <motion.div
           initial={{ opacity: 0, y: -5 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0 }}
-          className="absolute top-full right-0 mt-1 px-3 py-1.5 rounded-lg bg-white/10 text-xs text-white/70 whitespace-nowrap"
+          className="absolute top-full right-0 mt-2 px-3 py-2 rounded-lg bg-black/90 border border-white/10 text-xs text-white/70 whitespace-nowrap shadow-xl"
           data-testid="text-upload-result"
         >
           {uploadResult}
@@ -461,103 +576,146 @@ function FileUploadButton({ agentId }: { agentId: number }) {
   );
 }
 
+function AudioRing({ isActive, isSpeaking }: { isActive: boolean; isSpeaking: boolean }) {
+  if (!isActive) return null;
+  return (
+    <div className="absolute inset-0 pointer-events-none">
+      <motion.div
+        className={`absolute inset-[-8px] rounded-full border-2 ${isSpeaking ? "border-[#C9A96E]/30" : "border-white/10"}`}
+        animate={isSpeaking ? {
+          scale: [1, 1.08, 1],
+          opacity: [0.3, 0.6, 0.3],
+        } : {
+          scale: [1, 1.04, 1],
+          opacity: [0.15, 0.3, 0.15],
+        }}
+        transition={{ duration: isSpeaking ? 0.8 : 2, repeat: Infinity, ease: "easeInOut" }}
+      />
+      {isSpeaking && (
+        <motion.div
+          className="absolute inset-[-16px] rounded-full border border-[#C9A96E]/15"
+          animate={{
+            scale: [1, 1.12, 1],
+            opacity: [0.15, 0.35, 0.15],
+          }}
+          transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: 0.1 }}
+        />
+      )}
+    </div>
+  );
+}
+
 function VoiceControls({ voice, wakeWordConfig }: { voice: ReturnType<typeof useVoiceSession>; wakeWordConfig?: WakeWordConfig }) {
   return (
-    <div className="shrink-0 flex flex-col items-center gap-2 sm:gap-3 pb-4 sm:pb-8 pt-3 sm:pt-4">
-      {voice.status === "wake-listening" ? (
-        <div className="flex flex-col items-center gap-2 sm:gap-3">
-          <motion.div
-            animate={{ scale: [1, 1.15, 1] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/10 border border-white/20 flex items-center justify-center"
-            data-testid="indicator-wake-listening"
-          >
-            <Volume2 size={28} className="text-white/60 sm:w-8 sm:h-8" />
-          </motion.div>
-          <p className="text-white/50 text-xs sm:text-sm" data-testid="text-wake-listening">
-            Listening for '{wakeWordConfig?.phrase || "hey bev"}'...
-          </p>
-          <motion.button
-            data-testid="button-stop-wake-word"
-            onClick={voice.disconnect}
-            whileTap={{ scale: 0.9 }}
-            className="px-4 py-2 rounded-full text-xs font-medium border border-white/10 text-white/40 hover:text-white/70 hover:border-white/20 transition-all"
-          >
-            Stop Listening
-          </motion.button>
-        </div>
-      ) : voice.returningToStandby ? (
-        <div className="flex flex-col items-center gap-2 sm:gap-3">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/10 flex items-center justify-center">
-            <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          </div>
-          <p className="text-white/50 text-xs sm:text-sm" data-testid="text-returning-standby">Returning to standby...</p>
-        </div>
-      ) : voice.status === "idle" || voice.status === "error" ? (
-        <div className="flex flex-col items-center gap-2 sm:gap-3">
-          <motion.button
-            data-testid="button-start-call"
-            onClick={voice.connect}
-            whileTap={{ scale: 0.92 }}
-            className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white flex items-center justify-center shadow-[0_0_60px_rgba(255,255,255,0.15)]"
-          >
-            <Mic size={28} className="text-black sm:w-8 sm:h-8" />
-          </motion.button>
-          {wakeWordConfig?.enabled && (
-            <motion.button
-              data-testid="button-start-wake-word"
-              onClick={voice.startWakeWordListening}
-              whileTap={{ scale: 0.95 }}
-              className="px-4 py-2 rounded-full text-xs font-medium border border-white/10 text-white/40 hover:text-white/70 hover:border-white/20 transition-all flex items-center gap-2"
+    <div className="shrink-0 border-t border-white/[0.06] bg-black/40 backdrop-blur-md" data-testid="voice-controls">
+      <div className="flex flex-col items-center gap-3 py-5 sm:py-7 px-4">
+        {voice.status === "wake-listening" ? (
+          <div className="flex flex-col items-center gap-3">
+            <motion.div
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+              className="relative w-18 h-18 sm:w-20 sm:h-20"
             >
-              <Volume2 size={14} />
-              Start Wake Word
+              <div className="w-full h-full rounded-full bg-white/[0.06] border border-white/[0.12] flex items-center justify-center">
+                <Volume2 size={28} className="text-white/50" />
+              </div>
+              <motion.div
+                className="absolute inset-[-6px] rounded-full border border-white/10"
+                animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.4, 0.2] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+              />
+            </motion.div>
+            <p className="text-white/50 text-sm font-medium" data-testid="text-wake-listening">
+              Say "{wakeWordConfig?.phrase || "hey bev"}" to begin
+            </p>
+            <button
+              data-testid="button-stop-wake-word"
+              onClick={voice.disconnect}
+              className="px-5 py-2.5 rounded-full text-sm font-medium border border-white/[0.08] text-white/40 hover:text-white/70 hover:border-white/20 transition-all min-h-[44px]"
+            >
+              Stop Listening
+            </button>
+          </div>
+        ) : voice.returningToStandby ? (
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-white/[0.06] flex items-center justify-center">
+              <Loader2 size={28} className="text-white/40 animate-spin" />
+            </div>
+            <p className="text-white/45 text-sm" data-testid="text-returning-standby">Returning to standby...</p>
+          </div>
+        ) : voice.status === "idle" || voice.status === "error" ? (
+          <div className="flex flex-col items-center gap-3">
+            <motion.button
+              data-testid="button-start-call"
+              onClick={voice.connect}
+              whileTap={{ scale: 0.92 }}
+              whileHover={{ scale: 1.04 }}
+              className="relative w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-full bg-gradient-to-b from-[#D4B87A] to-[#C9A96E] flex items-center justify-center shadow-[0_0_40px_rgba(201,169,110,0.2),0_4px_16px_rgba(0,0,0,0.3)]"
+            >
+              <Mic size={28} className="text-black sm:w-8 sm:h-8" />
             </motion.button>
-          )}
-        </div>
-      ) : voice.status === "connecting" ? (
-        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/10 flex items-center justify-center">
-          <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-        </div>
-      ) : (
-        <div className="flex items-center gap-4 sm:gap-6">
-          <motion.button
-            data-testid="button-mute"
-            onClick={voice.toggleMute}
-            whileTap={{ scale: 0.9 }}
-            className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-colors ${
-              voice.isListening ? "bg-white/10 text-white" : "bg-red-500/20 text-red-400"
-            }`}
-          >
-            {voice.isListening ? <Mic size={20} /> : <MicOff size={20} />}
-          </motion.button>
+            <p className="text-white/40 text-sm font-medium">Tap to start</p>
+            {wakeWordConfig?.enabled && (
+              <button
+                data-testid="button-start-wake-word"
+                onClick={voice.startWakeWordListening}
+                className="px-5 py-2.5 rounded-full text-sm font-medium border border-white/[0.08] text-white/40 hover:text-white/70 hover:border-white/20 transition-all flex items-center gap-2 min-h-[44px]"
+              >
+                <Volume2 size={15} />
+                Wake Word Mode
+              </button>
+            )}
+          </div>
+        ) : voice.status === "connecting" ? (
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-full bg-white/[0.06] border border-white/[0.1] flex items-center justify-center">
+              <Loader2 size={28} className="text-[#C9A96E]/60 animate-spin" />
+            </div>
+            <p className="text-white/40 text-sm">Connecting...</p>
+          </div>
+        ) : (
+          <div className="flex items-center gap-5 sm:gap-6">
+            <motion.button
+              data-testid="button-mute"
+              onClick={voice.toggleMute}
+              whileTap={{ scale: 0.9 }}
+              className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all ${
+                voice.isListening
+                  ? "bg-white/[0.06] border border-white/[0.1] text-white/70 hover:bg-white/[0.1]"
+                  : "bg-red-500/15 border border-red-500/20 text-red-400"
+              }`}
+            >
+              {voice.isListening ? <Mic size={20} /> : <MicOff size={20} />}
+            </motion.button>
 
-          <motion.button
-            data-testid="button-end-call"
-            onClick={voice.disconnect}
-            whileTap={{ scale: 0.9 }}
-            className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-red-500 flex items-center justify-center shadow-[0_0_40px_rgba(239,68,68,0.3)]"
-          >
-            <PhoneOff size={24} className="text-white sm:w-7 sm:h-7" />
-          </motion.button>
+            <div className="relative">
+              <AudioRing isActive={voice.status === "connected"} isSpeaking={voice.isSpeaking} />
+              <motion.button
+                data-testid="button-end-call"
+                onClick={voice.disconnect}
+                whileTap={{ scale: 0.9 }}
+                className="relative w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-full bg-red-500 flex items-center justify-center shadow-[0_0_30px_rgba(239,68,68,0.25),0_4px_12px_rgba(0,0,0,0.3)]"
+              >
+                <PhoneOff size={22} className="text-white sm:w-6 sm:h-6" />
+              </motion.button>
+            </div>
 
-          <div className="w-12 h-12 sm:w-14 sm:h-14" />
-        </div>
-      )}
+            <div className="w-12 h-12 sm:w-14 sm:h-14" />
+          </div>
+        )}
 
-      {voice.error && (
-        <div className="max-w-xs text-center px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/20" data-testid="text-voice-error">
-          <p className="text-red-400 text-xs">{voice.error}</p>
-        </div>
-      )}
+        {voice.error && (
+          <div className="max-w-sm text-center px-4 py-2.5 rounded-lg bg-red-500/10 border border-red-500/15" data-testid="text-voice-error">
+            <p className="text-red-400 text-sm">{voice.error}</p>
+          </div>
+        )}
 
-      {!voice.error && !voice.returningToStandby && voice.status !== "wake-listening" && (
-        <p className="text-white/30 text-xs">
-          {voice.status === "idle" ? "Tap to start" :
-           voice.status === "connecting" ? "Connecting..." :
-           voice.isListening ? "Listening..." : "Muted"}
-        </p>
-      )}
+        {!voice.error && !voice.returningToStandby && voice.status === "connected" && (
+          <p className="text-white/30 text-xs">
+            {voice.isListening ? (voice.isSpeaking ? "Agent speaking..." : "Listening...") : "Muted"}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -600,31 +758,11 @@ export default function AgentApp() {
 
   if (isVoicePos) {
     return (
-      <div className="h-[100dvh] bg-black text-white flex flex-col" style={{ paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-        <header className="flex items-center justify-between px-3 sm:px-5 py-3 sm:py-4 shrink-0 border-b border-white/10">
-          <Link href="/dashboard" className="flex items-center gap-1 text-white/50 hover:text-white text-sm transition-colors shrink-0" data-testid="button-back">
-            <ArrowLeft size={16} />
-            <span className="hidden sm:inline">Back</span>
-          </Link>
-          <div className="text-center min-w-0 flex-1">
-            <h1 className="text-sm font-medium truncate px-2" data-testid="text-agent-name">{agent?.name || "Voice POS"}</h1>
-            {voice.status === "connected" && voice.latency !== null && (
-              <p className="text-[10px] text-white/30">{voice.latency}ms</p>
-            )}
-          </div>
-          <div className="w-10 sm:w-16 flex justify-end shrink-0">
-            {agentConfig?.fileUploadEnabled && <FileUploadButton agentId={id} />}
-          </div>
-        </header>
-
-        {voice.error && (
-          <div className="px-3 sm:px-5 py-2">
-            <p className="text-red-400 text-xs text-center" data-testid="text-voice-error">{voice.error}</p>
-          </div>
-        )}
+      <div className="h-[100dvh] bg-[#050505] text-white flex flex-col" style={{ paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+        <AgentHeader agent={agent} agentConfig={agentConfig} voice={voice} id={id} />
 
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
-          <div className="md:w-[340px] lg:w-[420px] md:border-r border-b md:border-b-0 border-white/10 h-[35vh] sm:h-[40vh] md:h-auto overflow-hidden" data-testid="pos-panel">
+          <div className="md:w-[360px] lg:w-[420px] md:border-r border-b md:border-b-0 border-white/[0.06] h-[38vh] sm:h-[42vh] md:h-auto overflow-hidden bg-black/30" data-testid="pos-panel">
             <PosDisplay posState={posState} />
           </div>
 
@@ -639,128 +777,108 @@ export default function AgentApp() {
   }
 
   return (
-    <div className="h-[100dvh] bg-black text-white flex flex-col" style={{ paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-      <header className="flex items-center justify-between px-3 sm:px-5 py-3 sm:py-4 shrink-0">
-        <Link href="/dashboard" className="flex items-center gap-1 text-white/50 hover:text-white text-sm transition-colors shrink-0" data-testid="button-back">
-          <ArrowLeft size={16} />
-          <span className="hidden sm:inline">Back</span>
-        </Link>
-        <div className="text-center min-w-0 flex-1">
-          <h1 className="text-sm font-medium truncate px-2" data-testid="text-agent-name">{agent?.name || "Voice Agent"}</h1>
-          {voice.status === "connected" && voice.latency !== null && (
-            <p className="text-[10px] text-white/30">{voice.latency}ms</p>
-          )}
-        </div>
-        <div className="w-10 sm:w-16 flex justify-end shrink-0">
-          {agentConfig?.fileUploadEnabled && <FileUploadButton agentId={id} />}
-        </div>
-      </header>
+    <div className="h-[100dvh] bg-[#050505] text-white flex flex-col" style={{ paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+      <AgentHeader agent={agent} agentConfig={agentConfig} voice={voice} id={id} />
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 sm:px-5 pb-4 min-h-0">
-        <AnimatePresence mode="popLayout">
-          {voice.status === "idle" && (
-            <motion.div
-              key="idle"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="h-full flex items-center justify-center min-h-[40vh] sm:min-h-[50vh]"
-            >
-              <div className="text-center">
-                <BevProLogo size={64} className="text-white/10 mx-auto mb-4 sm:w-[80px] sm:h-[80px]" />
-                <p className="text-white/30 text-sm">Tap below to start a conversation</p>
-              </div>
-            </motion.div>
-          )}
-
-          {voice.status === "connected" && voice.transcript.length === 0 && (
-            <motion.div
-              key="listening-pulse"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="h-full flex items-center justify-center min-h-[40vh] sm:min-h-[50vh]"
-            >
-              <BevProLogo size={80} className="text-white/20" animated={true} />
-            </motion.div>
-          )}
-
-          {voice.transcript.map((entry, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
-              className={`mb-3 flex ${entry.role === "user" ? "justify-end" : "justify-start"}`}
-            >
-              {entry.role === "tool" ? (
-                <div className="border border-white/10 rounded-2xl px-4 py-3 max-w-[85%] bg-white/[0.02]">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Wrench size={12} className="text-white/40" />
-                    <span className="text-white/40 text-xs font-medium">{entry.toolName}</span>
-                  </div>
-                  {entry.toolResult ? (
-                    <div className="text-white/60 text-sm">
-                      {typeof entry.toolResult === "object" && entry.toolResult.message
-                        ? entry.toolResult.message
-                        : <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(entry.toolResult, null, 2)}</pre>
-                      }
+      <div className="flex-1 overflow-hidden min-h-0 flex flex-col">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 pb-4 pt-3 min-h-0">
+          <AnimatePresence mode="popLayout">
+            {voice.status === "idle" && (
+              <motion.div
+                key="idle"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="h-full flex items-center justify-center min-h-[40vh] sm:min-h-[50vh]"
+              >
+                <div className="text-center">
+                  <div className="relative inline-block mb-6">
+                    <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-b from-white/[0.04] to-transparent border border-white/[0.06] flex items-center justify-center mx-auto">
+                      <BevProLogo size={48} className="text-white/15 sm:w-14 sm:h-14" />
                     </div>
-                  ) : (
-                    <p className="text-white/30 text-xs animate-pulse">{entry.text}</p>
-                  )}
+                  </div>
+                  <h2 className="text-white/50 text-base sm:text-lg font-medium mb-1">
+                    {agent?.name || "Voice Agent"}
+                  </h2>
+                  <p className="text-white/25 text-sm">Tap the button below to start</p>
                 </div>
-              ) : (
-                <div
-                  className={`max-w-[80%] px-4 py-3 rounded-2xl text-[15px] leading-relaxed ${
-                    entry.role === "user"
-                      ? "bg-white/10 text-white/80"
-                      : "border border-white/10 text-white/60 bg-white/[0.02]"
-                  }`}
-                >
-                  {entry.text}
+              </motion.div>
+            )}
+
+            {voice.status === "connected" && voice.transcript.length === 0 && (
+              <motion.div
+                key="listening-pulse"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="h-full flex items-center justify-center min-h-[40vh] sm:min-h-[50vh]"
+              >
+                <div className="text-center">
+                  <div className="relative inline-block">
+                    <motion.div
+                      className="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-gradient-to-b from-[#C9A96E]/10 to-transparent border border-[#C9A96E]/15 flex items-center justify-center mx-auto"
+                      animate={{ scale: [1, 1.03, 1] }}
+                      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                    >
+                      <BevProLogo size={56} className="text-[#C9A96E]/30" animated={true} />
+                    </motion.div>
+                    <motion.div
+                      className="absolute inset-[-10px] rounded-full border border-[#C9A96E]/10"
+                      animate={{ scale: [1, 1.08, 1], opacity: [0.15, 0.3, 0.15] }}
+                      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                    />
+                  </div>
+                  <p className="text-white/35 text-sm mt-5">I'm listening...</p>
                 </div>
-              )}
-            </motion.div>
-          ))}
+              </motion.div>
+            )}
 
-          {voice.status === "connected" && voice.isSpeaking && voice.transcript.length > 0 && (
-            <motion.div
-              key="speaking-pulse"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex justify-start mb-3"
-            >
-              <div className="border border-white/10 rounded-2xl px-4 py-3 bg-white/[0.02]">
-                <BevProLogo size={28} className="text-white/40" animated={true} />
-              </div>
-            </motion.div>
-          )}
+            {voice.transcript.map((entry, i) => (
+              <TranscriptBubble key={i} entry={entry} index={i} />
+            ))}
 
-          {voice.status === "connected" && voice.isListening && !voice.isSpeaking && voice.transcript.length > 0 && (
-            <motion.div
-              key="listening-indicator"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex justify-start mb-3"
-            >
-              <div className="border border-white/10 rounded-2xl px-4 py-3 bg-white/[0.02] flex items-center gap-2">
-                <div className="flex gap-1">
-                  <div className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <div className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <div className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+            {voice.status === "connected" && voice.isSpeaking && voice.transcript.length > 0 && (
+              <motion.div
+                key="speaking-pulse"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex justify-start mb-3"
+              >
+                <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl rounded-bl-md px-4 py-3">
+                  <BevProLogo size={24} className="text-[#C9A96E]/50" animated={true} />
                 </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+              </motion.div>
+            )}
 
-      {voice.error && (
-        <div className="px-5 py-2">
-          <p className="text-red-400 text-xs text-center" data-testid="text-voice-error">{voice.error}</p>
+            {voice.status === "connected" && voice.isListening && !voice.isSpeaking && voice.transcript.length > 0 && (
+              <motion.div
+                key="listening-indicator"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex justify-start mb-3"
+              >
+                <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl rounded-bl-md px-5 py-3.5 flex items-center gap-1.5">
+                  <motion.div
+                    className="w-2 h-2 bg-[#C9A96E]/40 rounded-full"
+                    animate={{ scale: [1, 1.4, 1], opacity: [0.4, 0.8, 0.4] }}
+                    transition={{ duration: 1.2, repeat: Infinity, delay: 0 }}
+                  />
+                  <motion.div
+                    className="w-2 h-2 bg-[#C9A96E]/40 rounded-full"
+                    animate={{ scale: [1, 1.4, 1], opacity: [0.4, 0.8, 0.4] }}
+                    transition={{ duration: 1.2, repeat: Infinity, delay: 0.2 }}
+                  />
+                  <motion.div
+                    className="w-2 h-2 bg-[#C9A96E]/40 rounded-full"
+                    animate={{ scale: [1, 1.4, 1], opacity: [0.4, 0.8, 0.4] }}
+                    transition={{ duration: 1.2, repeat: Infinity, delay: 0.4 }}
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-      )}
+      </div>
 
       <VoiceControls voice={voice} wakeWordConfig={wakeWordConfig} />
     </div>

@@ -5,55 +5,56 @@ interface BevProLogoProps {
   className?: string;
   animated?: boolean;
   pulseIntensity?: number;
-  goldColor?: string;
 }
 
-export function BevProLogo({ size = 32, className = "", animated = false, pulseIntensity = 1, goldColor = "#C9A96E" }: BevProLogoProps) {
-  const s = size;
-  const barW = s * 0.7;
-  const shortBarW = s * 0.5;
-  const barH = s * 0.15;
-  const barR = barH / 2;
-  const gap = s * 0.12;
-  const cx = s / 2;
-  const topY = cx - gap / 2 - barH;
-  const botY = cx + gap / 2;
+const GOLD = "#C9A96E";
+const GOLD_LIGHT = "#D4B87A";
 
+export function BevProLogo({ size = 32, className = "", animated = false, pulseIntensity = 1 }: BevProLogoProps) {
   if (animated) {
     return (
       <svg
-        width={s}
-        height={s}
-        viewBox={`0 0 ${s} ${s}`}
+        width={size}
+        height={size}
+        viewBox="0 0 100 100"
         fill="none"
         className={className}
         data-testid="bevpro-logo"
       >
+        <defs>
+          <linearGradient id="gold-grad-anim" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor={GOLD_LIGHT} />
+            <stop offset="100%" stopColor={GOLD} />
+          </linearGradient>
+        </defs>
         <motion.rect
-          x={cx - shortBarW / 2}
-          y={topY}
-          width={shortBarW}
-          height={barH}
-          rx={barR}
-          fill={goldColor}
+          x="18" y="30" width="38" height="10" rx="5"
+          fill="url(#gold-grad-anim)"
           animate={{
-            width: [shortBarW, shortBarW * (1 + 0.15 * pulseIntensity), shortBarW],
-            x: [cx - shortBarW / 2, cx - shortBarW * (1 + 0.15 * pulseIntensity) / 2, cx - shortBarW / 2],
+            width: [38, 38 + 8 * pulseIntensity, 38],
+            x: [18, 18 - 4 * pulseIntensity, 18],
+            opacity: [0.85, 1, 0.85],
           }}
-          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.rect
-          x={cx - barW / 2}
-          y={botY}
-          width={barW}
-          height={barH}
-          rx={barR}
-          fill={goldColor}
+          x="18" y="47" width="56" height="10" rx="5"
+          fill="url(#gold-grad-anim)"
           animate={{
-            width: [barW, barW * (1 + 0.1 * pulseIntensity), barW],
-            x: [cx - barW / 2, cx - barW * (1 + 0.1 * pulseIntensity) / 2, cx - barW / 2],
+            width: [56, 56 + 6 * pulseIntensity, 56],
+            opacity: [0.85, 1, 0.85],
           }}
-          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", delay: 0.15 }}
+        />
+        <motion.rect
+          x="18" y="64" width="44" height="10" rx="5"
+          fill="url(#gold-grad-anim)"
+          animate={{
+            width: [44, 44 + 10 * pulseIntensity, 44],
+            x: [18, 18 - 2 * pulseIntensity, 18],
+            opacity: [0.7, 1, 0.7],
+          }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
         />
       </svg>
     );
@@ -61,46 +62,47 @@ export function BevProLogo({ size = 32, className = "", animated = false, pulseI
 
   return (
     <svg
-      width={s}
-      height={s}
-      viewBox={`0 0 ${s} ${s}`}
+      width={size}
+      height={size}
+      viewBox="0 0 100 100"
       fill="none"
       className={className}
       data-testid="bevpro-logo"
     >
-      <rect
-        x={cx - shortBarW / 2}
-        y={topY}
-        width={shortBarW}
-        height={barH}
-        rx={barR}
-        fill={goldColor}
-      />
-      <rect
-        x={cx - barW / 2}
-        y={botY}
-        width={barW}
-        height={barH}
-        rx={barR}
-        fill={goldColor}
-      />
+      <defs>
+        <linearGradient id="gold-grad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor={GOLD_LIGHT} />
+          <stop offset="100%" stopColor={GOLD} />
+        </linearGradient>
+      </defs>
+      <rect x="18" y="30" width="38" height="10" rx="5" fill="url(#gold-grad)" />
+      <rect x="18" y="47" width="56" height="10" rx="5" fill="url(#gold-grad)" />
+      <rect x="18" y="64" width="44" height="10" rx="5" fill="url(#gold-grad)" />
     </svg>
   );
 }
 
-export function BevProWordmark({ className = "" }: { className?: string }) {
+export function BevProWordmark({ className = "", size = "text-xl" }: { className?: string; size?: string }) {
   return (
-    <span className={`tracking-widest uppercase ${className}`} style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 500, letterSpacing: "0.18em" }}>
-      bevpro
+    <span
+      className={`${size} ${className}`}
+      style={{
+        fontFamily: "'Outfit', sans-serif",
+        fontWeight: 600,
+        letterSpacing: "0.22em",
+        textTransform: "uppercase",
+      }}
+    >
+      BEVPRO
     </span>
   );
 }
 
-export function BevProBrand({ size = 28, className = "", gap = "gap-2" }: { size?: number; className?: string; gap?: string }) {
+export function BevProBrand({ size = 28, className = "", gap = "gap-2.5", textSize = "text-xl" }: { size?: number; className?: string; gap?: string; textSize?: string }) {
   return (
     <div className={`flex items-center ${gap} ${className}`} data-testid="bevpro-brand">
       <BevProLogo size={size} />
-      <BevProWordmark className="text-white text-xl" />
+      <BevProWordmark className="text-white" size={textSize} />
     </div>
   );
 }

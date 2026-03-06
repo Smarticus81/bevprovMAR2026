@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { BevProLogo } from "@/components/BevProLogo";
+import { BevProLogo, BevProWordmark } from "@/components/BevProLogo";
 
 export function Navbar() {
   return (
@@ -11,9 +11,9 @@ export function Navbar() {
       transition={{ duration: 1, ease: "easeOut" }}
     >
       <div className="flex items-center gap-12">
-        <Link href="/" className="flex items-center gap-2 text-white text-xl tracking-tight normal-case font-semibold mr-4">
-          <BevProLogo size={24} className="text-white/80" />
-          BevPro
+        <Link href="/" className="flex items-center gap-2.5 mr-4">
+          <BevProLogo size={28} />
+          <BevProWordmark className="text-white" size="text-lg" />
         </Link>
         <nav className="hidden md:flex gap-8">
           <Link href="#agents" className="hover:text-white transition-colors">Agents</Link>

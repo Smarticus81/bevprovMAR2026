@@ -17,6 +17,7 @@ const AgentBuilder = lazy(() => import("@/pages/AgentBuilder"));
 const AppStore = lazy(() => import("@/pages/AppStore"));
 const AgentApp = lazy(() => import("@/pages/AgentApp"));
 const VenueData = lazy(() => import("@/pages/VenueData"));
+const Documentation = lazy(() => import("@/pages/Documentation"));
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -52,6 +53,7 @@ function Router() {
         <Route path="/login" component={Login} />
         <Route path="/register" component={Register} />
         <Route path="/pricing" component={Pricing} />
+        <Route path="/docs" component={Documentation} />
         <Route path="/dashboard">
           {() => <ProtectedRoute component={Dashboard} />}
         </Route>

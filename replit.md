@@ -78,6 +78,7 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 - `client/src/pages/AppStore.tsx` — iOS App Store-style agent marketplace
 - `client/src/pages/AgentApp.tsx` — Full-screen voice interface; voice-pos type shows split-screen POS UI with live order display
 - `client/src/pages/VenueData.tsx` — Venue data management (6 tabs: Menu, Inventory, Staff, Bookings, Guests, Suppliers)
+- `client/src/pages/Documentation.tsx` — Public documentation/help page at /docs with 6 sections (Getting Started, First Agent, Agent Types, Venue Data, Voice Agents, Bulk Import)
 - `client/src/pages/Pricing.tsx` — Pricing page (3 tiers, UI only)
 - `client/src/hooks/useAuth.ts` — Auth hook
 - `client/src/hooks/useVoiceSession.ts` — WebRTC voice session hook (greeting, wake word detection, end/shutdown phrases)
@@ -123,6 +124,7 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 
 ### Venue Data (all scoped by orgId)
 - `GET/POST/PATCH/:id/DELETE/:id /api/venue/menu` — Menu items
+- `POST /api/venue/menu/bulk` — Bulk import menu items (JSON array, max 500, per-item error reporting)
 - `GET/POST/PATCH/:id/DELETE/:id /api/venue/inventory` — Inventory
 - `GET/POST/PATCH/:id/DELETE/:id /api/venue/staff` — Staff members
 - `GET/POST/PATCH/:id/DELETE/:id /api/venue/bookings` — Bookings

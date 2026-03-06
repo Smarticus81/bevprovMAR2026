@@ -127,6 +127,35 @@ export async function registerRoutes(
     return res.status(201).json(item);
   });
 
+  app.post("/api/venue/menu/bulk", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const itemSchema = z.object({
+      name: z.string().min(1),
+      price: z.union([z.string(), z.number()]).transform(v => String(v)),
+      category: z.string().optional().default("food"),
+      description: z.string().optional().default(""),
+      available: z.boolean().optional().default(true),
+    });
+    const schema = z.object({ items: z.array(itemSchema).min(1).max(500) });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    try {
+      const created = [];
+      const errors: { index: number; name: string; error: string }[] = [];
+      for (let i = 0; i < parsed.data.items.length; i++) {
+        try {
+          const result = await storage.createMenuItem({ ...parsed.data.items[i], organizationId: user.organizationId });
+          created.push(result);
+        } catch (e: any) {
+          errors.push({ index: i, name: parsed.data.items[i].name, error: e.message || "Failed to create" });
+        }
+      }
+      return res.status(201).json({ imported: created.length, failed: errors.length, items: created, errors: errors.length > 0 ? errors : undefined });
+    } catch (e: any) {
+      return res.status(500).json({ error: "Bulk import failed: " + (e.message || "Unknown error") });
+    }
+  });
+
   app.patch("/api/venue/menu/:id", requireAuth, async (req, res) => {
     const user = req.user as any;
     const item = await storage.updateMenuItem(parseInt(req.params.id), user.organizationId, req.body);

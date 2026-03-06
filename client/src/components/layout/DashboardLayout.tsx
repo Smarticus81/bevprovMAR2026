@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
-import { Bot, Store, LogOut, Menu, X, Database, ChevronRight } from "lucide-react";
+import { Bot, Store, LogOut, Menu, X, Database, ChevronRight, BookOpen } from "lucide-react";
 import { useState } from "react";
 import { BevProLogo, BevProWordmark } from "@/components/BevProLogo";
 
@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Agents", icon: Bot },
   { href: "/dashboard/venue", label: "Venue Data", icon: Database },
   { href: "/dashboard/store", label: "App Store", icon: Store },
+  { href: "/docs", label: "Documentation", icon: BookOpen },
 ];
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {

@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { apiRequest } from "@/lib/queryClient";
-import { Plus, Trash2, Edit2, X, Check, Package, UtensilsCrossed, Users, Calendar, Star, Truck } from "lucide-react";
+import { Plus, Trash2, X, Check, Package, UtensilsCrossed, Users, Calendar, Star, Truck, Upload, FileText, Database, AlertCircle, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 type Tab = "menu" | "inventory" | "staff" | "bookings" | "guests" | "suppliers";
@@ -23,25 +23,25 @@ function AddForm({ fields, onSubmit, onCancel }: {
 }) {
   const [values, setValues] = useState<Record<string, string>>({});
   return (
-    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="border border-white/10 rounded-xl p-4 mb-4 bg-white/[0.03]">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="border-b border-white/[0.06] pb-6 mb-6 overflow-hidden">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
         {fields.map((f) => (
           <div key={f.name}>
-            <label className="text-xs font-medium text-white/50 mb-1 block">{f.label}</label>
+            <label className="text-[11px] uppercase tracking-[0.15em] text-white/25 font-medium block mb-2">{f.label}</label>
             {f.options ? (
-              <select data-testid={`select-${f.name}`} value={values[f.name] || ""} onChange={(e) => setValues({ ...values, [f.name]: e.target.value })} className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/20">
+              <select data-testid={`select-${f.name}`} value={values[f.name] || ""} onChange={(e) => setValues({ ...values, [f.name]: e.target.value })} className="w-full bg-transparent border-0 border-b border-white/10 px-0 py-2.5 text-sm text-white focus:outline-none focus:border-[#C9A96E]/40 transition-colors appearance-none">
                 <option value="" className="bg-black">Select...</option>
                 {f.options.map((o) => <option key={o} value={o} className="bg-black">{o}</option>)}
               </select>
             ) : (
-              <input data-testid={`input-${f.name}`} type={f.type || "text"} placeholder={f.label} value={values[f.name] || ""} onChange={(e) => setValues({ ...values, [f.name]: e.target.value })} className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-white/20" />
+              <input data-testid={`input-${f.name}`} type={f.type || "text"} placeholder={f.label} value={values[f.name] || ""} onChange={(e) => setValues({ ...values, [f.name]: e.target.value })} className="w-full bg-transparent border-0 border-b border-white/10 px-0 py-2.5 text-sm text-white placeholder:text-white/15 focus:outline-none focus:border-[#C9A96E]/40 transition-colors" />
             )}
           </div>
         ))}
       </div>
-      <div className="flex gap-2 mt-3">
-        <button data-testid="button-save-item" onClick={() => onSubmit(values)} className="px-4 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-white/90 transition-colors flex items-center gap-1.5"><Check size={14} /> Save</button>
-        <button data-testid="button-cancel-add" onClick={onCancel} className="px-4 py-2 bg-white/10 text-white/70 rounded-lg text-sm font-medium hover:bg-white/15 transition-colors flex items-center gap-1.5"><X size={14} /> Cancel</button>
+      <div className="flex gap-3 mt-5">
+        <button data-testid="button-save-item" onClick={() => onSubmit(values)} className="flex items-center gap-1.5 bg-[#C9A96E] text-black px-4 py-2 text-sm font-semibold hover:bg-[#D4B87A] transition-colors"><Check size={14} /> Save</button>
+        <button data-testid="button-cancel-add" onClick={onCancel} className="flex items-center gap-1.5 text-white/30 hover:text-white/50 text-sm transition-colors"><X size={14} /> Cancel</button>
       </div>
     </motion.div>
   );
@@ -54,37 +54,181 @@ function DataTable({ columns, data, onDelete, idKey = "id" }: {
   idKey?: string;
 }) {
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto -mx-1">
       <table className="w-full" data-testid="data-table">
         <thead>
-          <tr className="border-b border-white/10">
-            {columns.map((c) => <th key={c.key} className="text-left text-xs font-medium text-white/40 uppercase tracking-wider py-3 px-4">{c.label}</th>)}
+          <tr className="border-b border-white/[0.06]">
+            {columns.map((c) => <th key={c.key} className="text-left text-[10px] font-medium text-white/25 uppercase tracking-[0.15em] py-3 px-3">{c.label}</th>)}
             {onDelete && <th className="w-10"></th>}
           </tr>
         </thead>
         <tbody>
           {data.map((row) => (
-            <tr key={row[idKey]} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors" data-testid={`row-${row[idKey]}`}>
+            <tr key={row[idKey]} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors group" data-testid={`row-${row[idKey]}`}>
               {columns.map((c) => (
-                <td key={c.key} className="py-3 px-4 text-sm text-white/70">
+                <td key={c.key} className="py-3 px-3 text-sm text-white/60">
                   {c.render ? c.render(row[c.key], row) : row[c.key] ?? "—"}
                 </td>
               ))}
               {onDelete && (
                 <td className="py-3 px-2">
-                  <button data-testid={`button-delete-${row[idKey]}`} onClick={() => onDelete(row[idKey])} className="p-1.5 text-white/30 hover:text-red-400 transition-colors rounded-lg hover:bg-red-500/10">
-                    <Trash2 size={14} />
+                  <button data-testid={`button-delete-${row[idKey]}`} onClick={() => onDelete(row[idKey])} className="p-1.5 text-white/15 hover:text-red-400/70 transition-colors opacity-0 group-hover:opacity-100">
+                    <Trash2 size={13} />
                   </button>
                 </td>
               )}
             </tr>
           ))}
           {data.length === 0 && (
-            <tr><td colSpan={columns.length + 1} className="py-12 text-center text-sm text-white/30">No data yet. Click "Add" to create your first entry.</td></tr>
+            <tr><td colSpan={columns.length + 1} className="py-16 text-center text-sm text-white/20">No data yet. Click "Add" to create your first entry.</td></tr>
           )}
         </tbody>
       </table>
     </div>
+  );
+}
+
+function BulkImportSection() {
+  const qc = useQueryClient();
+  const [mode, setMode] = useState<"closed" | "paste" | "file">("closed");
+  const [jsonText, setJsonText] = useState("");
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importSuccess, setImportSuccess] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const bulkImport = useMutation({
+    mutationFn: async (items: any[]) => {
+      const res = await apiRequest("POST", "/api/venue/menu/bulk", { items });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["venue", "menu"] });
+      setImportSuccess(`Imported ${data.imported} items`);
+      setJsonText("");
+      setMode("closed");
+      setTimeout(() => setImportSuccess(null), 4000);
+    },
+    onError: (err: Error) => {
+      setImportError(err.message || "Import failed");
+    },
+  });
+
+  const parseAndImport = (text: string) => {
+    setImportError(null);
+    try {
+      let items: any[];
+      const trimmed = text.trim();
+      if (trimmed.startsWith("[")) {
+        items = JSON.parse(trimmed);
+      } else if (trimmed.startsWith("{")) {
+        const obj = JSON.parse(trimmed);
+        items = obj.items || obj.menu || obj.drinks || [obj];
+      } else {
+        const lines = trimmed.split("\n").filter(l => l.trim());
+        if (lines.length < 2) throw new Error("CSV must have a header row and at least one data row");
+        const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+        const nameIdx = headers.findIndex(h => h === "name" || h === "item" || h === "drink");
+        const priceIdx = headers.findIndex(h => h === "price" || h === "cost");
+        const catIdx = headers.findIndex(h => h === "category" || h === "type");
+        const descIdx = headers.findIndex(h => h === "description" || h === "desc");
+        if (nameIdx === -1) throw new Error("CSV must have a 'name' column");
+        items = lines.slice(1).map(line => {
+          const cols = line.split(",").map(c => c.trim().replace(/^["']|["']$/g, ""));
+          return {
+            name: cols[nameIdx],
+            price: priceIdx >= 0 ? cols[priceIdx]?.replace("$", "") : "0",
+            category: catIdx >= 0 ? cols[catIdx] : "food",
+            description: descIdx >= 0 ? cols[descIdx] : "",
+          };
+        }).filter(i => i.name);
+      }
+      if (!Array.isArray(items) || items.length === 0) throw new Error("No valid items found");
+      bulkImport.mutate(items);
+    } catch (e: any) {
+      setImportError(e.message || "Invalid format");
+    }
+  };
+
+  const handleFileUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      parseAndImport(text);
+    };
+    reader.readAsText(file);
+  };
+
+  if (mode === "closed") {
+    return (
+      <div className="flex flex-wrap items-center gap-3">
+        {importSuccess && (
+          <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-emerald-400">{importSuccess}</motion.span>
+        )}
+        <button
+          data-testid="button-bulk-paste"
+          onClick={() => setMode("paste")}
+          className="flex items-center gap-1.5 text-white/20 hover:text-white/40 text-xs transition-colors"
+        >
+          <FileText size={12} />
+          Paste JSON/CSV
+        </button>
+        <button
+          data-testid="button-bulk-file"
+          onClick={() => { setMode("file"); fileInputRef.current?.click(); }}
+          className="flex items-center gap-1.5 text-white/20 hover:text-white/40 text-xs transition-colors"
+        >
+          <Upload size={12} />
+          Upload File
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json,.csv,.txt"
+          className="hidden"
+          data-testid="input-bulk-file"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handleFileUpload(f);
+            e.target.value = "";
+            setMode("closed");
+          }}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="border-b border-white/[0.06] pb-6 mb-4 overflow-hidden">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[11px] uppercase tracking-[0.15em] text-white/25 font-medium">Bulk Import</p>
+        <button onClick={() => { setMode("closed"); setImportError(null); }} className="text-white/20 hover:text-white/40 text-xs">Cancel</button>
+      </div>
+      <textarea
+        data-testid="textarea-bulk-import"
+        value={jsonText}
+        onChange={(e) => setJsonText(e.target.value)}
+        placeholder={'Paste JSON or CSV here...\n\nJSON: [{"name": "Margarita", "price": "12", "category": "cocktails"}]\n\nCSV:\nname,price,category\nMargarita,12,cocktails\nOld Fashioned,14,cocktails'}
+        rows={6}
+        className="w-full bg-white/[0.02] border border-white/[0.06] px-4 py-3 text-sm text-white placeholder:text-white/15 focus:outline-none focus:border-[#C9A96E]/30 transition-colors font-mono"
+      />
+      {importError && (
+        <div className="flex items-center gap-2 mt-2 text-red-400/80 text-xs">
+          <AlertCircle size={12} />
+          {importError}
+        </div>
+      )}
+      <div className="flex gap-3 mt-3">
+        <button
+          data-testid="button-import-submit"
+          onClick={() => parseAndImport(jsonText)}
+          disabled={!jsonText.trim() || bulkImport.isPending}
+          className="flex items-center gap-1.5 bg-[#C9A96E] text-black px-4 py-2 text-sm font-semibold hover:bg-[#D4B87A] disabled:opacity-40 transition-colors"
+        >
+          {bulkImport.isPending ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+          Import
+        </button>
+      </div>
+    </motion.div>
   );
 }
 
@@ -98,9 +242,12 @@ function MenuTab() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-white/40">{items.length} items on the menu</p>
-        <button data-testid="button-add-menu" onClick={() => setAdding(true)} className="flex items-center gap-1.5 px-3 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-white/90 transition-colors"><Plus size={14} /> Add Item</button>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <p className="text-xs text-white/25">{items.length} items on the menu</p>
+        <div className="flex items-center gap-3">
+          <BulkImportSection />
+          <button data-testid="button-add-menu" onClick={() => setAdding(true)} className="flex items-center gap-1.5 bg-[#C9A96E] text-black px-3 py-2 text-xs font-semibold hover:bg-[#D4B87A] transition-colors"><Plus size={13} /> Add Item</button>
+        </div>
       </div>
       <AnimatePresence>
         {adding && <AddForm fields={[
@@ -114,11 +261,11 @@ function MenuTab() {
         columns={[
           { key: "name", label: "Name" },
           { key: "price", label: "Price", render: (v: string) => `$${parseFloat(v).toFixed(2)}` },
-          { key: "category", label: "Category", render: (v: string) => <span className="inline-block px-2 py-0.5 bg-white/10 rounded-md text-xs font-medium capitalize text-white/70">{v}</span> },
+          { key: "category", label: "Category", render: (v: string) => <span className="text-[10px] uppercase tracking-wider text-white/30 font-medium">{v}</span> },
           { key: "description", label: "Description" },
           { key: "available", label: "Available", render: (v: boolean, row: any) => (
-            <button data-testid={`toggle-avail-${row.id}`} onClick={() => toggle.mutate({ id: row.id, available: !v })} className={`w-8 h-5 rounded-full transition-colors relative ${v ? "bg-green-500" : "bg-white/20"}`}>
-              <div className={`w-3.5 h-3.5 bg-white rounded-full absolute top-0.5 transition-transform ${v ? "left-3.5" : "left-0.5"}`} />
+            <button data-testid={`toggle-avail-${row.id}`} onClick={() => toggle.mutate({ id: row.id, available: !v })} className={`w-9 h-[22px] rounded-full transition-colors relative ${v ? "bg-[#C9A96E]" : "bg-white/10"}`}>
+              <div className={`w-4 h-4 bg-white rounded-full absolute top-[3px] transition-transform ${v ? "left-[19px]" : "left-[3px]"}`} />
             </button>
           )},
         ]}
@@ -138,9 +285,9 @@ function InventoryTab() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-white/40">{items.length} inventory items</p>
-        <button data-testid="button-add-inventory" onClick={() => setAdding(true)} className="flex items-center gap-1.5 px-3 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-white/90 transition-colors"><Plus size={14} /> Add Item</button>
+      <div className="flex items-center justify-between mb-6">
+        <p className="text-xs text-white/25">{items.length} inventory items</p>
+        <button data-testid="button-add-inventory" onClick={() => setAdding(true)} className="flex items-center gap-1.5 bg-[#C9A96E] text-black px-3 py-2 text-xs font-semibold hover:bg-[#D4B87A] transition-colors"><Plus size={13} /> Add Item</button>
       </div>
       <AnimatePresence>
         {adding && <AddForm fields={[
@@ -179,9 +326,9 @@ function StaffTab() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-white/40">{staff.length} staff members</p>
-        <button data-testid="button-add-staff" onClick={() => setAdding(true)} className="flex items-center gap-1.5 px-3 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-white/90 transition-colors"><Plus size={14} /> Add Staff</button>
+      <div className="flex items-center justify-between mb-6">
+        <p className="text-xs text-white/25">{staff.length} staff members</p>
+        <button data-testid="button-add-staff" onClick={() => setAdding(true)} className="flex items-center gap-1.5 bg-[#C9A96E] text-black px-3 py-2 text-xs font-semibold hover:bg-[#D4B87A] transition-colors"><Plus size={13} /> Add Staff</button>
       </div>
       <AnimatePresence>
         {adding && <AddForm fields={[
@@ -194,7 +341,7 @@ function StaffTab() {
       <DataTable
         columns={[
           { key: "name", label: "Name" },
-          { key: "role", label: "Role", render: (v: string) => <span className="inline-block px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-md text-xs font-medium">{v}</span> },
+          { key: "role", label: "Role", render: (v: string) => <span className="text-[10px] uppercase tracking-wider text-[#C9A96E]/60 font-medium">{v}</span> },
           { key: "email", label: "Email" },
           { key: "phone", label: "Phone" },
         ]}
@@ -214,9 +361,9 @@ function BookingsTab() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-white/40">{bookingsList.length} bookings</p>
-        <button data-testid="button-add-booking" onClick={() => setAdding(true)} className="flex items-center gap-1.5 px-3 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-white/90 transition-colors"><Plus size={14} /> Add Booking</button>
+      <div className="flex items-center justify-between mb-6">
+        <p className="text-xs text-white/25">{bookingsList.length} bookings</p>
+        <button data-testid="button-add-booking" onClick={() => setAdding(true)} className="flex items-center gap-1.5 bg-[#C9A96E] text-black px-3 py-2 text-xs font-semibold hover:bg-[#D4B87A] transition-colors"><Plus size={13} /> Add Booking</button>
       </div>
       <AnimatePresence>
         {adding && <AddForm fields={[
@@ -233,10 +380,13 @@ function BookingsTab() {
       <DataTable
         columns={[
           { key: "eventDate", label: "Date" },
-          { key: "eventType", label: "Type", render: (v: string) => <span className="inline-block px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded-md text-xs font-medium">{v}</span> },
+          { key: "eventType", label: "Type", render: (v: string) => <span className="text-[10px] uppercase tracking-wider text-[#C9A96E]/60 font-medium">{v}</span> },
           { key: "guestName", label: "Guest" },
           { key: "guestCount", label: "Count" },
-          { key: "status", label: "Status", render: (v: string) => <span className={`inline-block px-2 py-0.5 rounded-md text-xs font-medium ${v === "confirmed" ? "bg-green-500/20 text-green-400" : v === "cancelled" ? "bg-red-500/20 text-red-400" : "bg-yellow-500/20 text-yellow-400"}`}>{v}</span> },
+          { key: "status", label: "Status", render: (v: string) => {
+            const colors: Record<string, string> = { confirmed: "text-emerald-400/70", cancelled: "text-red-400/70", pending: "text-white/30" };
+            return <span className={`text-[10px] uppercase tracking-wider font-medium ${colors[v] || "text-white/30"}`}>{v}</span>;
+          }},
         ]}
         data={bookingsList}
         onDelete={(id) => del.mutate(id)}
@@ -254,9 +404,9 @@ function GuestsTab() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-white/40">{guestList.length} guests, {guestList.filter((g: any) => g.vipStatus).length} VIP</p>
-        <button data-testid="button-add-guest" onClick={() => setAdding(true)} className="flex items-center gap-1.5 px-3 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-white/90 transition-colors"><Plus size={14} /> Add Guest</button>
+      <div className="flex items-center justify-between mb-6">
+        <p className="text-xs text-white/25">{guestList.length} guests, {guestList.filter((g: any) => g.vipStatus).length} VIP</p>
+        <button data-testid="button-add-guest" onClick={() => setAdding(true)} className="flex items-center gap-1.5 bg-[#C9A96E] text-black px-3 py-2 text-xs font-semibold hover:bg-[#D4B87A] transition-colors"><Plus size={13} /> Add Guest</button>
       </div>
       <AnimatePresence>
         {adding && <AddForm fields={[
@@ -273,7 +423,7 @@ function GuestsTab() {
           { key: "phone", label: "Phone" },
           { key: "visitCount", label: "Visits" },
           { key: "totalSpent", label: "Total Spent", render: (v: string) => `$${parseFloat(v || "0").toFixed(2)}` },
-          { key: "vipStatus", label: "VIP", render: (v: boolean) => v ? <span className="inline-block px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded-md text-xs font-bold">VIP</span> : "—" },
+          { key: "vipStatus", label: "VIP", render: (v: boolean) => v ? <span className="text-[10px] uppercase tracking-wider text-[#C9A96E] font-bold">VIP</span> : "—" },
           { key: "notes", label: "Notes" },
         ]}
         data={guestList}
@@ -292,9 +442,9 @@ function SuppliersTab() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-white/40">{supplierList.length} suppliers</p>
-        <button data-testid="button-add-supplier" onClick={() => setAdding(true)} className="flex items-center gap-1.5 px-3 py-2 bg-white text-black rounded-lg text-sm font-medium hover:bg-white/90 transition-colors"><Plus size={14} /> Add Supplier</button>
+      <div className="flex items-center justify-between mb-6">
+        <p className="text-xs text-white/25">{supplierList.length} suppliers</p>
+        <button data-testid="button-add-supplier" onClick={() => setAdding(true)} className="flex items-center gap-1.5 bg-[#C9A96E] text-black px-3 py-2 text-xs font-semibold hover:bg-[#D4B87A] transition-colors"><Plus size={13} /> Add Supplier</button>
       </div>
       <AnimatePresence>
         {adding && <AddForm fields={[
@@ -325,37 +475,46 @@ export default function VenueData() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 lg:p-10 max-w-6xl">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-white" data-testid="text-venue-title">Venue Data</h1>
-          <p className="text-sm text-white/40 mt-1">Manage the data your voice agents use — menus, inventory, staff, bookings, and guests.</p>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 lg:py-16">
+        <div className="mb-8 sm:mb-12">
+          <p className="text-[10px] uppercase tracking-[0.25em] text-[#C9A96E]/50 font-medium mb-2 sm:mb-3">Venue Management</p>
+          <h1 className="text-2xl sm:text-3xl font-light text-white tracking-tight mb-2" data-testid="text-venue-title">Venue Data</h1>
+          <p className="text-xs sm:text-sm text-white/30 max-w-lg">
+            Manage the data your voice agents use — menus, inventory, staff, bookings, and guests.
+          </p>
         </div>
 
-        <div className="flex gap-1 mb-6 bg-white/5 p-1 rounded-xl overflow-x-auto" data-testid="venue-tabs">
-          {TABS.map(({ key, label, icon: Icon }) => (
-            <button
-              key={key}
-              data-testid={`tab-${key}`}
-              onClick={() => setActiveTab(key)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
-                activeTab === key ? "bg-white text-black shadow-sm" : "text-white/50 hover:text-white"
-              }`}
-            >
-              <Icon size={14} />
-              {label}
-            </button>
-          ))}
-        </div>
+        <nav className="flex gap-0.5 mb-8 sm:mb-10 overflow-x-auto pb-1" data-testid="venue-tabs">
+          {TABS.map(({ key, label, icon: Icon }) => {
+            const isActive = activeTab === key;
+            return (
+              <button
+                key={key}
+                data-testid={`tab-${key}`}
+                onClick={() => setActiveTab(key)}
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-all duration-200 relative ${
+                  isActive
+                    ? "text-white bg-white/[0.04]"
+                    : "text-white/25 hover:text-white/40 hover:bg-white/[0.02]"
+                }`}
+              >
+                {isActive && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#C9A96E]" />
+                )}
+                <Icon size={14} className={isActive ? "text-[#C9A96E]" : ""} />
+                <span className="hidden sm:inline">{label}</span>
+              </button>
+            );
+          })}
+        </nav>
 
-        <div className="bg-white/[0.03] rounded-xl border border-white/10 overflow-hidden">
-          <div className="p-4">
-            {activeTab === "menu" && <MenuTab />}
-            {activeTab === "inventory" && <InventoryTab />}
-            {activeTab === "staff" && <StaffTab />}
-            {activeTab === "bookings" && <BookingsTab />}
-            {activeTab === "guests" && <GuestsTab />}
-            {activeTab === "suppliers" && <SuppliersTab />}
-          </div>
+        <div>
+          {activeTab === "menu" && <MenuTab />}
+          {activeTab === "inventory" && <InventoryTab />}
+          {activeTab === "staff" && <StaffTab />}
+          {activeTab === "bookings" && <BookingsTab />}
+          {activeTab === "guests" && <GuestsTab />}
+          {activeTab === "suppliers" && <SuppliersTab />}
         </div>
       </div>
     </DashboardLayout>

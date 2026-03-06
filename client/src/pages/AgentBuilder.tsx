@@ -93,9 +93,9 @@ export default function AgentBuilder() {
   const [speed, setSpeed] = useState(1);
   const [greeting, setGreeting] = useState("");
   const [fallbackMessage, setFallbackMessage] = useState("");
-  const [maxConversationLength, setMaxConversationLength] = useState(10);
+  const [maxConversationLength, setMaxConversationLength] = useState(50);
   const [isActive, setIsActive] = useState(false);
-  const [wakeWordEnabled, setWakeWordEnabled] = useState(false);
+  const [wakeWordEnabled, setWakeWordEnabled] = useState(true);
   const [wakeWordPhrase, setWakeWordPhrase] = useState("hey bev");
   const [wakeWordEndPhrases, setWakeWordEndPhrases] = useState("goodbye, we are done, that's all, thank you that's it");
   const [wakeWordShutdownPhrases, setWakeWordShutdownPhrases] = useState("stop listening, shut down, terminate");
@@ -208,7 +208,7 @@ export default function AgentBuilder() {
       setRagMaxResults(c?.rag?.maxResults || 5);
       setFileUploadEnabled(c?.fileUploadEnabled || false);
       if (c?.wakeWord) {
-        setWakeWordEnabled(c.wakeWord.enabled ?? false);
+        setWakeWordEnabled(c.wakeWord.enabled ?? true);
         setWakeWordPhrase(c.wakeWord.phrase || "hey bev");
         setWakeWordEndPhrases(c.wakeWord.endPhrases?.join(", ") || "goodbye, we are done, that's all, thank you that's it");
         setWakeWordShutdownPhrases(c.wakeWord.shutdownPhrases?.join(", ") || "stop listening, shut down, terminate");
@@ -568,50 +568,27 @@ export default function AgentBuilder() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                      <div>
-                        <div className="flex items-baseline justify-between mb-4">
-                          <label className="text-[11px] uppercase tracking-[0.15em] text-white/25 font-medium">Speed</label>
-                          <span className="text-xs text-white/40">
-                            {speed < 1 ? "Slow" : speed > 1.3 ? "Fast" : speed > 1 ? "Slightly Fast" : "Normal"}
-                          </span>
-                        </div>
-                        <input
-                          data-testid="slider-speed"
-                          type="range"
-                          min={0.5}
-                          max={1.5}
-                          step={0.1}
-                          value={speed}
-                          onChange={(e) => setSpeed(Number(e.target.value))}
-                          className="w-full accent-[#C9A96E]"
-                        />
-                        <div className="flex justify-between text-[10px] text-white/15 mt-1.5">
-                          <span>Slow</span>
-                          <span>Normal</span>
-                          <span>Fast</span>
-                        </div>
+                    <div>
+                      <div className="flex items-baseline justify-between mb-4">
+                        <label className="text-[11px] uppercase tracking-[0.15em] text-white/25 font-medium">Speed</label>
+                        <span className="text-xs text-white/40">
+                          {speed < 1 ? "Slow" : speed > 1.3 ? "Fast" : speed > 1 ? "Slightly Fast" : "Normal"}
+                        </span>
                       </div>
-
-                      <div>
-                        <div className="flex items-baseline justify-between mb-4">
-                          <label className="text-[11px] uppercase tracking-[0.15em] text-white/25 font-medium">Turns</label>
-                          <span className="text-xs text-white/40">{maxConversationLength}</span>
-                        </div>
-                        <input
-                          data-testid="slider-max-conversation"
-                          type="range"
-                          min={1}
-                          max={50}
-                          value={maxConversationLength}
-                          onChange={(e) => setMaxConversationLength(Number(e.target.value))}
-                          className="w-full accent-[#C9A96E]"
-                        />
-                        <div className="flex justify-between text-[10px] text-white/15 mt-1.5">
-                          <span>1</span>
-                          <span>25</span>
-                          <span>50</span>
-                        </div>
+                      <input
+                        data-testid="slider-speed"
+                        type="range"
+                        min={0.5}
+                        max={1.5}
+                        step={0.1}
+                        value={speed}
+                        onChange={(e) => setSpeed(Number(e.target.value))}
+                        className="w-full accent-[#C9A96E]"
+                      />
+                      <div className="flex justify-between text-[10px] text-white/15 mt-1.5">
+                        <span>Slow</span>
+                        <span>Normal</span>
+                        <span>Fast</span>
                       </div>
                     </div>
                   </div>

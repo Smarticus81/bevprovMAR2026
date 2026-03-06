@@ -258,7 +258,7 @@ export default function Home() {
         <div className="flex gap-6">
           <a href="#" className="hover:text-white transition-colors">Privacy</a>
           <a href="#" className="hover:text-white transition-colors">Terms</a>
-          <a href="#" className="hover:text-white transition-colors">Documentation</a>
+          <Link href="/docs" className="hover:text-white transition-colors" data-testid="link-footer-docs">Documentation</Link>
         </div>
       </motion.footer>
     </div>

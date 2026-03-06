@@ -45,9 +45,9 @@ function formatFileSize(bytes: number): string {
 function StatusPill({ active }: { active: boolean }) {
   return (
     <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium tracking-wide uppercase transition-all duration-300 ${
-      active ? "text-emerald-400" : "text-white/25"
+      active ? "text-emerald-400" : "text-ink-faint"
     }`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${active ? "bg-emerald-400" : "bg-white/20"}`} />
+      <span className={`w-1.5 h-1.5 rounded-full ${active ? "bg-emerald-400" : "bg-ink-ghost"}`} />
       {active ? "Active" : "Draft"}
     </span>
   );
@@ -67,7 +67,7 @@ function SectionToggle({
       data-testid={testId}
       onClick={onToggle}
       className={`relative w-12 h-7 rounded-full transition-all duration-300 ${
-        enabled ? "bg-[#C9A96E]" : "bg-white/10"
+        enabled ? "bg-accent" : "bg-surface-4"
       }`}
     >
       <span
@@ -257,18 +257,18 @@ export default function AgentBuilder() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <Loader2 className="w-6 h-6 text-white/40 animate-spin" />
+      <div className="min-h-screen bg-page flex items-center justify-center">
+        <Loader2 className="w-6 h-6 text-ink-faint animate-spin" />
       </div>
     );
   }
 
   if (!agent) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-page flex items-center justify-center">
         <div className="text-center">
-          <p className="text-white/50 mb-4" data-testid="text-agent-not-found">Agent not found</p>
-          <Link href="/dashboard" className="text-white/70 hover:text-white text-sm underline">Back to Dashboard</Link>
+          <p className="text-ink-muted mb-4" data-testid="text-agent-not-found">Agent not found</p>
+          <Link href="/dashboard" className="text-ink-secondary hover:text-ink text-sm underline">Back to Dashboard</Link>
         </div>
       </div>
     );
@@ -295,19 +295,19 @@ export default function AgentBuilder() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans flex">
-      <aside className="hidden lg:flex w-64 flex-col border-r border-white/[0.06] bg-white/[0.01]">
-        <div className="p-6 border-b border-white/[0.06]">
-          <Link href="/dashboard" className="flex items-center gap-2 text-white/30 hover:text-white/60 text-sm transition-colors" data-testid="link-back-dashboard">
+    <div className="min-h-screen bg-page text-ink font-sans flex">
+      <aside className="hidden lg:flex w-64 flex-col border-r border-line-subtle bg-surface-1">
+        <div className="p-6 border-b border-line-subtle">
+          <Link href="/dashboard" className="flex items-center gap-2 text-ink-faint hover:text-ink-secondary text-sm transition-colors" data-testid="link-back-dashboard">
             <ArrowLeft size={14} />
             <span>Back to agents</span>
           </Link>
         </div>
 
-        <div className="p-6 border-b border-white/[0.06]">
-          <p className="text-xs uppercase tracking-[0.2em] text-white/40 font-medium mb-2">Agent</p>
-          <h2 className="text-base font-semibold text-white truncate" data-testid="text-agent-name-header">{name || "Untitled"}</h2>
-          <p className="text-xs text-white/30 mt-0.5">{AGENT_TYPE_LABELS[agent.type as keyof typeof AGENT_TYPE_LABELS] || agent.type}</p>
+        <div className="p-6 border-b border-line-subtle">
+          <p className="text-xs uppercase tracking-[0.2em] text-ink-faint font-medium mb-2">Agent</p>
+          <h2 className="text-base font-semibold text-ink truncate" data-testid="text-agent-name-header">{name || "Untitled"}</h2>
+          <p className="text-xs text-ink-faint mt-0.5">{AGENT_TYPE_LABELS[agent.type as keyof typeof AGENT_TYPE_LABELS] || agent.type}</p>
         </div>
 
         <nav className="flex-1 py-4">
@@ -321,19 +321,19 @@ export default function AgentBuilder() {
                 onClick={() => setCurrentStep(step.id)}
                 className={`w-full flex items-center gap-3 px-6 py-3.5 text-left transition-all duration-200 relative ${
                   isCurrent
-                    ? "text-white bg-white/[0.04]"
-                    : "text-white/30 hover:text-white/50 hover:bg-white/[0.02]"
+                    ? "text-ink bg-surface-2"
+                    : "text-ink-faint hover:text-ink-muted hover:bg-surface-1"
                 }`}
               >
                 {isCurrent && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-[#C9A96E]" />
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-accent" />
                 )}
                 <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
                   isCurrent
-                    ? "bg-[#C9A96E] text-black"
+                    ? "bg-accent text-black"
                     : isCompleted
-                      ? "bg-white/10 text-white/60"
-                      : "bg-white/[0.04] text-white/20"
+                      ? "bg-surface-4 text-ink-secondary"
+                      : "bg-surface-2 text-ink-ghost"
                 }`}>
                   {isCompleted ? <CheckCircle2 size={12} /> : step.num}
                 </span>
@@ -343,9 +343,9 @@ export default function AgentBuilder() {
           })}
         </nav>
 
-        <div className="p-6 border-t border-white/[0.06] space-y-3">
+        <div className="p-6 border-t border-line-subtle space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-white/40 uppercase tracking-wider">Status</span>
+            <span className="text-xs text-ink-faint uppercase tracking-wider">Status</span>
             <button
               data-testid="switch-activate"
               onClick={() => setIsActive(!isActive)}
@@ -357,12 +357,12 @@ export default function AgentBuilder() {
             data-testid="button-save-agent"
             onClick={() => saveMutation.mutate()}
             disabled={saveMutation.isPending}
-            className="w-full flex items-center justify-center gap-2 bg-[#C9A96E] text-black py-2.5 text-sm font-semibold hover:bg-[#D4B87A] disabled:opacity-50 transition-all duration-300"
+            className="w-full flex items-center justify-center gap-2 bg-accent text-black py-2.5 text-sm font-semibold hover:bg-accent-hover disabled:opacity-50 transition-all duration-300"
           >
             {saveMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
             Save Configuration
           </button>
-          <Link href={`/app/${id}`} className="w-full flex items-center justify-center gap-2 border border-white/10 text-white/60 py-2.5 text-sm font-medium hover:bg-white/5 hover:text-white transition-all duration-300" data-testid="button-launch-agent">
+          <Link href={`/app/${id}`} className="w-full flex items-center justify-center gap-2 border border-line text-ink-secondary py-2.5 text-sm font-medium hover:bg-surface-2 hover:text-ink transition-all duration-300" data-testid="button-launch-agent">
             <ExternalLink size={14} />
             Launch Agent
           </Link>
@@ -370,18 +370,18 @@ export default function AgentBuilder() {
       </aside>
 
       <div className="flex-1 flex flex-col min-h-screen">
-        <header className="lg:hidden sticky top-0 z-40 bg-black/90 backdrop-blur-xl border-b border-white/[0.06]">
+        <header className="lg:hidden sticky top-0 z-40 bg-page/90 backdrop-blur-xl border-b border-line-subtle">
           <div className="px-4 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Link href="/dashboard">
-                <button className="text-white/30 hover:text-white p-1" data-testid="link-back-dashboard-mobile">
+                <button className="text-ink-faint hover:text-ink p-1" data-testid="link-back-dashboard-mobile">
                   <ArrowLeft size={20} />
                 </button>
               </Link>
-              <span className="text-base font-semibold text-white truncate max-w-[160px]">{name || "Untitled"}</span>
+              <span className="text-base font-semibold text-ink truncate max-w-[160px]">{name || "Untitled"}</span>
             </div>
             <div className="flex items-center gap-2">
-              <Link href={`/app/${id}`} className="flex items-center gap-1.5 border border-white/10 text-white/50 px-3 py-2 text-sm font-medium" data-testid="button-launch-agent-mobile">
+              <Link href={`/app/${id}`} className="flex items-center gap-1.5 border border-line text-ink-muted px-3 py-2 text-sm font-medium" data-testid="button-launch-agent-mobile">
                 <ExternalLink size={13} />
                 Launch
               </Link>
@@ -389,7 +389,7 @@ export default function AgentBuilder() {
                 data-testid="button-save-agent-mobile"
                 onClick={() => saveMutation.mutate()}
                 disabled={saveMutation.isPending}
-                className="flex items-center gap-1.5 bg-[#C9A96E] text-black px-4 py-2 text-sm font-semibold"
+                className="flex items-center gap-1.5 bg-accent text-black px-4 py-2 text-sm font-semibold"
               >
                 {saveMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                 Save
@@ -404,8 +404,8 @@ export default function AgentBuilder() {
                 data-testid={`tab-mobile-${step.id}`}
                 className={`shrink-0 px-4 py-2.5 text-sm font-medium rounded transition-all ${
                   currentStep === step.id
-                    ? "bg-white/10 text-white"
-                    : "text-white/30"
+                    ? "bg-surface-4 text-ink"
+                    : "text-ink-faint"
                 }`}
               >
                 {step.label}
@@ -427,80 +427,80 @@ export default function AgentBuilder() {
                   className="space-y-8"
                 >
                   <div>
-                    <p className="text-xs uppercase tracking-[0.25em] text-[#C9A96E]/60 font-medium mb-3">Step 01</p>
-                    <h1 className="text-2xl font-light text-white tracking-tight mb-2">Define your agent</h1>
-                    <p className="text-sm text-white/40 max-w-md">Give your agent a name and describe what it does. This shapes how it introduces itself and interacts with users.</p>
+                    <p className="text-xs uppercase tracking-[0.25em] text-accent/60 font-medium mb-3">Step 01</p>
+                    <h1 className="text-2xl font-light text-ink tracking-tight mb-2">Define your agent</h1>
+                    <p className="text-sm text-ink-faint max-w-md">Give your agent a name and describe what it does. This shapes how it introduces itself and interacts with users.</p>
                   </div>
 
                   <div className="space-y-6">
                     <div>
-                      <label className="text-xs uppercase tracking-[0.15em] text-white/40 font-medium block mb-3">Agent Name</label>
+                      <label className="text-xs uppercase tracking-[0.15em] text-ink-faint font-medium block mb-3">Agent Name</label>
                       <input
                         data-testid="input-agent-name"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="e.g., Front Bar POS"
-                        className="w-full bg-transparent border-0 border-b border-white/10 px-0 py-3 text-lg text-white placeholder:text-white/20 focus:outline-none focus:border-[#C9A96E]/40 transition-colors"
+                        className="w-full bg-transparent border-0 border-b border-line px-0 py-3 text-lg text-ink placeholder:text-ink-ghost focus:outline-none focus:border-accent/40 transition-colors"
                       />
                     </div>
                     <div>
-                      <label className="text-xs uppercase tracking-[0.15em] text-white/40 font-medium block mb-3">Description</label>
+                      <label className="text-xs uppercase tracking-[0.15em] text-ink-faint font-medium block mb-3">Description</label>
                       <textarea
                         data-testid="input-agent-description"
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         placeholder="Describe what this agent handles..."
                         rows={3}
-                        className="w-full bg-transparent border-0 border-b border-white/10 px-0 py-3 text-base text-white placeholder:text-white/20 focus:outline-none focus:border-[#C9A96E]/40 transition-colors resize-none"
+                        className="w-full bg-transparent border-0 border-b border-line px-0 py-3 text-base text-ink placeholder:text-ink-ghost focus:outline-none focus:border-accent/40 transition-colors resize-none"
                       />
                     </div>
                     <div>
-                      <label className="text-xs uppercase tracking-[0.15em] text-white/40 font-medium block mb-3">Greeting Message</label>
+                      <label className="text-xs uppercase tracking-[0.15em] text-ink-faint font-medium block mb-3">Greeting Message</label>
                       <textarea
                         data-testid="input-greeting"
                         value={greeting}
                         onChange={(e) => setGreeting(e.target.value)}
                         placeholder="Hi! How can I help you today?"
                         rows={2}
-                        className="w-full bg-transparent border-0 border-b border-white/10 px-0 py-3 text-base text-white placeholder:text-white/20 focus:outline-none focus:border-[#C9A96E]/40 transition-colors resize-none"
+                        className="w-full bg-transparent border-0 border-b border-line px-0 py-3 text-base text-ink placeholder:text-ink-ghost focus:outline-none focus:border-accent/40 transition-colors resize-none"
                       />
                     </div>
                     <div>
-                      <label className="text-xs uppercase tracking-[0.15em] text-white/40 font-medium block mb-3">Fallback Message</label>
+                      <label className="text-xs uppercase tracking-[0.15em] text-ink-faint font-medium block mb-3">Fallback Message</label>
                       <textarea
                         data-testid="input-fallback-message"
                         value={fallbackMessage}
                         onChange={(e) => setFallbackMessage(e.target.value)}
                         placeholder="Sorry, I didn't catch that. Could you say it again?"
                         rows={2}
-                        className="w-full bg-transparent border-0 border-b border-white/10 px-0 py-3 text-base text-white placeholder:text-white/20 focus:outline-none focus:border-[#C9A96E]/40 transition-colors resize-none"
+                        className="w-full bg-transparent border-0 border-b border-line px-0 py-3 text-base text-ink placeholder:text-ink-ghost focus:outline-none focus:border-accent/40 transition-colors resize-none"
                       />
                     </div>
                   </div>
 
                   <div className="pt-2">
                     <div className="flex items-center gap-3 mb-5">
-                      <div className="flex-1 h-px bg-white/[0.06]" />
-                      <span className="text-[10px] uppercase tracking-[0.2em] text-white/15">Capabilities</span>
-                      <div className="flex-1 h-px bg-white/[0.06]" />
+                      <div className="flex-1 h-px bg-line-subtle" />
+                      <span className="text-[10px] uppercase tracking-[0.2em] text-ink-ghost">Capabilities</span>
+                      <div className="flex-1 h-px bg-line-subtle" />
                     </div>
 
-                    <p className="text-xs uppercase tracking-[0.15em] text-white/40 font-medium mb-4">
+                    <p className="text-xs uppercase tracking-[0.15em] text-ink-faint font-medium mb-4">
                       {availableTools.length} tools enabled for this agent type
                     </p>
 
                     {Object.entries(toolsByCategory).map(([category, tools]) => (
                       <div key={category} className="mb-4">
-                        <p className="text-xs uppercase tracking-[0.2em] text-white/30 mb-2">{category}</p>
+                        <p className="text-xs uppercase tracking-[0.2em] text-ink-faint mb-2">{category}</p>
                         <div className="flex flex-wrap gap-1.5">
                           {tools.map((tool) => (
                             <span
                               key={tool.name}
                               data-testid={`info-tool-${tool.name}`}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white/[0.03] text-white/40 text-xs"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-surface-1 text-ink-faint text-xs"
                               title={tool.description}
                             >
-                              <Zap size={9} className="text-[#C9A96E]/40" />
+                              <Zap size={9} className="text-accent/40" />
                               {tool.name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
                             </span>
                           ))}
@@ -521,14 +521,14 @@ export default function AgentBuilder() {
                   className="space-y-8"
                 >
                   <div>
-                    <p className="text-xs uppercase tracking-[0.25em] text-[#C9A96E]/60 font-medium mb-3">Step 02</p>
-                    <h1 className="text-2xl font-light text-white tracking-tight mb-2">Voice & Behavior</h1>
-                    <p className="text-sm text-white/40 max-w-md">Choose how your agent sounds and responds. Set the voice, speed, and language that fits your venue.</p>
+                    <p className="text-xs uppercase tracking-[0.25em] text-accent/60 font-medium mb-3">Step 02</p>
+                    <h1 className="text-2xl font-light text-ink tracking-tight mb-2">Voice & Behavior</h1>
+                    <p className="text-sm text-ink-faint max-w-md">Choose how your agent sounds and responds. Set the voice, speed, and language that fits your venue.</p>
                   </div>
 
                   <div className="space-y-8">
                     <div>
-                      <label className="text-xs uppercase tracking-[0.15em] text-white/40 font-medium block mb-4">Voice</label>
+                      <label className="text-xs uppercase tracking-[0.15em] text-ink-faint font-medium block mb-4">Voice</label>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                         {VOICES.map((v) => (
                           <button
@@ -537,11 +537,11 @@ export default function AgentBuilder() {
                             onClick={() => setVoice(v)}
                             className={`relative py-5 text-center text-sm font-medium transition-all duration-300 rounded ${
                               voice === v
-                                ? "bg-white/[0.08] text-white border-b-2 border-[#C9A96E]"
-                                : "text-white/35 hover:text-white/60 hover:bg-white/[0.03] border-b border-transparent"
+                                ? "bg-surface-3 text-ink border-b-2 border-accent"
+                                : "text-ink-faint hover:text-ink-secondary hover:bg-surface-1 border-b border-transparent"
                             }`}
                           >
-                            <Mic size={18} className={`mx-auto mb-2 ${voice === v ? "text-[#C9A96E]" : "text-white/20"}`} />
+                            <Mic size={18} className={`mx-auto mb-2 ${voice === v ? "text-accent" : "text-ink-ghost"}`} />
                             {v.charAt(0).toUpperCase() + v.slice(1)}
                           </button>
                         ))}
@@ -549,7 +549,7 @@ export default function AgentBuilder() {
                     </div>
 
                     <div>
-                      <label className="text-xs uppercase tracking-[0.15em] text-white/40 font-medium block mb-4">Language</label>
+                      <label className="text-xs uppercase tracking-[0.15em] text-ink-faint font-medium block mb-4">Language</label>
                       <div className="flex flex-wrap gap-1.5">
                         {LANGUAGES.map((l) => (
                           <button
@@ -558,8 +558,8 @@ export default function AgentBuilder() {
                             onClick={() => setLanguage(l.value)}
                             className={`px-4 py-2 text-sm transition-all duration-300 ${
                               language === l.value
-                                ? "bg-white/[0.08] text-white border-b border-[#C9A96E]"
-                                : "text-white/25 hover:text-white/50"
+                                ? "bg-surface-3 text-ink border-b border-accent"
+                                : "text-ink-faint hover:text-ink-muted"
                             }`}
                           >
                             {l.label}
@@ -570,8 +570,8 @@ export default function AgentBuilder() {
 
                     <div>
                       <div className="flex items-baseline justify-between mb-4">
-                        <label className="text-xs uppercase tracking-[0.15em] text-white/40 font-medium">Speed</label>
-                        <span className="text-xs text-white/40">
+                        <label className="text-xs uppercase tracking-[0.15em] text-ink-faint font-medium">Speed</label>
+                        <span className="text-xs text-ink-faint">
                           {speed < 1 ? "Slow" : speed > 1.3 ? "Fast" : speed > 1 ? "Slightly Fast" : "Normal"}
                         </span>
                       </div>
@@ -583,9 +583,9 @@ export default function AgentBuilder() {
                         step={0.1}
                         value={speed}
                         onChange={(e) => setSpeed(Number(e.target.value))}
-                        className="w-full accent-[#C9A96E]"
+                        className="w-full accent-accent"
                       />
-                      <div className="flex justify-between text-[10px] text-white/15 mt-1.5">
+                      <div className="flex justify-between text-[10px] text-ink-ghost mt-1.5">
                         <span>Slow</span>
                         <span>Normal</span>
                         <span>Fast</span>
@@ -595,15 +595,15 @@ export default function AgentBuilder() {
 
                   <div className="pt-2">
                     <div className="flex items-center gap-3 mb-6">
-                      <div className="flex-1 h-px bg-white/[0.06]" />
-                      <span className="text-[10px] uppercase tracking-[0.2em] text-white/15">Wake Word</span>
-                      <div className="flex-1 h-px bg-white/[0.06]" />
+                      <div className="flex-1 h-px bg-line-subtle" />
+                      <span className="text-[10px] uppercase tracking-[0.2em] text-ink-ghost">Wake Word</span>
+                      <div className="flex-1 h-px bg-line-subtle" />
                     </div>
 
                     <div className="flex items-center justify-between mb-5">
                       <div>
-                        <p className="text-sm text-white/60">Hands-free activation</p>
-                        <p className="text-xs text-white/35 mt-0.5">Activate with a voice trigger phrase</p>
+                        <p className="text-sm text-ink-secondary">Hands-free activation</p>
+                        <p className="text-xs text-ink-faint mt-0.5">Activate with a voice trigger phrase</p>
                       </div>
                       <SectionToggle
                         enabled={wakeWordEnabled}
@@ -621,41 +621,41 @@ export default function AgentBuilder() {
                           className="space-y-6 overflow-hidden"
                         >
                           <div>
-                            <label className="text-xs uppercase tracking-[0.15em] text-white/40 font-medium block mb-2">Trigger Phrase</label>
+                            <label className="text-xs uppercase tracking-[0.15em] text-ink-faint font-medium block mb-2">Trigger Phrase</label>
                             <input
                               data-testid="input-wake-word-phrase"
                               value={wakeWordPhrase}
                               onChange={(e) => setWakeWordPhrase(e.target.value)}
                               placeholder="hey bev"
-                              className="w-full bg-transparent border-0 border-b border-white/10 px-0 py-3 text-base text-white placeholder:text-white/20 focus:outline-none focus:border-[#C9A96E]/40 transition-colors"
+                              className="w-full bg-transparent border-0 border-b border-line px-0 py-3 text-base text-ink placeholder:text-ink-ghost focus:outline-none focus:border-accent/40 transition-colors"
                             />
                           </div>
                           <div>
-                            <label className="text-xs uppercase tracking-[0.15em] text-white/40 font-medium block mb-2">End Phrases</label>
+                            <label className="text-xs uppercase tracking-[0.15em] text-ink-faint font-medium block mb-2">End Phrases</label>
                             <textarea
                               data-testid="input-wake-word-end-phrases"
                               value={wakeWordEndPhrases}
                               onChange={(e) => setWakeWordEndPhrases(e.target.value)}
                               placeholder="goodbye, we are done, that's all"
                               rows={2}
-                              className="w-full bg-transparent border-0 border-b border-white/10 px-0 py-3 text-sm text-white placeholder:text-white/15 focus:outline-none focus:border-[#C9A96E]/40 transition-colors resize-none"
+                              className="w-full bg-transparent border-0 border-b border-line px-0 py-3 text-sm text-ink placeholder:text-ink-ghost focus:outline-none focus:border-accent/40 transition-colors resize-none"
                             />
                           </div>
                           <div>
-                            <label className="text-xs uppercase tracking-[0.15em] text-white/40 font-medium block mb-2">Shutdown Phrases</label>
+                            <label className="text-xs uppercase tracking-[0.15em] text-ink-faint font-medium block mb-2">Shutdown Phrases</label>
                             <textarea
                               data-testid="input-wake-word-shutdown-phrases"
                               value={wakeWordShutdownPhrases}
                               onChange={(e) => setWakeWordShutdownPhrases(e.target.value)}
                               placeholder="stop listening, shut down, terminate"
                               rows={2}
-                              className="w-full bg-transparent border-0 border-b border-white/10 px-0 py-3 text-sm text-white placeholder:text-white/15 focus:outline-none focus:border-[#C9A96E]/40 transition-colors resize-none"
+                              className="w-full bg-transparent border-0 border-b border-line px-0 py-3 text-sm text-ink placeholder:text-ink-ghost focus:outline-none focus:border-accent/40 transition-colors resize-none"
                             />
                           </div>
                           <div>
                             <div className="flex items-baseline justify-between mb-3">
-                              <label className="text-xs uppercase tracking-[0.15em] text-white/40 font-medium">Sensitivity</label>
-                              <span className="text-xs text-white/40">{levenshteinThreshold}</span>
+                              <label className="text-xs uppercase tracking-[0.15em] text-ink-faint font-medium">Sensitivity</label>
+                              <span className="text-xs text-ink-faint">{levenshteinThreshold}</span>
                             </div>
                             <input
                               data-testid="slider-levenshtein-threshold"
@@ -665,9 +665,9 @@ export default function AgentBuilder() {
                               step={1}
                               value={levenshteinThreshold}
                               onChange={(e) => setLevenshteinThreshold(Number(e.target.value))}
-                              className="w-full accent-[#C9A96E]"
+                              className="w-full accent-accent"
                             />
-                            <div className="flex justify-between text-[10px] text-white/15 mt-1.5">
+                            <div className="flex justify-between text-[10px] text-ink-ghost mt-1.5">
                               <span>Strict</span>
                               <span>Flexible</span>
                             </div>
@@ -689,9 +689,9 @@ export default function AgentBuilder() {
                   className="space-y-8"
                 >
                   <div>
-                    <p className="text-xs uppercase tracking-[0.25em] text-[#C9A96E]/60 font-medium mb-3">Step 03</p>
-                    <h1 className="text-2xl font-light text-white tracking-tight mb-2">Connections</h1>
-                    <p className="text-sm text-white/40 max-w-md">Connect your agent to databases, knowledge bases, and external tools. Enable only what you need.</p>
+                    <p className="text-xs uppercase tracking-[0.25em] text-accent/60 font-medium mb-3">Step 03</p>
+                    <h1 className="text-2xl font-light text-ink tracking-tight mb-2">Connections</h1>
+                    <p className="text-sm text-ink-faint max-w-md">Connect your agent to databases, knowledge bases, and external tools. Enable only what you need.</p>
                   </div>
 
                   <div className="space-y-1">
@@ -705,7 +705,7 @@ export default function AgentBuilder() {
                     >
                       <div className="space-y-5 pt-2">
                         <div>
-                          <label className="text-xs uppercase tracking-[0.15em] text-white/40 font-medium block mb-3">Type</label>
+                          <label className="text-xs uppercase tracking-[0.15em] text-ink-faint font-medium block mb-3">Type</label>
                           <div className="flex gap-1.5">
                             {([
                               { value: "supabase" as const, label: "Supabase" },
@@ -718,8 +718,8 @@ export default function AgentBuilder() {
                                 onClick={() => setExternalDbType(opt.value)}
                                 className={`px-4 py-2 text-sm transition-all duration-300 ${
                                   externalDbType === opt.value
-                                    ? "bg-white/[0.08] text-white border-b border-[#C9A96E]"
-                                    : "text-white/25 hover:text-white/50"
+                                    ? "bg-surface-3 text-ink border-b border-accent"
+                                    : "text-ink-faint hover:text-ink-muted"
                                 }`}
                               >
                                 {opt.label}
@@ -728,14 +728,14 @@ export default function AgentBuilder() {
                           </div>
                         </div>
                         <div>
-                          <label className="text-xs uppercase tracking-[0.15em] text-white/40 font-medium block mb-2">Connection String</label>
+                          <label className="text-xs uppercase tracking-[0.15em] text-ink-faint font-medium block mb-2">Connection String</label>
                           <input
                             data-testid="input-db-connection-string"
                             type="password"
                             value={externalDbConnectionString}
                             onChange={(e) => setExternalDbConnectionString(e.target.value)}
                             placeholder="postgres://user:pass@host:5432/db"
-                            className="w-full bg-transparent border-0 border-b border-white/10 px-0 py-3 text-sm text-white placeholder:text-white/15 focus:outline-none focus:border-[#C9A96E]/40 transition-colors"
+                            className="w-full bg-transparent border-0 border-b border-line px-0 py-3 text-sm text-ink placeholder:text-ink-ghost focus:outline-none focus:border-accent/40 transition-colors"
                           />
                         </div>
                       </div>
@@ -750,15 +750,15 @@ export default function AgentBuilder() {
                       toggleTestId="switch-mcp-enabled"
                     >
                       <div className="pt-2">
-                        <label className="text-xs uppercase tracking-[0.15em] text-white/40 font-medium block mb-2">Endpoint</label>
+                        <label className="text-xs uppercase tracking-[0.15em] text-ink-faint font-medium block mb-2">Endpoint</label>
                         <input
                           data-testid="input-mcp-endpoint"
                           type="text"
                           readOnly
                           value={typeof window !== "undefined" ? window.location.origin + "/api/mcp" : "/api/mcp"}
-                          className="w-full bg-white/[0.02] border-0 border-b border-white/10 px-0 py-3 text-sm text-white/50 focus:outline-none cursor-default"
+                          className="w-full bg-surface-1 border-0 border-b border-line px-0 py-3 text-sm text-ink-muted focus:outline-none cursor-default"
                         />
-                        <p className="text-xs text-white/20 mt-2">Use this endpoint to connect MCP-compatible tools</p>
+                        <p className="text-xs text-ink-ghost mt-2">Use this endpoint to connect MCP-compatible tools</p>
                       </div>
                     </ConnectionSection>
 
@@ -778,14 +778,14 @@ export default function AgentBuilder() {
                           onDrop={(e) => { e.preventDefault(); setIsDragging(false); handleFileDrop(e.dataTransfer.files); }}
                           onClick={() => fileInputRef.current?.click()}
                           className={`border border-dashed py-8 text-center cursor-pointer transition-all duration-300 ${
-                            isDragging ? "border-[#C9A96E]/40 bg-[#C9A96E]/[0.03]" : "border-white/10 hover:border-white/20"
+                            isDragging ? "border-accent/40 bg-accent-bg" : "border-line hover:border-line-strong"
                           }`}
                         >
-                          <Upload size={20} className="mx-auto text-white/20 mb-2" />
-                          <p className="text-sm text-white/35">
+                          <Upload size={20} className="mx-auto text-ink-ghost mb-2" />
+                          <p className="text-sm text-ink-faint">
                             {uploadMutation.isPending ? "Uploading..." : "Drop files or click to upload"}
                           </p>
-                          <p className="text-xs text-white/30 mt-1">.txt, .md, .csv, .json — up to 5MB</p>
+                          <p className="text-xs text-ink-faint mt-1">.txt, .md, .csv, .json — up to 5MB</p>
                           <input
                             ref={fileInputRef}
                             data-testid="input-rag-file"
@@ -798,7 +798,7 @@ export default function AgentBuilder() {
 
                         {documentsLoading ? (
                           <div className="flex justify-center py-4">
-                            <Loader2 size={14} className="text-white/20 animate-spin" />
+                            <Loader2 size={14} className="text-ink-ghost animate-spin" />
                           </div>
                         ) : documents.length > 0 ? (
                           <div className="space-y-1">
@@ -806,20 +806,20 @@ export default function AgentBuilder() {
                               <div
                                 key={doc.id}
                                 data-testid={`row-document-${doc.id}`}
-                                className="flex items-center justify-between py-3 border-b border-white/[0.04]"
+                                className="flex items-center justify-between py-3 border-b border-line-subtle"
                               >
                                 <div className="flex items-center gap-3 min-w-0">
-                                  <FileText size={13} className="text-white/20 shrink-0" />
+                                  <FileText size={13} className="text-ink-ghost shrink-0" />
                                   <div className="min-w-0">
-                                    <p className="text-sm text-white/50 truncate" data-testid={`text-doc-name-${doc.id}`}>{doc.filename}</p>
-                                    <p className="text-xs text-white/30">{formatFileSize(doc.sizeBytes)}</p>
+                                    <p className="text-sm text-ink-muted truncate" data-testid={`text-doc-name-${doc.id}`}>{doc.filename}</p>
+                                    <p className="text-xs text-ink-faint">{formatFileSize(doc.sizeBytes)}</p>
                                   </div>
                                 </div>
                                 <button
                                   data-testid={`button-delete-doc-${doc.id}`}
                                   onClick={() => deleteMutation.mutate(doc.id)}
                                   disabled={deleteMutation.isPending}
-                                  className="text-white/20 hover:text-red-400 transition-colors p-1"
+                                  className="text-ink-ghost hover:text-red-400 transition-colors p-1"
                                 >
                                   <Trash2 size={13} />
                                 </button>
@@ -830,8 +830,8 @@ export default function AgentBuilder() {
 
                         <div>
                           <div className="flex items-baseline justify-between mb-3">
-                            <label className="text-xs uppercase tracking-[0.15em] text-white/40 font-medium">Max Results</label>
-                            <span className="text-xs text-white/40">{ragMaxResults}</span>
+                            <label className="text-xs uppercase tracking-[0.15em] text-ink-faint font-medium">Max Results</label>
+                            <span className="text-xs text-ink-faint">{ragMaxResults}</span>
                           </div>
                           <input
                             data-testid="slider-rag-max-results"
@@ -840,9 +840,9 @@ export default function AgentBuilder() {
                             max={10}
                             value={ragMaxResults}
                             onChange={(e) => setRagMaxResults(Number(e.target.value))}
-                            className="w-full accent-[#C9A96E]"
+                            className="w-full accent-accent"
                           />
-                          <div className="flex justify-between text-[10px] text-white/15 mt-1.5">
+                          <div className="flex justify-between text-[10px] text-ink-ghost mt-1.5">
                             <span>1</span>
                             <span>5</span>
                             <span>10</span>
@@ -859,7 +859,7 @@ export default function AgentBuilder() {
                       onToggle={() => setFileUploadEnabled(!fileUploadEnabled)}
                       toggleTestId="switch-file-upload"
                     >
-                      <p className="text-sm text-white/35 pt-2">Users can upload files through the agent interface during active sessions.</p>
+                      <p className="text-sm text-ink-faint pt-2">Users can upload files through the agent interface during active sessions.</p>
                     </ConnectionSection>
                   </div>
                 </motion.div>
@@ -875,15 +875,15 @@ export default function AgentBuilder() {
                   className="space-y-8"
                 >
                   <div>
-                    <p className="text-xs uppercase tracking-[0.25em] text-[#C9A96E]/60 font-medium mb-3">Step 04</p>
-                    <h1 className="text-2xl font-light text-white tracking-tight mb-2">Test & Launch</h1>
-                    <p className="text-sm text-white/40 max-w-md">Run a live voice session to verify your agent works as expected. Save your configuration first.</p>
+                    <p className="text-xs uppercase tracking-[0.25em] text-accent/60 font-medium mb-3">Step 04</p>
+                    <h1 className="text-2xl font-light text-ink tracking-tight mb-2">Test & Launch</h1>
+                    <p className="text-sm text-ink-faint max-w-md">Run a live voice session to verify your agent works as expected. Save your configuration first.</p>
                   </div>
 
                   <div className="space-y-6">
-                    <div className="flex items-center gap-3 p-4 bg-white/[0.02] border border-white/[0.06]">
+                    <div className="flex items-center gap-3 p-4 bg-surface-1 border border-line-subtle">
                       <div className={`w-2 h-2 rounded-full ${isActive ? "bg-emerald-400" : "bg-amber-400"}`} />
-                      <span className="text-sm text-white/50">
+                      <span className="text-sm text-ink-muted">
                         {isActive
                           ? "Your agent is active and ready to test."
                           : "Your agent is in draft mode. Set it to active to enable voice sessions."
@@ -896,13 +896,13 @@ export default function AgentBuilder() {
               )}
             </AnimatePresence>
 
-            <div className="flex items-center justify-between mt-10 sm:mt-16 pt-4 sm:pt-6 lg:relative fixed bottom-0 left-0 right-0 lg:bottom-auto lg:left-auto lg:right-auto bg-black/90 backdrop-blur-xl lg:bg-transparent lg:backdrop-blur-none px-4 py-4 sm:px-0 sm:py-0 border-t border-white/[0.06] lg:border-white/[0.04] z-30">
+            <div className="flex items-center justify-between mt-10 sm:mt-16 pt-4 sm:pt-6 lg:relative fixed bottom-0 left-0 right-0 lg:bottom-auto lg:left-auto lg:right-auto bg-page/90 backdrop-blur-xl lg:bg-transparent lg:backdrop-blur-none px-4 py-4 sm:px-0 sm:py-0 border-t border-line-subtle lg:border-line-subtle z-30">
               <button
                 data-testid="button-prev-step"
                 onClick={() => canGoPrev && setCurrentStep(STEPS[currentStepIndex - 1].id)}
                 disabled={!canGoPrev}
                 className={`flex items-center gap-2 text-base py-2 px-4 transition-colors ${
-                  canGoPrev ? "text-white/50 hover:text-white hover:bg-white/[0.04] rounded" : "text-white/10 cursor-not-allowed"
+                  canGoPrev ? "text-ink-muted hover:text-ink hover:bg-surface-2 rounded" : "text-ink-ghost cursor-not-allowed"
                 }`}
               >
                 <ArrowLeft size={16} />
@@ -913,7 +913,7 @@ export default function AgentBuilder() {
                 onClick={() => canGoNext && setCurrentStep(STEPS[currentStepIndex + 1].id)}
                 disabled={!canGoNext}
                 className={`flex items-center gap-2 text-base py-2 px-4 transition-colors ${
-                  canGoNext ? "text-white/50 hover:text-white hover:bg-white/[0.04] rounded" : "text-white/10 cursor-not-allowed"
+                  canGoNext ? "text-ink-muted hover:text-ink hover:bg-surface-2 rounded" : "text-ink-ghost cursor-not-allowed"
                 }`}
               >
                 {canGoNext ? STEPS[currentStepIndex + 1].label : ""}
@@ -946,15 +946,15 @@ function ConnectionSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className={`py-6 border-b border-white/[0.04] transition-all duration-300 ${enabled ? "" : ""}`}>
+    <div className={`py-6 border-b border-line-subtle transition-all duration-300 ${enabled ? "" : ""}`}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
-          <span className={`mt-0.5 ${enabled ? "text-[#C9A96E]" : "text-white/20"} transition-colors`}>
+          <span className={`mt-0.5 ${enabled ? "text-accent" : "text-ink-ghost"} transition-colors`}>
             {icon}
           </span>
           <div>
-            <p className={`text-sm font-medium transition-colors ${enabled ? "text-white" : "text-white/50"}`}>{title}</p>
-            <p className="text-sm text-white/35 mt-0.5">{description}</p>
+            <p className={`text-sm font-medium transition-colors ${enabled ? "text-ink" : "text-ink-muted"}`}>{title}</p>
+            <p className="text-sm text-ink-faint mt-0.5">{description}</p>
           </div>
         </div>
         <SectionToggle enabled={enabled} onToggle={onToggle} testId={toggleTestId} />

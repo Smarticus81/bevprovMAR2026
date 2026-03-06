@@ -24,8 +24,6 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
-const GOLD = "#C9A96E";
-
 const SECTIONS = [
   { id: "getting-started", label: "Getting Started" },
   { id: "first-agent", label: "Your First Agent" },
@@ -39,12 +37,12 @@ function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementTyp
   return (
     <div className="mb-8">
       <div className="flex items-center gap-3 mb-2">
-        <div className="p-2.5 rounded-lg bg-[#C9A96E]/10 border border-[#C9A96E]/20">
-          <Icon size={20} className="text-[#C9A96E]" />
+        <div className="p-2.5 rounded-lg bg-accent-bg border border-accent-border">
+          <Icon size={20} className="text-accent" />
         </div>
-        <h2 className="text-2xl font-semibold text-white tracking-wide" data-testid={`text-section-${title.toLowerCase().replace(/\s+/g, "-")}`}>{title}</h2>
+        <h2 className="text-2xl font-semibold text-ink tracking-wide" data-testid={`text-section-${title.toLowerCase().replace(/\s+/g, "-")}`}>{title}</h2>
       </div>
-      <p className="text-white/40 text-sm ml-[52px]">{subtitle}</p>
+      <p className="text-ink-faint text-sm ml-[52px]">{subtitle}</p>
     </div>
   );
 }
@@ -52,17 +50,17 @@ function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementTyp
 function Step({ number, title, description, tips }: { number: number; title: string; description: string; tips?: string[] }) {
   return (
     <div className="flex gap-4 mb-6" data-testid={`step-${number}`}>
-      <div className="shrink-0 w-8 h-8 rounded-full bg-[#C9A96E]/20 border border-[#C9A96E]/30 flex items-center justify-center">
-        <span className="text-sm font-semibold text-[#C9A96E]">{number}</span>
+      <div className="shrink-0 w-8 h-8 rounded-full bg-accent-bg border border-accent-border flex items-center justify-center">
+        <span className="text-sm font-semibold text-accent">{number}</span>
       </div>
       <div className="flex-1">
-        <h3 className="text-white/90 font-medium text-sm mb-1">{title}</h3>
-        <p className="text-white/50 text-sm leading-relaxed">{description}</p>
+        <h3 className="text-ink-secondary font-medium text-sm mb-1">{title}</h3>
+        <p className="text-ink-muted text-sm leading-relaxed">{description}</p>
         {tips && tips.length > 0 && (
           <div className="mt-3 space-y-1.5">
             {tips.map((tip, i) => (
-              <div key={i} className="flex items-start gap-2 text-xs text-white/40">
-                <CheckCircle2 size={13} className="text-[#C9A96E]/60 mt-0.5 shrink-0" />
+              <div key={i} className="flex items-start gap-2 text-xs text-ink-faint">
+                <CheckCircle2 size={13} className="text-accent/60 mt-0.5 shrink-0" />
                 <span>{tip}</span>
               </div>
             ))}
@@ -75,14 +73,14 @@ function Step({ number, title, description, tips }: { number: number; title: str
 
 function AgentTypeCard({ icon: Icon, name, description }: { icon: React.ElementType; name: string; description: string }) {
   return (
-    <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-lg" data-testid={`card-agent-type-${name.toLowerCase().replace(/\s+/g, "-")}`}>
+    <div className="p-4 bg-surface-1 border border-line-subtle rounded-lg" data-testid={`card-agent-type-${name.toLowerCase().replace(/\s+/g, "-")}`}>
       <div className="flex items-center gap-3 mb-2">
-        <div className="p-2 rounded-lg bg-white/[0.04]">
-          <Icon size={16} className="text-[#C9A96E]" />
+        <div className="p-2 rounded-lg bg-surface-2">
+          <Icon size={16} className="text-accent" />
         </div>
-        <h3 className="text-sm font-medium text-white/90">{name}</h3>
+        <h3 className="text-sm font-medium text-ink-secondary">{name}</h3>
       </div>
-      <p className="text-xs text-white/50 leading-relaxed">{description}</p>
+      <p className="text-xs text-ink-muted leading-relaxed">{description}</p>
     </div>
   );
 }
@@ -97,29 +95,29 @@ export default function Documentation() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <header className="fixed top-0 w-full bg-black/90 backdrop-blur-xl border-b border-white/[0.06] z-40 px-6 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-page text-ink">
+      <header className="fixed top-0 w-full bg-page/90 backdrop-blur-xl border-b border-line-subtle z-40 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2.5" data-testid="link-docs-home">
             <BevProLogo size={22} />
-            <BevProWordmark className="text-white" size="text-base" />
+            <BevProWordmark className="text-ink" size="text-base" />
           </Link>
-          <div className="h-5 w-px bg-white/10 hidden sm:block" />
-          <span className="text-white/30 text-sm hidden sm:block tracking-wide">Documentation</span>
+          <div className="h-5 w-px bg-line hidden sm:block" />
+          <span className="text-ink-faint text-sm hidden sm:block tracking-wide">Documentation</span>
         </div>
         <div className="flex items-center gap-4">
-          <Link href="/dashboard" data-testid="link-docs-dashboard" className="text-xs text-white/40 hover:text-white/70 transition-colors flex items-center gap-1">
+          <Link href="/dashboard" data-testid="link-docs-dashboard" className="text-xs text-ink-faint hover:text-ink-secondary transition-colors flex items-center gap-1">
             <ArrowLeft size={12} />
             Dashboard
           </Link>
-          <Link href="/register" data-testid="link-docs-signup" className="border border-[#C9A96E]/30 text-[#C9A96E] rounded-full px-4 py-1.5 text-xs hover:bg-[#C9A96E]/10 transition-colors">
+          <Link href="/register" data-testid="link-docs-signup" className="border border-accent-border text-accent rounded-full px-4 py-1.5 text-xs hover:bg-accent-bg transition-colors">
             Get Started
           </Link>
         </div>
       </header>
 
       <div className="flex pt-16">
-        <aside className="hidden lg:block w-56 fixed h-[calc(100vh-64px)] top-16 border-r border-white/[0.06] bg-white/[0.01]">
+        <aside className="hidden lg:block w-56 fixed h-[calc(100vh-64px)] top-16 border-r border-line-subtle bg-surface-1">
           <nav className="p-4 space-y-0.5">
             {SECTIONS.map((section) => (
               <button
@@ -128,12 +126,12 @@ export default function Documentation() {
                 onClick={() => scrollToSection(section.id)}
                 className={`w-full text-left flex items-center gap-2 px-3 py-2 text-sm transition-all relative ${
                   activeSection === section.id
-                    ? "text-white bg-white/[0.04]"
-                    : "text-white/30 hover:text-white/50 hover:bg-white/[0.02]"
+                    ? "text-ink bg-surface-2"
+                    : "text-ink-faint hover:text-ink-muted hover:bg-surface-1"
                 }`}
               >
                 {activeSection === section.id && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-[#C9A96E]" />
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-accent" />
                 )}
                 {section.label}
               </button>
@@ -143,8 +141,8 @@ export default function Documentation() {
 
         <main className="flex-1 lg:ml-56 px-6 md:px-12 lg:px-16 py-12 max-w-4xl">
           <div className="mb-16">
-            <h1 className="text-4xl font-bold text-white tracking-tight mb-3" data-testid="text-docs-title">BevPro Documentation</h1>
-            <p className="text-white/40 text-base leading-relaxed max-w-2xl">
+            <h1 className="text-4xl font-bold text-ink tracking-tight mb-3" data-testid="text-docs-title">BevPro Documentation</h1>
+            <p className="text-ink-faint text-base leading-relaxed max-w-2xl">
               Everything you need to set up, configure, and run your AI-powered venue operations.
               Written in plain language — no technical expertise required.
             </p>
@@ -239,8 +237,8 @@ export default function Documentation() {
                 description="Handles event management, staff scheduling, calendars, and multi-location coordination. Perfect for venues with regular events, private bookings, or multiple locations."
               />
             </div>
-            <div className="p-4 bg-[#C9A96E]/5 border border-[#C9A96E]/15 rounded-lg">
-              <p className="text-xs text-[#C9A96E]/80 leading-relaxed">
+            <div className="p-4 bg-accent-bg border border-accent-border rounded-lg">
+              <p className="text-xs text-accent/80 leading-relaxed">
                 <strong>Tip:</strong> You can run multiple agents simultaneously. Many venues use a BevOne concierge alongside a Voice POS and an Inventory Agent — they all share the same venue data.
               </p>
             </div>
@@ -249,7 +247,7 @@ export default function Documentation() {
           <section id="venue-data" className="mb-20 scroll-mt-24">
             <SectionHeader icon={Database} title="Venue Data" subtitle="How to add and manage your menus, inventory, staff, bookings, guests, and suppliers." />
             <div className="space-y-2 mb-8">
-              <h3 className="text-white/70 text-sm font-medium mb-3">The Venue Data page has six tabs:</h3>
+              <h3 className="text-ink-secondary text-sm font-medium mb-3">The Venue Data page has six tabs:</h3>
               <div className="grid gap-3">
                 {[
                   { title: "Menu", desc: "Add your drinks, cocktails, food items with prices and descriptions. Your agents reference this when taking orders or making recommendations." },
@@ -259,11 +257,11 @@ export default function Documentation() {
                   { title: "Guests", desc: "Maintain your guest database with contact info, visit history, spending, and VIP status." },
                   { title: "Suppliers", desc: "Keep track of your suppliers, contact details, and the products they provide." },
                 ].map((tab) => (
-                  <div key={tab.title} className="flex items-start gap-3 p-3 bg-white/[0.02] border border-white/[0.06] rounded-lg">
-                    <ChevronRight size={14} className="text-[#C9A96E] mt-0.5 shrink-0" />
+                  <div key={tab.title} className="flex items-start gap-3 p-3 bg-surface-1 border border-line-subtle rounded-lg">
+                    <ChevronRight size={14} className="text-accent mt-0.5 shrink-0" />
                     <div>
-                      <p className="text-sm font-medium text-white/80">{tab.title}</p>
-                      <p className="text-xs text-white/40 mt-0.5">{tab.desc}</p>
+                      <p className="text-sm font-medium text-ink-secondary">{tab.title}</p>
+                      <p className="text-xs text-ink-faint mt-0.5">{tab.desc}</p>
                     </div>
                   </div>
                 ))}
@@ -315,18 +313,18 @@ export default function Documentation() {
 
           <section id="bulk-import" className="mb-20 scroll-mt-24">
             <SectionHeader icon={Upload} title="Bulk Import Guide" subtitle="Add many items at once using CSV or JSON files." />
-            <p className="text-white/50 text-sm leading-relaxed mb-8">
+            <p className="text-ink-muted text-sm leading-relaxed mb-8">
               Instead of adding menu items one by one, you can upload a file with all your data at once.
               This is perfect for setting up a new venue or migrating from another system.
             </p>
 
             <div className="grid gap-4 md:grid-cols-2 mb-8">
-              <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-lg">
+              <div className="p-4 bg-surface-1 border border-line-subtle rounded-lg">
                 <div className="flex items-center gap-2 mb-3">
-                  <FileJson size={16} className="text-[#C9A96E]" />
-                  <h3 className="text-sm font-medium text-white/80">JSON Format</h3>
+                  <FileJson size={16} className="text-accent" />
+                  <h3 className="text-sm font-medium text-ink-secondary">JSON Format</h3>
                 </div>
-                <div className="bg-black/40 rounded p-3 font-mono text-xs text-white/50 leading-relaxed">
+                <div className="bg-page/40 rounded p-3 font-mono text-xs text-ink-muted leading-relaxed">
                   <pre>{`[
   {
     "name": "Old Fashioned",
@@ -342,12 +340,12 @@ export default function Documentation() {
 ]`}</pre>
                 </div>
               </div>
-              <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-lg">
+              <div className="p-4 bg-surface-1 border border-line-subtle rounded-lg">
                 <div className="flex items-center gap-2 mb-3">
-                  <FileSpreadsheet size={16} className="text-[#C9A96E]" />
-                  <h3 className="text-sm font-medium text-white/80">CSV Format</h3>
+                  <FileSpreadsheet size={16} className="text-accent" />
+                  <h3 className="text-sm font-medium text-ink-secondary">CSV Format</h3>
                 </div>
-                <div className="bg-black/40 rounded p-3 font-mono text-xs text-white/50 leading-relaxed">
+                <div className="bg-page/40 rounded p-3 font-mono text-xs text-ink-muted leading-relaxed">
                   <pre>{`name,category,price,description
 Old Fashioned,Cocktails,14.00,Bourbon...
 Espresso Martini,Cocktails,16.00,
@@ -374,14 +372,14 @@ Margarita,Cocktails,13.00,Tequila...`}</pre>
             />
           </section>
 
-          <div className="border-t border-white/[0.06] pt-12 pb-8">
+          <div className="border-t border-line-subtle pt-12 pb-8">
             <div className="text-center">
-              <p className="text-white/30 text-sm mb-4">Ready to get started?</p>
+              <p className="text-ink-faint text-sm mb-4">Ready to get started?</p>
               <div className="flex items-center justify-center gap-4">
-                <Link href="/register" data-testid="link-docs-bottom-signup" className="bg-[#C9A96E] text-black px-6 py-2.5 rounded-full text-sm font-medium hover:bg-[#D4B87A] transition-colors">
+                <Link href="/register" data-testid="link-docs-bottom-signup" className="bg-accent text-black px-6 py-2.5 rounded-full text-sm font-medium hover:bg-accent-hover transition-colors">
                   Create Account
                 </Link>
-                <Link href="/dashboard" data-testid="link-docs-bottom-dashboard" className="border border-white/20 text-white/60 px-6 py-2.5 rounded-full text-sm hover:bg-white/5 transition-colors">
+                <Link href="/dashboard" data-testid="link-docs-bottom-dashboard" className="border border-line-strong text-ink-secondary px-6 py-2.5 rounded-full text-sm hover:bg-surface-2 transition-colors">
                   Go to Dashboard
                 </Link>
               </div>

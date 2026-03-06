@@ -3,24 +3,125 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@theme inline {
-  --color-background: #000000;
-  --color-foreground: #ffffff;
-  --color-muted: #111111;
-  --color-muted-foreground: #888888;
-  --color-border: #222222;
-  
-  --font-sans: 'Inter', sans-serif;
+:root {
+  --page-bg: #FAF8F5;
+  --page-deep: #F2EDE6;
+  --card-bg: #FFFFFF;
+  --ink: #2C2418;
+  --ink-secondary: #5C5043;
+  --ink-muted: #8A7E72;
+  --ink-faint: #B5ADA3;
+  --ink-ghost: #D1CBC3;
+  --line: rgba(0,0,0,0.10);
+  --line-subtle: rgba(0,0,0,0.06);
+  --line-strong: rgba(0,0,0,0.18);
+  --surface-1: rgba(0,0,0,0.02);
+  --surface-2: rgba(0,0,0,0.04);
+  --surface-3: rgba(0,0,0,0.06);
+  --surface-4: rgba(0,0,0,0.10);
+  --accent: #B08C3E;
+  --accent-hover: #9A7A35;
+  --accent-bg: rgba(176,140,62,0.08);
+  --accent-border: rgba(176,140,62,0.20);
+  --backdrop: rgba(0,0,0,0.5);
+  --user-bubble: rgba(176,140,62,0.12);
+  --user-bubble-border: rgba(176,140,62,0.15);
+  --agent-bubble: rgba(0,0,0,0.03);
+  --agent-bubble-border: rgba(0,0,0,0.08);
+  --selection-bg: rgba(176,140,62,0.20);
+  --selection-text: #2C2418;
+  --input-bg: #FFFFFF;
+  --input-border: rgba(0,0,0,0.12);
+  --input-focus: rgba(176,140,62,0.40);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.10);
+  --meta-theme: #FAF8F5;
 }
 
-:root {
-  background-color: #000000;
-  color: #ffffff;
+.dark {
+  --page-bg: #000000;
+  --page-deep: #050505;
+  --card-bg: #0A0A0A;
+  --ink: #FFFFFF;
+  --ink-secondary: rgba(255,255,255,0.70);
+  --ink-muted: rgba(255,255,255,0.50);
+  --ink-faint: rgba(255,255,255,0.30);
+  --ink-ghost: rgba(255,255,255,0.15);
+  --line: rgba(255,255,255,0.10);
+  --line-subtle: rgba(255,255,255,0.06);
+  --line-strong: rgba(255,255,255,0.20);
+  --surface-1: rgba(255,255,255,0.02);
+  --surface-2: rgba(255,255,255,0.04);
+  --surface-3: rgba(255,255,255,0.06);
+  --surface-4: rgba(255,255,255,0.10);
+  --accent: #C9A96E;
+  --accent-hover: #D4B87A;
+  --accent-bg: rgba(201,169,110,0.10);
+  --accent-border: rgba(201,169,110,0.20);
+  --backdrop: rgba(0,0,0,0.7);
+  --user-bubble: rgba(201,169,110,0.15);
+  --user-bubble-border: rgba(201,169,110,0.10);
+  --agent-bubble: rgba(255,255,255,0.04);
+  --agent-bubble-border: rgba(255,255,255,0.06);
+  --selection-bg: rgba(255,255,255,0.20);
+  --selection-text: #FFFFFF;
+  --input-bg: rgba(255,255,255,0.03);
+  --input-border: rgba(255,255,255,0.10);
+  --input-focus: rgba(255,255,255,0.30);
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: 0 0 60px rgba(255,255,255,0.03);
+  --meta-theme: #000000;
+}
+
+@theme inline {
+  --color-page: var(--page-bg);
+  --color-page-deep: var(--page-deep);
+  --color-card: var(--card-bg);
+  --color-ink: var(--ink);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-ink-ghost: var(--ink-ghost);
+  --color-line: var(--line);
+  --color-line-subtle: var(--line-subtle);
+  --color-line-strong: var(--line-strong);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-surface-4: var(--surface-4);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-bg: var(--accent-bg);
+  --color-accent-border: var(--accent-border);
+  --color-backdrop: var(--backdrop);
+  --color-user-bubble: var(--user-bubble);
+  --color-user-bubble-border: var(--user-bubble-border);
+  --color-agent-bubble: var(--agent-bubble);
+  --color-agent-bubble-border: var(--agent-bubble-border);
+  --color-input-bg: var(--input-bg);
+  --color-input-border: var(--input-border);
+
+  --color-background: var(--page-bg);
+  --color-foreground: var(--ink);
+  --color-muted: var(--page-deep);
+  --color-muted-foreground: var(--ink-muted);
+  --color-border: var(--line);
+
+  --font-sans: 'Inter', sans-serif;
 }
 
 @layer base {
   body {
-    @apply font-sans antialiased bg-black text-white selection:bg-white/20 selection:text-white;
+    @apply font-sans antialiased bg-page text-ink;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background: var(--selection-bg);
+    color: var(--selection-text);
   }
 }
 
@@ -28,28 +129,46 @@
   .text-glow {
     text-shadow: 0 0 40px rgba(255, 255, 255, 0.4);
   }
-  
+
+  .dark .text-glow {
+    text-shadow: 0 0 40px rgba(255, 255, 255, 0.4);
+  }
+
+  :root:not(.dark) .text-glow {
+    text-shadow: 0 0 40px rgba(176, 140, 62, 0.3);
+  }
+
   .mask-radial {
     mask-image: radial-gradient(circle at center, black 0%, transparent 70%);
     -webkit-mask-image: radial-gradient(circle at center, black 0%, transparent 70%);
   }
-  
+
   .glass-input {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
     backdrop-filter: blur(10px);
   }
-  
+
   .glass-input:focus-within {
-    border-color: rgba(255, 255, 255, 0.3);
-    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--input-focus);
+    background: var(--input-bg);
   }
-  
+
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
   .hide-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  .theme-shadow-sm {
+    box-shadow: var(--shadow-sm);
+  }
+  .theme-shadow-md {
+    box-shadow: var(--shadow-md);
+  }
+  .theme-shadow-lg {
+    box-shadow: var(--shadow-lg);
   }
 }

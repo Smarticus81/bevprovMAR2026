@@ -55,8 +55,8 @@ export default function Login() {
         className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-105"
         style={{ backgroundImage: "url('/login-bg.png')" }}
       />
-      <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/60" />
+      <div className="absolute inset-0 bg-gradient-to-r from-page/90 via-page/70 to-page/40" />
+      <div className="absolute inset-0 bg-gradient-to-t from-page/80 via-transparent to-page/60" />
 
       <div className="relative z-10 min-h-screen flex">
         <div className="w-full lg:w-[480px] xl:w-[520px] flex flex-col justify-center px-6 sm:px-12 lg:px-16 py-8 sm:py-12 overflow-y-auto">
@@ -67,13 +67,13 @@ export default function Login() {
           >
             <Link href="/" className="inline-flex items-center gap-2.5 mb-8 sm:mb-12" data-testid="link-home">
               <BevProLogo size={32} />
-              <BevProWordmark className="text-xl text-white" />
+              <BevProWordmark className="text-xl text-ink" />
             </Link>
 
-            <h1 className="text-2xl sm:text-3xl font-light text-white tracking-tight mb-2" data-testid="text-login-title">
+            <h1 className="text-2xl sm:text-3xl font-light text-ink tracking-tight mb-2" data-testid="text-login-title">
               Welcome back
             </h1>
-            <p className="text-white/50 text-sm sm:text-base mb-8 sm:mb-10">
+            <p className="text-ink-muted text-sm sm:text-base mb-8 sm:mb-10">
               Sign in to manage your venue's voice agents
             </p>
 
@@ -91,13 +91,13 @@ export default function Login() {
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div>
-                <label htmlFor="email" className="text-xs uppercase tracking-[0.15em] text-white/50 font-medium block mb-2">Email</label>
+                <label htmlFor="email" className="text-xs uppercase tracking-[0.15em] text-ink-muted font-medium block mb-2">Email</label>
                 <input
                   id="email"
                   type="email"
                   data-testid="input-email"
                   placeholder="you@venue.com"
-                  className="w-full bg-white/[0.04] border-0 border-b border-white/10 rounded-none px-0 py-4 text-base text-white placeholder:text-white/30 focus:outline-none focus:border-[#C9A96E]/50 transition-colors"
+                  className="w-full bg-surface-2 border-0 border-b border-line rounded-none px-0 py-4 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-accent/50 transition-colors"
                   {...register("email")}
                 />
                 {errors.email && (
@@ -106,13 +106,13 @@ export default function Login() {
               </div>
 
               <div>
-                <label htmlFor="password" className="text-xs uppercase tracking-[0.15em] text-white/50 font-medium block mb-2">Password</label>
+                <label htmlFor="password" className="text-xs uppercase tracking-[0.15em] text-ink-muted font-medium block mb-2">Password</label>
                 <input
                   id="password"
                   type="password"
                   data-testid="input-password"
                   placeholder="••••••••"
-                  className="w-full bg-white/[0.04] border-0 border-b border-white/10 rounded-none px-0 py-4 text-base text-white placeholder:text-white/30 focus:outline-none focus:border-[#C9A96E]/50 transition-colors"
+                  className="w-full bg-surface-2 border-0 border-b border-line rounded-none px-0 py-4 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-accent/50 transition-colors"
                   {...register("password")}
                 />
                 {errors.password && (
@@ -125,7 +125,7 @@ export default function Login() {
                   type="submit"
                   data-testid="button-login"
                   disabled={login.isPending}
-                  className="w-full flex items-center justify-center gap-2 bg-[#C9A96E] text-black py-4 text-base font-semibold tracking-wide uppercase hover:bg-[#D4B87A] disabled:opacity-50 transition-all duration-300"
+                  className="w-full flex items-center justify-center gap-2 bg-accent text-black py-4 text-base font-semibold tracking-wide uppercase hover:bg-accent-hover disabled:opacity-50 transition-all duration-300"
                 >
                   {login.isPending ? (
                     <Loader2 size={16} className="animate-spin" />
@@ -142,14 +142,14 @@ export default function Login() {
             {authConfig?.googleEnabled && (
               <>
                 <div className="flex items-center gap-4 my-6">
-                  <div className="flex-1 h-px bg-white/8" />
-                  <span className="text-[11px] text-white/25 uppercase tracking-widest">or</span>
-                  <div className="flex-1 h-px bg-white/8" />
+                  <div className="flex-1 h-px bg-surface-4" />
+                  <span className="text-[11px] text-ink-faint uppercase tracking-widest">or</span>
+                  <div className="flex-1 h-px bg-surface-4" />
                 </div>
                 <a
                   href="/api/auth/google"
                   data-testid="button-google-login"
-                  className="flex items-center justify-center gap-3 w-full border border-white/10 text-white/70 py-4 text-base font-medium hover:bg-white/5 hover:text-white transition-all duration-300"
+                  className="flex items-center justify-center gap-3 w-full border border-line text-ink-secondary py-4 text-base font-medium hover:bg-surface-2 hover:text-ink transition-all duration-300"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
@@ -162,9 +162,9 @@ export default function Login() {
               </>
             )}
 
-            <p className="mt-10 text-base text-white/40">
+            <p className="mt-10 text-base text-ink-faint">
               Don't have an account?{" "}
-              <Link href="/register" data-testid="link-register" className="text-white/60 hover:text-white transition-colors">
+              <Link href="/register" data-testid="link-register" className="text-ink-secondary hover:text-ink transition-colors">
                 Create one
               </Link>
             </p>
@@ -178,12 +178,12 @@ export default function Login() {
             transition={{ duration: 0.8, delay: 0.3 }}
             className="max-w-sm"
           >
-            <div className="backdrop-blur-md bg-black/30 border border-white/10 rounded-xl p-6">
+            <div className="bg-card/80 backdrop-blur-md border border-line rounded-xl p-6">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-2 h-2 rounded-full bg-[#C9A96E] animate-pulse" />
-                <span className="text-[11px] uppercase tracking-[0.2em] text-[#C9A96E]/80 font-medium">Brighton Abbey</span>
+                <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+                <span className="text-[11px] uppercase tracking-[0.2em] text-accent/80 font-medium">Brighton Abbey</span>
               </div>
-              <p className="text-white/70 text-sm leading-relaxed">
+              <p className="text-ink-secondary text-sm leading-relaxed">
                 Glass chapel, crystal chandeliers, and seamless voice-powered service — all from a single earbud.
               </p>
             </div>

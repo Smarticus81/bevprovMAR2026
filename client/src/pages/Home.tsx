@@ -103,13 +103,13 @@ export default function Home() {
   const displayed = conversation.slice(0, visibleMessages);
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-hidden relative font-sans">
+    <div className="min-h-screen bg-page text-ink overflow-hidden relative font-sans">
       <Navbar />
 
       <div className="fixed inset-0 z-0 flex items-center justify-center pointer-events-none">
-        <div className="absolute inset-0 bg-black z-10 opacity-40" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black z-10" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black via-transparent to-black z-10" />
+        <div className="absolute inset-0 bg-page z-10 opacity-40" />
+        <div className="absolute inset-0 bg-gradient-to-b from-page via-transparent to-page z-10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-page via-transparent to-page z-10" />
 
         <motion.div
           className="w-[120vw] h-[120vh] opacity-80"
@@ -137,11 +137,11 @@ export default function Home() {
           <div className="flex items-center justify-center gap-4 md:gap-6 mb-5">
             <BevProLogo size={64} className="hidden md:block" />
             <BevProLogo size={48} className="block md:hidden" />
-            <BevProWordmark className="text-white" size="text-5xl md:text-7xl" />
+            <BevProWordmark className="text-ink" size="text-5xl md:text-7xl" />
           </div>
           <p
             data-testid="text-hero-subtitle"
-            className="text-white/50 text-sm md:text-base tracking-wide mt-4 max-w-xl mx-auto font-light"
+            className="text-ink-muted text-sm md:text-base tracking-wide mt-4 max-w-xl mx-auto font-light"
           >
             Voice-Powered POS, Inventory and assistants for your business.
           </p>
@@ -174,8 +174,8 @@ export default function Home() {
                       data-testid={`demo-msg-${i}`}
                       className={`max-w-[85%] px-3.5 py-2 rounded-2xl text-sm leading-relaxed ${
                         msg.role === "user"
-                          ? "bg-white/10 text-white/80"
-                          : "bg-white/[0.04] text-white/60 border border-white/[0.06]"
+                          ? "bg-surface-4 text-ink-secondary"
+                          : "bg-surface-2 text-ink-secondary border border-line-subtle"
                       }`}
                     >
                       {msg.text}
@@ -191,19 +191,19 @@ export default function Home() {
                   className="flex justify-start"
                 >
                   <div className="px-4 py-2">
-                    <BevProLogo size={28} className="text-white/40" animated={true} />
+                    <BevProLogo size={28} className="text-ink-faint" animated={true} />
                   </div>
                 </motion.div>
               )}
 
               {!isTyping && displayed.length === 0 && (
                 <div className="flex items-center justify-center h-full pt-6">
-                  <BevProLogo size={40} className="text-white/10" />
+                  <BevProLogo size={40} className="text-ink-ghost" />
                 </div>
               )}
             </div>
 
-            <div className="flex items-center justify-between border-t border-white/10 pt-2 px-2 mt-1">
+            <div className="flex items-center justify-between border-t border-line pt-2 px-2 mt-1">
               <div className="flex gap-1.5 overflow-x-auto hide-scrollbar py-1">
                 {AGENTS.map((agent) => {
                   const Icon = agent.icon;
@@ -215,11 +215,11 @@ export default function Home() {
                       onClick={() => setActiveAgent(agent.id)}
                       className={`flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 rounded-full text-xs transition-all duration-300 ${
                         isActive
-                          ? "border border-white/30 text-white bg-white/[0.06]"
-                          : "text-white/40 hover:text-white/70 hover:bg-white/[0.04]"
+                          ? "border border-line-strong text-ink bg-surface-3"
+                          : "text-ink-faint hover:text-ink-secondary hover:bg-surface-2"
                       }`}
                     >
-                      <Icon size={13} className={isActive ? "text-white/70" : "text-white/30"} />
+                      <Icon size={13} className={isActive ? "text-ink-secondary" : "text-ink-faint"} />
                       {agent.name}
                     </button>
                   );
@@ -229,7 +229,7 @@ export default function Home() {
               <Link href="/register">
                 <button
                   data-testid="button-start-building"
-                  className="border border-white/20 text-white/70 hover:bg-white hover:text-black rounded-full px-4 py-1.5 ml-2 transition-all duration-300 text-xs font-medium shrink-0 flex items-center gap-1"
+                  className="border border-line-strong text-ink-secondary hover:bg-ink hover:text-page rounded-full px-4 py-1.5 ml-2 transition-all duration-300 text-xs font-medium shrink-0 flex items-center gap-1"
                 >
                   Start Building
                   <ChevronRight size={12} />
@@ -239,7 +239,7 @@ export default function Home() {
           </div>
 
           <div className="text-center mt-6">
-            <p className="text-white/30 text-xs tracking-wide">
+            <p className="text-ink-faint text-xs tracking-wide">
               Voice-first AI agents for Square & Toast POS
             </p>
           </div>
@@ -247,7 +247,7 @@ export default function Home() {
       </main>
 
       <motion.footer
-        className="fixed bottom-0 w-full p-6 md:p-8 flex flex-col md:flex-row justify-between items-center z-10 text-xs text-white/40 gap-4"
+        className="fixed bottom-0 w-full p-6 md:p-8 flex flex-col md:flex-row justify-between items-center z-10 text-xs text-ink-faint gap-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1, duration: 1 }}
@@ -256,9 +256,9 @@ export default function Home() {
           © 2026 BevPro Inc. — The hospitality intelligence platform.
         </div>
         <div className="flex gap-6">
-          <a href="#" className="hover:text-white transition-colors">Privacy</a>
-          <a href="#" className="hover:text-white transition-colors">Terms</a>
-          <Link href="/docs" className="hover:text-white transition-colors" data-testid="link-footer-docs">Documentation</Link>
+          <a href="#" className="hover:text-ink transition-colors">Privacy</a>
+          <a href="#" className="hover:text-ink transition-colors">Terms</a>
+          <Link href="/docs" className="hover:text-ink transition-colors" data-testid="link-footer-docs">Documentation</Link>
         </div>
       </motion.footer>
     </div>

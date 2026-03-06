@@ -170,17 +170,17 @@ function StatusPill({ status, latency }: { status: string; latency: number | nul
       isConnected ? "bg-emerald-500/15 text-emerald-400" :
       isConnecting ? "bg-amber-500/15 text-amber-400" :
       status === "error" ? "bg-red-500/15 text-red-400" :
-      "bg-white/[0.06] text-white/40"
+      "bg-surface-3 text-ink-faint"
     }`} data-testid="status-pill">
       <div className={`w-1.5 h-1.5 rounded-full ${
         isConnected ? "bg-emerald-400" :
         isConnecting ? "bg-amber-400 animate-pulse" :
         status === "error" ? "bg-red-400" :
-        "bg-white/30"
+        "bg-ink-faint"
       }`} />
       {isConnected ? "Live" : isConnecting ? "Connecting" : status === "error" ? "Error" : "Ready"}
       {isConnected && latency !== null && (
-        <span className="text-white/30 ml-0.5">{latency}ms</span>
+        <span className="text-ink-faint ml-0.5">{latency}ms</span>
       )}
     </div>
   );
@@ -199,11 +199,11 @@ function AgentHeader({
 }) {
   const typeLabel = AGENT_TYPE_LABELS[agent?.type] || agent?.type || "";
   return (
-    <header className="shrink-0 border-b border-white/[0.06] bg-black/40 backdrop-blur-md" data-testid="agent-header">
+    <header className="shrink-0 border-b border-line-subtle bg-page/40 backdrop-blur-md" data-testid="agent-header">
       <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4">
         <Link
           href="/dashboard"
-          className="flex items-center gap-2 text-white/50 hover:text-white transition-colors min-w-[44px] min-h-[44px] -ml-2 pl-2"
+          className="flex items-center gap-2 text-ink-muted hover:text-ink transition-colors min-w-[44px] min-h-[44px] -ml-2 pl-2"
           data-testid="button-back"
         >
           <ArrowLeft size={18} />
@@ -211,11 +211,11 @@ function AgentHeader({
         </Link>
 
         <div className="text-center min-w-0 flex-1 px-3">
-          <h1 className="text-base sm:text-lg font-semibold truncate text-white" data-testid="text-agent-name">
+          <h1 className="text-base sm:text-lg font-semibold truncate text-ink" data-testid="text-agent-name">
             {agent?.name || "Voice Agent"}
           </h1>
           {typeLabel && (
-            <p className="text-[11px] sm:text-xs text-[#C9A96E]/70 font-medium tracking-wide uppercase mt-0.5">
+            <p className="text-[11px] sm:text-xs text-accent/70 font-medium tracking-wide uppercase mt-0.5">
               {typeLabel}
             </p>
           )}
@@ -233,23 +233,23 @@ function AgentHeader({
 function PosDisplay({ posState }: { posState: PosState }) {
   return (
     <div className="h-full flex flex-col" data-testid="pos-display">
-      <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-white/[0.06]">
+      <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-line-subtle">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-[#C9A96E]/10 flex items-center justify-center">
-              <ShoppingCart size={16} className="text-[#C9A96E]" />
+            <div className="w-8 h-8 rounded-lg bg-accent-bg flex items-center justify-center">
+              <ShoppingCart size={16} className="text-accent" />
             </div>
-            <h2 className="text-sm sm:text-base font-semibold text-white" data-testid="text-pos-title">Current Order</h2>
+            <h2 className="text-sm sm:text-base font-semibold text-ink" data-testid="text-pos-title">Current Order</h2>
           </div>
-          <div className="flex items-center gap-3 text-xs text-white/40">
+          <div className="flex items-center gap-3 text-xs text-ink-faint">
             {posState.tabId && (
-              <span className="flex items-center gap-1 bg-white/[0.04] px-2 py-0.5 rounded" data-testid="text-tab-id">
+              <span className="flex items-center gap-1 bg-surface-2 px-2 py-0.5 rounded" data-testid="text-tab-id">
                 <Hash size={11} />
                 Tab {posState.tabId}
               </span>
             )}
             {posState.orderId && (
-              <span className="flex items-center gap-1 bg-white/[0.04] px-2 py-0.5 rounded" data-testid="text-order-id">
+              <span className="flex items-center gap-1 bg-surface-2 px-2 py-0.5 rounded" data-testid="text-order-id">
                 <Receipt size={11} />
                 #{posState.orderId}
               </span>
@@ -258,15 +258,15 @@ function PosDisplay({ posState }: { posState: PosState }) {
         </div>
 
         {(posState.customerName || posState.tableNumber) && (
-          <div className="flex items-center gap-3 mt-2 text-xs text-white/50">
+          <div className="flex items-center gap-3 mt-2 text-xs text-ink-muted">
             {posState.customerName && (
               <span className="flex items-center gap-1.5 truncate" data-testid="text-customer-name">
-                <User size={12} className="shrink-0 text-[#C9A96E]/60" />
+                <User size={12} className="shrink-0 text-accent/60" />
                 {posState.customerName}
               </span>
             )}
             {posState.tableNumber && (
-              <span data-testid="text-table-number" className="shrink-0 bg-white/[0.04] px-2 py-0.5 rounded">
+              <span data-testid="text-table-number" className="shrink-0 bg-surface-2 px-2 py-0.5 rounded">
                 Table {posState.tableNumber}
               </span>
             )}
@@ -278,11 +278,11 @@ function PosDisplay({ posState }: { posState: PosState }) {
         {posState.orderItems.length === 0 ? (
           <div className="h-full flex items-center justify-center" data-testid="pos-empty-state">
             <div className="text-center py-8">
-              <div className="w-14 h-14 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mx-auto mb-3">
-                <ShoppingCart size={24} className="text-white/15" />
+              <div className="w-14 h-14 rounded-2xl bg-surface-1 border border-line-subtle flex items-center justify-center mx-auto mb-3">
+                <ShoppingCart size={24} className="text-ink-ghost" />
               </div>
-              <p className="text-white/30 text-sm font-medium">No items yet</p>
-              <p className="text-white/20 text-xs mt-1 max-w-[200px] mx-auto leading-relaxed">
+              <p className="text-ink-faint text-sm font-medium">No items yet</p>
+              <p className="text-ink-ghost text-xs mt-1 max-w-[200px] mx-auto leading-relaxed">
                 Order items will appear here as you speak
               </p>
             </div>
@@ -295,16 +295,16 @@ function PosDisplay({ posState }: { posState: PosState }) {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.2 }}
-                className="flex items-center justify-between py-3 px-3.5 rounded-lg bg-white/[0.03] border border-white/[0.04] hover:bg-white/[0.05] transition-colors"
+                className="flex items-center justify-between py-3 px-3.5 rounded-lg bg-surface-1 border border-line-subtle hover:bg-surface-2 transition-colors"
                 data-testid={`pos-item-${idx}`}
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-[15px] text-white font-medium truncate" data-testid={`text-item-name-${idx}`}>{item.name}</p>
-                  <p className="text-xs text-white/40 mt-0.5">
+                  <p className="text-[15px] text-ink font-medium truncate" data-testid={`text-item-name-${idx}`}>{item.name}</p>
+                  <p className="text-xs text-ink-faint mt-0.5">
                     ${item.price.toFixed(2)} × {item.quantity}
                   </p>
                 </div>
-                <p className="text-[15px] text-white font-semibold ml-3 tabular-nums" data-testid={`text-item-total-${idx}`}>
+                <p className="text-[15px] text-ink font-semibold ml-3 tabular-nums" data-testid={`text-item-total-${idx}`}>
                   ${(item.price * item.quantity).toFixed(2)}
                 </p>
               </motion.div>
@@ -313,17 +313,17 @@ function PosDisplay({ posState }: { posState: PosState }) {
         )}
       </div>
 
-      <div className="border-t border-white/[0.06] px-4 sm:px-5 py-4 space-y-2 bg-white/[0.02]" data-testid="pos-totals">
-        <div className="flex justify-between text-sm text-white/50">
+      <div className="border-t border-line-subtle px-4 sm:px-5 py-4 space-y-2 bg-surface-1" data-testid="pos-totals">
+        <div className="flex justify-between text-sm text-ink-muted">
           <span>Subtotal</span>
           <span className="tabular-nums" data-testid="text-subtotal">${posState.subtotal.toFixed(2)}</span>
         </div>
-        <div className="flex justify-between text-sm text-white/50">
+        <div className="flex justify-between text-sm text-ink-muted">
           <span>Tax (8%)</span>
           <span className="tabular-nums" data-testid="text-tax">${posState.tax.toFixed(2)}</span>
         </div>
-        <div className="h-px bg-white/[0.08] my-1" />
-        <div className="flex justify-between text-lg font-bold text-white">
+        <div className="h-px bg-line my-1" />
+        <div className="flex justify-between text-lg font-bold text-ink">
           <span>Total</span>
           <span className="tabular-nums" data-testid="text-total">${posState.total.toFixed(2)}</span>
         </div>
@@ -334,7 +334,7 @@ function PosDisplay({ posState }: { posState: PosState }) {
               ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
               : posState.paymentStatus === "processing"
               ? "bg-amber-500/15 text-amber-400 border border-amber-500/20"
-              : "bg-white/[0.03] text-white/35 border border-white/[0.06]"
+              : "bg-surface-1 text-ink-faint border border-line-subtle"
           }`} data-testid="text-payment-status">
             {posState.paymentStatus === "paid" ? (
               <>
@@ -356,7 +356,7 @@ function PosDisplay({ posState }: { posState: PosState }) {
         </div>
 
         {posState.lastAction && (
-          <p className="text-xs text-white/25 text-center pt-1 flex items-center justify-center gap-1.5" data-testid="text-last-action">
+          <p className="text-xs text-ink-faint text-center pt-1 flex items-center justify-center gap-1.5" data-testid="text-last-action">
             <Clock size={10} />
             {posState.lastAction}
           </p>
@@ -375,22 +375,22 @@ function TranscriptBubble({ entry, index }: { entry: TranscriptEntry; index: num
         transition={{ duration: 0.2 }}
         className="flex justify-center mb-3"
       >
-        <div className="border border-white/[0.06] rounded-lg px-4 py-2.5 max-w-[90%] bg-white/[0.02]">
+        <div className="border border-line-subtle rounded-lg px-4 py-2.5 max-w-[90%] bg-surface-1">
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-5 h-5 rounded bg-[#C9A96E]/10 flex items-center justify-center">
-              <Wrench size={10} className="text-[#C9A96E]/60" />
+            <div className="w-5 h-5 rounded bg-accent-bg flex items-center justify-center">
+              <Wrench size={10} className="text-accent/60" />
             </div>
-            <span className="text-white/40 text-xs font-medium">{entry.toolName}</span>
+            <span className="text-ink-faint text-xs font-medium">{entry.toolName}</span>
           </div>
           {entry.toolResult ? (
-            <div className="text-white/55 text-sm leading-relaxed">
+            <div className="text-ink-secondary text-sm leading-relaxed">
               {typeof entry.toolResult === "object" && entry.toolResult.message
                 ? entry.toolResult.message
-                : <pre className="text-xs whitespace-pre-wrap font-mono text-white/40">{JSON.stringify(entry.toolResult, null, 2)}</pre>
+                : <pre className="text-xs whitespace-pre-wrap font-mono text-ink-faint">{JSON.stringify(entry.toolResult, null, 2)}</pre>
               }
             </div>
           ) : (
-            <p className="text-white/30 text-xs animate-pulse">{entry.text}</p>
+            <p className="text-ink-faint text-xs animate-pulse">{entry.text}</p>
           )}
         </div>
       </motion.div>
@@ -408,8 +408,8 @@ function TranscriptBubble({ entry, index }: { entry: TranscriptEntry; index: num
       <div
         className={`max-w-[82%] px-4 py-3 text-[15px] leading-relaxed ${
           isUser
-            ? "bg-[#C9A96E]/15 text-white/90 rounded-2xl rounded-br-md border border-[#C9A96E]/10"
-            : "bg-white/[0.04] text-white/75 rounded-2xl rounded-bl-md border border-white/[0.06]"
+            ? "bg-user-bubble text-ink-secondary rounded-2xl rounded-br-md border border-user-bubble-border"
+            : "bg-agent-bubble text-ink-secondary rounded-2xl rounded-bl-md border border-agent-bubble-border"
         }`}
       >
         {entry.text}
@@ -438,8 +438,8 @@ function TranscriptPanel({
               className="h-full flex items-center justify-center min-h-[30vh]"
             >
               <div className="text-center">
-                <BevProLogo size={56} className="text-white/10 mx-auto mb-4" />
-                <p className="text-white/25 text-sm">Conversation will appear here</p>
+                <BevProLogo size={56} className="text-ink-ghost mx-auto mb-4" />
+                <p className="text-ink-faint text-sm">Conversation will appear here</p>
               </div>
             </motion.div>
           )}
@@ -453,8 +453,8 @@ function TranscriptPanel({
               className="h-full flex items-center justify-center min-h-[30vh]"
             >
               <div className="text-center">
-                <BevProLogo size={64} className="text-[#C9A96E]/30" animated={true} />
-                <p className="text-white/30 text-sm mt-4">Listening...</p>
+                <BevProLogo size={64} className="text-accent/30" animated={true} />
+                <p className="text-ink-faint text-sm mt-4">Listening...</p>
               </div>
             </motion.div>
           )}
@@ -470,8 +470,8 @@ function TranscriptPanel({
               animate={{ opacity: 1 }}
               className="flex justify-start mb-3"
             >
-              <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl rounded-bl-md px-4 py-3">
-                <BevProLogo size={24} className="text-[#C9A96E]/50" animated={true} />
+              <div className="bg-agent-bubble border border-agent-bubble-border rounded-2xl rounded-bl-md px-4 py-3">
+                <BevProLogo size={24} className="text-accent/50" animated={true} />
               </div>
             </motion.div>
           )}
@@ -483,19 +483,19 @@ function TranscriptPanel({
               animate={{ opacity: 1 }}
               className="flex justify-start mb-3"
             >
-              <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl rounded-bl-md px-5 py-3.5 flex items-center gap-1.5">
+              <div className="bg-agent-bubble border border-agent-bubble-border rounded-2xl rounded-bl-md px-5 py-3.5 flex items-center gap-1.5">
                 <motion.div
-                  className="w-2 h-2 bg-[#C9A96E]/40 rounded-full"
+                  className="w-2 h-2 bg-accent/40 rounded-full"
                   animate={{ scale: [1, 1.4, 1], opacity: [0.4, 0.8, 0.4] }}
                   transition={{ duration: 1.2, repeat: Infinity, delay: 0 }}
                 />
                 <motion.div
-                  className="w-2 h-2 bg-[#C9A96E]/40 rounded-full"
+                  className="w-2 h-2 bg-accent/40 rounded-full"
                   animate={{ scale: [1, 1.4, 1], opacity: [0.4, 0.8, 0.4] }}
                   transition={{ duration: 1.2, repeat: Infinity, delay: 0.2 }}
                 />
                 <motion.div
-                  className="w-2 h-2 bg-[#C9A96E]/40 rounded-full"
+                  className="w-2 h-2 bg-accent/40 rounded-full"
                   animate={{ scale: [1, 1.4, 1], opacity: [0.4, 0.8, 0.4] }}
                   transition={{ duration: 1.2, repeat: Infinity, delay: 0.4 }}
                 />
@@ -557,7 +557,7 @@ function FileUploadButton({ agentId }: { agentId: number }) {
         data-testid="button-upload-file"
         onClick={() => fileInputRef.current?.click()}
         disabled={uploading}
-        className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/[0.04] border border-white/[0.06] text-white/50 hover:text-white hover:bg-white/[0.08] transition-colors disabled:opacity-50"
+        className="flex items-center justify-center w-9 h-9 rounded-lg bg-surface-2 border border-line-subtle text-ink-muted hover:text-ink hover:bg-surface-4 transition-colors disabled:opacity-50"
       >
         {uploading ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
       </button>
@@ -566,7 +566,7 @@ function FileUploadButton({ agentId }: { agentId: number }) {
           initial={{ opacity: 0, y: -5 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0 }}
-          className="absolute top-full right-0 mt-2 px-3 py-2 rounded-lg bg-black/90 border border-white/10 text-xs text-white/70 whitespace-nowrap shadow-xl"
+          className="absolute top-full right-0 mt-2 px-3 py-2 rounded-lg bg-page/90 border border-line text-xs text-ink-secondary whitespace-nowrap shadow-xl"
           data-testid="text-upload-result"
         >
           {uploadResult}
@@ -581,7 +581,7 @@ function AudioRing({ isActive, isSpeaking }: { isActive: boolean; isSpeaking: bo
   return (
     <div className="absolute inset-0 pointer-events-none">
       <motion.div
-        className={`absolute inset-[-8px] rounded-full border-2 ${isSpeaking ? "border-[#C9A96E]/30" : "border-white/10"}`}
+        className={`absolute inset-[-8px] rounded-full border-2 ${isSpeaking ? "border-accent/30" : "border-line"}`}
         animate={isSpeaking ? {
           scale: [1, 1.08, 1],
           opacity: [0.3, 0.6, 0.3],
@@ -593,7 +593,7 @@ function AudioRing({ isActive, isSpeaking }: { isActive: boolean; isSpeaking: bo
       />
       {isSpeaking && (
         <motion.div
-          className="absolute inset-[-16px] rounded-full border border-[#C9A96E]/15"
+          className="absolute inset-[-16px] rounded-full border border-accent/15"
           animate={{
             scale: [1, 1.12, 1],
             opacity: [0.15, 0.35, 0.15],
@@ -607,7 +607,7 @@ function AudioRing({ isActive, isSpeaking }: { isActive: boolean; isSpeaking: bo
 
 function VoiceControls({ voice, wakeWordConfig }: { voice: ReturnType<typeof useVoiceSession>; wakeWordConfig?: WakeWordConfig }) {
   return (
-    <div className="shrink-0 border-t border-white/[0.06] bg-black/40 backdrop-blur-md" data-testid="voice-controls">
+    <div className="shrink-0 border-t border-line-subtle bg-page/40 backdrop-blur-md" data-testid="voice-controls">
       <div className="flex flex-col items-center gap-3 py-5 sm:py-7 px-4">
         {voice.status === "wake-listening" ? (
           <div className="flex flex-col items-center gap-3">
@@ -616,32 +616,32 @@ function VoiceControls({ voice, wakeWordConfig }: { voice: ReturnType<typeof use
               transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
               className="relative w-18 h-18 sm:w-20 sm:h-20"
             >
-              <div className="w-full h-full rounded-full bg-white/[0.06] border border-white/[0.12] flex items-center justify-center">
-                <Volume2 size={28} className="text-white/50" />
+              <div className="w-full h-full rounded-full bg-surface-3 border border-line-strong flex items-center justify-center">
+                <Volume2 size={28} className="text-ink-muted" />
               </div>
               <motion.div
-                className="absolute inset-[-6px] rounded-full border border-white/10"
+                className="absolute inset-[-6px] rounded-full border border-line"
                 animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.4, 0.2] }}
                 transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
               />
             </motion.div>
-            <p className="text-white/50 text-sm font-medium" data-testid="text-wake-listening">
+            <p className="text-ink-muted text-sm font-medium" data-testid="text-wake-listening">
               Say "{wakeWordConfig?.phrase || "hey bev"}" to begin
             </p>
             <button
               data-testid="button-stop-wake-word"
               onClick={voice.disconnect}
-              className="px-5 py-2.5 rounded-full text-sm font-medium border border-white/[0.08] text-white/40 hover:text-white/70 hover:border-white/20 transition-all min-h-[44px]"
+              className="px-5 py-2.5 rounded-full text-sm font-medium border border-line text-ink-faint hover:text-ink-secondary hover:border-line-strong transition-all min-h-[44px]"
             >
               Stop Listening
             </button>
           </div>
         ) : voice.returningToStandby ? (
           <div className="flex flex-col items-center gap-3">
-            <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-white/[0.06] flex items-center justify-center">
-              <Loader2 size={28} className="text-white/40 animate-spin" />
+            <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-surface-3 flex items-center justify-center">
+              <Loader2 size={28} className="text-ink-faint animate-spin" />
             </div>
-            <p className="text-white/45 text-sm" data-testid="text-returning-standby">Returning to standby...</p>
+            <p className="text-ink-faint text-sm" data-testid="text-returning-standby">Returning to standby...</p>
           </div>
         ) : voice.status === "idle" || voice.status === "error" ? (
           <div className="flex flex-col items-center gap-3">
@@ -650,16 +650,16 @@ function VoiceControls({ voice, wakeWordConfig }: { voice: ReturnType<typeof use
               onClick={() => voice.connect()}
               whileTap={{ scale: 0.92 }}
               whileHover={{ scale: 1.04 }}
-              className="relative w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-full bg-gradient-to-b from-[#D4B87A] to-[#C9A96E] flex items-center justify-center shadow-[0_0_40px_rgba(201,169,110,0.2),0_4px_16px_rgba(0,0,0,0.3)]"
+              className="relative w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-full bg-gradient-to-b from-accent-hover to-accent flex items-center justify-center shadow-[0_0_40px_rgba(201,169,110,0.2),0_4px_16px_rgba(0,0,0,0.3)]"
             >
               <Mic size={28} className="text-black sm:w-8 sm:h-8" />
             </motion.button>
-            <p className="text-white/40 text-sm font-medium">Tap to start</p>
+            <p className="text-ink-faint text-sm font-medium">Tap to start</p>
             {wakeWordConfig?.enabled && (
               <button
                 data-testid="button-start-wake-word"
                 onClick={voice.startWakeWordListening}
-                className="px-5 py-2.5 rounded-full text-sm font-medium border border-white/[0.08] text-white/40 hover:text-white/70 hover:border-white/20 transition-all flex items-center gap-2 min-h-[44px]"
+                className="px-5 py-2.5 rounded-full text-sm font-medium border border-line text-ink-faint hover:text-ink-secondary hover:border-line-strong transition-all flex items-center gap-2 min-h-[44px]"
               >
                 <Volume2 size={15} />
                 Wake Word Mode
@@ -668,10 +668,10 @@ function VoiceControls({ voice, wakeWordConfig }: { voice: ReturnType<typeof use
           </div>
         ) : voice.status === "connecting" ? (
           <div className="flex flex-col items-center gap-3">
-            <div className="w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-full bg-white/[0.06] border border-white/[0.1] flex items-center justify-center">
-              <Loader2 size={28} className="text-[#C9A96E]/60 animate-spin" />
+            <div className="w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-full bg-surface-3 border border-line flex items-center justify-center">
+              <Loader2 size={28} className="text-accent/60 animate-spin" />
             </div>
-            <p className="text-white/40 text-sm">Connecting...</p>
+            <p className="text-ink-faint text-sm">Connecting...</p>
           </div>
         ) : (
           <div className="flex items-center gap-5 sm:gap-6">
@@ -681,7 +681,7 @@ function VoiceControls({ voice, wakeWordConfig }: { voice: ReturnType<typeof use
               whileTap={{ scale: 0.9 }}
               className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all ${
                 voice.isListening
-                  ? "bg-white/[0.06] border border-white/[0.1] text-white/70 hover:bg-white/[0.1]"
+                  ? "bg-surface-3 border border-line text-ink-secondary hover:bg-surface-4"
                   : "bg-red-500/15 border border-red-500/20 text-red-400"
               }`}
             >
@@ -711,7 +711,7 @@ function VoiceControls({ voice, wakeWordConfig }: { voice: ReturnType<typeof use
         )}
 
         {!voice.error && !voice.returningToStandby && voice.status === "connected" && (
-          <p className="text-white/30 text-xs">
+          <p className="text-ink-faint text-xs">
             {voice.isListening ? (voice.isSpeaking ? "Agent speaking..." : "Listening...") : "Muted"}
           </p>
         )}
@@ -758,11 +758,11 @@ export default function AgentApp() {
 
   if (isVoicePos) {
     return (
-      <div className="h-[100dvh] bg-[#050505] text-white flex flex-col" style={{ paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+      <div className="h-[100dvh] bg-page-deep text-ink flex flex-col" style={{ paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
         <AgentHeader agent={agent} agentConfig={agentConfig} voice={voice} id={id} />
 
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
-          <div className="md:w-[360px] lg:w-[420px] md:border-r border-b md:border-b-0 border-white/[0.06] h-[38vh] sm:h-[42vh] md:h-auto overflow-hidden bg-black/30" data-testid="pos-panel">
+          <div className="md:w-[360px] lg:w-[420px] md:border-r border-b md:border-b-0 border-line-subtle h-[38vh] sm:h-[42vh] md:h-auto overflow-hidden bg-page/30" data-testid="pos-panel">
             <PosDisplay posState={posState} />
           </div>
 
@@ -777,7 +777,7 @@ export default function AgentApp() {
   }
 
   return (
-    <div className="h-[100dvh] bg-[#050505] text-white flex flex-col" style={{ paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+    <div className="h-[100dvh] bg-page-deep text-ink flex flex-col" style={{ paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
       <AgentHeader agent={agent} agentConfig={agentConfig} voice={voice} id={id} />
 
       <div className="flex-1 overflow-hidden min-h-0 flex flex-col">
@@ -793,14 +793,14 @@ export default function AgentApp() {
               >
                 <div className="text-center">
                   <div className="relative inline-block mb-6">
-                    <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-b from-white/[0.04] to-transparent border border-white/[0.06] flex items-center justify-center mx-auto">
-                      <BevProLogo size={48} className="text-white/15 sm:w-14 sm:h-14" />
+                    <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-b from-surface-2 to-transparent border border-line-subtle flex items-center justify-center mx-auto">
+                      <BevProLogo size={48} className="text-ink-ghost sm:w-14 sm:h-14" />
                     </div>
                   </div>
-                  <h2 className="text-white/50 text-base sm:text-lg font-medium mb-1">
+                  <h2 className="text-ink-muted text-base sm:text-lg font-medium mb-1">
                     {agent?.name || "Voice Agent"}
                   </h2>
-                  <p className="text-white/25 text-sm">Tap the button below to start</p>
+                  <p className="text-ink-faint text-sm">Tap the button below to start</p>
                 </div>
               </motion.div>
             )}
@@ -816,19 +816,19 @@ export default function AgentApp() {
                 <div className="text-center">
                   <div className="relative inline-block">
                     <motion.div
-                      className="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-gradient-to-b from-[#C9A96E]/10 to-transparent border border-[#C9A96E]/15 flex items-center justify-center mx-auto"
+                      className="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-gradient-to-b from-accent-bg to-transparent border border-accent-border flex items-center justify-center mx-auto"
                       animate={{ scale: [1, 1.03, 1] }}
                       transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                     >
-                      <BevProLogo size={56} className="text-[#C9A96E]/30" animated={true} />
+                      <BevProLogo size={56} className="text-accent/30" animated={true} />
                     </motion.div>
                     <motion.div
-                      className="absolute inset-[-10px] rounded-full border border-[#C9A96E]/10"
+                      className="absolute inset-[-10px] rounded-full border border-accent-border"
                       animate={{ scale: [1, 1.08, 1], opacity: [0.15, 0.3, 0.15] }}
                       transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                     />
                   </div>
-                  <p className="text-white/35 text-sm mt-5">I'm listening...</p>
+                  <p className="text-ink-faint text-sm mt-5">I'm listening...</p>
                 </div>
               </motion.div>
             )}
@@ -844,8 +844,8 @@ export default function AgentApp() {
                 animate={{ opacity: 1 }}
                 className="flex justify-start mb-3"
               >
-                <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl rounded-bl-md px-4 py-3">
-                  <BevProLogo size={24} className="text-[#C9A96E]/50" animated={true} />
+                <div className="bg-agent-bubble border border-agent-bubble-border rounded-2xl rounded-bl-md px-4 py-3">
+                  <BevProLogo size={24} className="text-accent/50" animated={true} />
                 </div>
               </motion.div>
             )}
@@ -857,19 +857,19 @@ export default function AgentApp() {
                 animate={{ opacity: 1 }}
                 className="flex justify-start mb-3"
               >
-                <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl rounded-bl-md px-5 py-3.5 flex items-center gap-1.5">
+                <div className="bg-agent-bubble border border-agent-bubble-border rounded-2xl rounded-bl-md px-5 py-3.5 flex items-center gap-1.5">
                   <motion.div
-                    className="w-2 h-2 bg-[#C9A96E]/40 rounded-full"
+                    className="w-2 h-2 bg-accent/40 rounded-full"
                     animate={{ scale: [1, 1.4, 1], opacity: [0.4, 0.8, 0.4] }}
                     transition={{ duration: 1.2, repeat: Infinity, delay: 0 }}
                   />
                   <motion.div
-                    className="w-2 h-2 bg-[#C9A96E]/40 rounded-full"
+                    className="w-2 h-2 bg-accent/40 rounded-full"
                     animate={{ scale: [1, 1.4, 1], opacity: [0.4, 0.8, 0.4] }}
                     transition={{ duration: 1.2, repeat: Infinity, delay: 0.2 }}
                   />
                   <motion.div
-                    className="w-2 h-2 bg-[#C9A96E]/40 rounded-full"
+                    className="w-2 h-2 bg-accent/40 rounded-full"
                     animate={{ scale: [1, 1.4, 1], opacity: [0.4, 0.8, 0.4] }}
                     transition={{ duration: 1.2, repeat: Infinity, delay: 0.4 }}
                   />

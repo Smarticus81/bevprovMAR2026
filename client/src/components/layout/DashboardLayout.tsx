@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
-import { Bot, Store, LogOut, Menu, X, Database, ChevronRight, BookOpen, CreditCard } from "lucide-react";
+import { useTheme } from "@/hooks/useTheme";
+import { Bot, Store, LogOut, Menu, X, Database, ChevronRight, BookOpen, CreditCard, Sun, Moon } from "lucide-react";
 import { useState } from "react";
 import { BevProLogo, BevProWordmark } from "@/components/BevProLogo";
 
@@ -16,17 +17,18 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, organization, logout } = useAuth();
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { theme, toggleTheme, isDark } = useTheme();
 
   return (
-    <div className="min-h-screen bg-black text-white flex">
-      <aside className="hidden lg:flex w-60 flex-col fixed h-full z-30 border-r border-white/[0.06] bg-white/[0.01]">
+    <div className="min-h-screen bg-page text-ink flex">
+      <aside className="hidden lg:flex w-60 flex-col fixed h-full z-30 border-r border-line-subtle bg-surface-1">
         <div className="p-6 pb-5">
           <Link href="/dashboard" className="inline-flex items-center gap-2.5" data-testid="link-home">
             <BevProLogo size={22} />
-            <BevProWordmark className="text-white" size="text-base" />
+            <BevProWordmark className="text-ink" size="text-base" />
           </Link>
           {organization && (
-            <p className="text-xs text-white/40 mt-2 truncate tracking-wide">{organization.name}</p>
+            <p className="text-xs text-ink-faint mt-2 truncate tracking-wide">{organization.name}</p>
           )}
         </div>
 
@@ -43,31 +45,39 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 data-testid={`link-nav-${item.label.toLowerCase().replace(/\s/g, "-")}`}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                   active
-                    ? "text-white bg-[#C9A96E]/10 border border-[#C9A96E]/20"
-                    : "text-white/40 hover:text-white/60 hover:bg-white/[0.04]"
+                    ? "text-ink bg-accent-bg border border-accent-border"
+                    : "text-ink-faint hover:text-ink-secondary hover:bg-surface-2"
                 }`}
               >
-                <Icon size={16} className={active ? "text-[#C9A96E]" : ""} />
+                <Icon size={16} className={active ? "text-accent" : ""} />
                 {item.label}
               </Link>
             );
           })}
         </nav>
 
-        <div className="p-4 border-t border-white/[0.06]">
+        <div className="p-4 border-t border-line-subtle">
           <div className="flex items-center gap-3 px-2 py-2">
-            <div className="w-8 h-8 rounded-full bg-[#C9A96E]/15 text-[#C9A96E] flex items-center justify-center text-xs font-semibold">
+            <div className="w-8 h-8 rounded-full bg-accent-bg text-accent flex items-center justify-center text-xs font-semibold">
               {user?.name?.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{user?.name}</p>
-              <p className="text-xs text-white/40 truncate">{user?.email}</p>
+              <p className="text-sm font-medium text-ink truncate">{user?.name}</p>
+              <p className="text-xs text-ink-faint truncate">{user?.email}</p>
             </div>
           </div>
           <button
+            data-testid="button-theme-toggle"
+            onClick={toggleTheme}
+            className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-ink-muted hover:text-ink-secondary hover:bg-surface-2 rounded-lg transition-colors w-full mt-2"
+          >
+            {isDark ? <Sun size={16} /> : <Moon size={16} />}
+            {isDark ? "Light Mode" : "Dark Mode"}
+          </button>
+          <button
             data-testid="button-logout"
             onClick={() => logout.mutate()}
-            className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-white/50 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors w-full mt-2"
+            className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-ink-muted hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors w-full mt-2"
           >
             <LogOut size={16} />
             Sign Out
@@ -75,23 +85,23 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <div className="lg:hidden fixed top-0 w-full bg-black/90 backdrop-blur-xl border-b border-white/[0.06] z-40 px-5 py-4 flex items-center justify-between">
+      <div className="lg:hidden fixed top-0 w-full bg-page/90 backdrop-blur-xl border-b border-line-subtle z-40 px-5 py-4 flex items-center justify-between">
         <Link href="/dashboard" className="flex items-center gap-2.5">
           <BevProLogo size={22} />
-          <BevProWordmark className="text-white" size="text-base" />
+          <BevProWordmark className="text-ink" size="text-base" />
         </Link>
-        <button data-testid="button-mobile-menu" aria-label={mobileMenuOpen ? "Close menu" : "Open menu"} onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-white/60 p-2 -mr-2 min-h-[44px] min-w-[44px] flex items-center justify-center">
+        <button data-testid="button-mobile-menu" aria-label={mobileMenuOpen ? "Close menu" : "Open menu"} onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-ink-secondary p-2 -mr-2 min-h-[44px] min-w-[44px] flex items-center justify-center">
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
 
       {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 bg-black/95 backdrop-blur-xl z-30 pt-[72px] animate-in fade-in duration-200">
+        <div className="lg:hidden fixed inset-0 bg-page/95 backdrop-blur-xl z-30 pt-[72px] animate-in fade-in duration-200">
           <nav className="p-4 space-y-1">
             {organization && (
-              <div className="px-4 py-3 mb-3 border-b border-white/[0.06]">
-                <p className="text-xs uppercase tracking-[0.15em] text-white/40 font-medium mb-1">Venue</p>
-                <p className="text-base text-white/70 truncate">{organization.name}</p>
+              <div className="px-4 py-3 mb-3 border-b border-line-subtle">
+                <p className="text-xs uppercase tracking-[0.15em] text-ink-faint font-medium mb-1">Venue</p>
+                <p className="text-base text-ink-secondary truncate">{organization.name}</p>
               </div>
             )}
             {NAV_ITEMS.map((item) => {
@@ -107,34 +117,42 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   onClick={() => setMobileMenuOpen(false)}
                   className={`flex items-center gap-4 px-4 py-4 rounded-lg text-base transition-colors min-h-[56px] ${
                     active
-                      ? "text-white bg-[#C9A96E]/10 border border-[#C9A96E]/20"
-                      : "text-white/60 hover:text-white hover:bg-white/[0.04]"
+                      ? "text-ink bg-accent-bg border border-accent-border"
+                      : "text-ink-secondary hover:text-ink hover:bg-surface-2"
                   }`}
                 >
-                  <Icon size={22} className={active ? "text-[#C9A96E]" : "text-white/40"} />
+                  <Icon size={22} className={active ? "text-accent" : "text-ink-faint"} />
                   <div className="flex flex-col">
                     <span className="text-[16px] font-medium leading-tight">{item.label}</span>
-                    <span className={`text-[13px] leading-tight mt-0.5 ${active ? "text-white/50" : "text-white/30"}`}>{item.description}</span>
+                    <span className={`text-[13px] leading-tight mt-0.5 ${active ? "text-ink-muted" : "text-ink-faint"}`}>{item.description}</span>
                   </div>
                 </Link>
               );
             })}
-            <div className="h-px bg-white/[0.08] my-4" />
+            <div className="h-px bg-surface-3 my-4" />
             {user && (
               <div className="flex items-center gap-3 px-4 py-3">
-                <div className="w-10 h-10 rounded-full bg-[#C9A96E]/15 text-[#C9A96E] flex items-center justify-center text-sm font-semibold">
+                <div className="w-10 h-10 rounded-full bg-accent-bg text-accent flex items-center justify-center text-sm font-semibold">
                   {user.name?.charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-base text-white truncate">{user.name}</p>
-                  <p className="text-sm text-white/40 truncate">{user.email}</p>
+                  <p className="text-base text-ink truncate">{user.name}</p>
+                  <p className="text-sm text-ink-faint truncate">{user.email}</p>
                 </div>
               </div>
             )}
             <button
+              data-testid="button-theme-toggle"
+              onClick={toggleTheme}
+              className="flex items-center gap-3 px-4 py-4 text-base text-ink-muted hover:text-ink-secondary hover:bg-surface-2 rounded-lg transition-colors w-full min-h-[48px]"
+            >
+              {isDark ? <Sun size={20} /> : <Moon size={20} />}
+              {isDark ? "Light Mode" : "Dark Mode"}
+            </button>
+            <button
               data-testid="button-mobile-logout"
               onClick={() => { logout.mutate(); setMobileMenuOpen(false); }}
-              className="flex items-center gap-3 px-4 py-4 text-base text-white/50 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors w-full min-h-[48px]"
+              className="flex items-center gap-3 px-4 py-4 text-base text-ink-muted hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors w-full min-h-[48px]"
             >
               <LogOut size={20} />
               Sign Out

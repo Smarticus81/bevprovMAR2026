@@ -102,7 +102,7 @@ export function BevProBrand({ size = 28, className = "", gap = "gap-2.5", textSi
   return (
     <div className={`flex items-center ${gap} ${className}`} data-testid="bevpro-brand">
       <BevProLogo size={size} />
-      <BevProWordmark className="text-white" size={textSize} />
+      <BevProWordmark className="text-ink" size={textSize} />
     </div>
   );
 }

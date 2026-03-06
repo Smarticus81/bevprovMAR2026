@@ -138,7 +138,7 @@ export default function Pricing() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans">
+    <div className="min-h-screen bg-page text-ink font-sans">
       <Navbar />
 
       <main className="pt-32 pb-24 px-6">
@@ -151,7 +151,7 @@ export default function Pricing() {
           <h1 data-testid="text-pricing-title" className="text-5xl md:text-6xl font-medium tracking-tight text-glow">
             Simple, transparent pricing
           </h1>
-          <p data-testid="text-pricing-subtitle" className="text-white/50 text-lg mt-4 font-light">
+          <p data-testid="text-pricing-subtitle" className="text-ink-muted text-lg mt-4 font-light">
             Start free, scale as you grow. No hidden fees.
           </p>
         </motion.div>
@@ -168,21 +168,21 @@ export default function Pricing() {
                 transition={{ duration: 0.6, delay: i * 0.1 }}
                 className={`relative rounded-2xl border p-8 flex flex-col ${
                   tier.highlighted
-                    ? "border-white/30 bg-white/[0.06]"
-                    : "border-white/10 bg-white/[0.02]"
+                    ? "border-line-strong bg-surface-3"
+                    : "border-line bg-surface-1"
                 }`}
               >
                 {tier.highlighted && (
                   <span
                     data-testid="badge-most-popular"
-                    className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white text-black text-xs font-semibold px-4 py-1 rounded-full"
+                    className="absolute -top-3 left-1/2 -translate-x-1/2 bg-ink text-page text-xs font-semibold px-4 py-1 rounded-full"
                   >
                     Most Popular
                   </span>
                 )}
 
                 {isCurrent && (
-                  <span className="absolute -top-3 right-4 bg-[#C9A96E] text-black text-xs font-semibold px-3 py-1 rounded-full" data-testid={`badge-current-plan-${tier.plan}`}>
+                  <span className="absolute -top-3 right-4 bg-accent text-black text-xs font-semibold px-3 py-1 rounded-full" data-testid={`badge-current-plan-${tier.plan}`}>
                     Current Plan
                   </span>
                 )}
@@ -191,20 +191,20 @@ export default function Pricing() {
                   <h3 data-testid={`text-tier-name-${tier.plan}`} className="text-lg font-semibold mb-1">
                     {tier.name}
                   </h3>
-                  <p className="text-white/40 text-sm font-light">{tier.description}</p>
+                  <p className="text-ink-faint text-sm font-light">{tier.description}</p>
                 </div>
 
                 <div className="mb-8">
                   <span data-testid={`text-tier-price-${tier.plan}`} className="text-4xl font-semibold tracking-tight">
                     {tier.price}
                   </span>
-                  {tier.period && <span className="text-white/40 text-sm">{tier.period}</span>}
+                  {tier.period && <span className="text-ink-faint text-sm">{tier.period}</span>}
                 </div>
 
                 <ul className="space-y-3 mb-8 flex-1">
                   {tier.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-3 text-sm text-white/70">
-                      <Check size={16} className="text-white/50 shrink-0" />
+                    <li key={feature} className="flex items-center gap-3 text-sm text-ink-secondary">
+                      <Check size={16} className="text-ink-muted shrink-0" />
                       {feature}
                     </li>
                   ))}
@@ -214,7 +214,7 @@ export default function Pricing() {
                   <Link
                     href="/dashboard/billing"
                     data-testid={`button-manage-${tier.plan}`}
-                    className="block text-center rounded-full py-3 text-sm font-medium border border-[#C9A96E]/30 text-[#C9A96E] hover:bg-[#C9A96E]/10 transition-all duration-300"
+                    className="block text-center rounded-full py-3 text-sm font-medium border border-accent-border text-accent hover:bg-accent-bg transition-all duration-300"
                   >
                     Manage Subscription
                   </Link>
@@ -225,8 +225,8 @@ export default function Pricing() {
                     data-testid={`button-cta-${tier.plan}`}
                     className={`block w-full text-center rounded-full py-3 text-sm font-medium transition-all duration-300 ${
                       tier.highlighted
-                        ? "bg-white text-black hover:bg-white/90"
-                        : "border border-white/20 text-white hover:bg-white hover:text-black"
+                        ? "bg-ink text-page hover:opacity-90"
+                        : "border border-line-strong text-ink hover:bg-ink hover:text-page"
                     } disabled:opacity-50`}
                   >
                     {checkoutMutation.isPending ? (
@@ -252,14 +252,14 @@ export default function Pricing() {
           </h2>
           <Accordion type="single" collapsible className="w-full">
             {FAQS.map((faq, i) => (
-              <AccordionItem key={i} value={`faq-${i}`} className="border-white/10">
+              <AccordionItem key={i} value={`faq-${i}`} className="border-line">
                 <AccordionTrigger
                   data-testid={`button-faq-${i}`}
-                  className="text-white/80 hover:text-white hover:no-underline text-left"
+                  className="text-ink-secondary hover:text-ink hover:no-underline text-left"
                 >
                   {faq.question}
                 </AccordionTrigger>
-                <AccordionContent data-testid={`text-faq-answer-${i}`} className="text-white/50">
+                <AccordionContent data-testid={`text-faq-answer-${i}`} className="text-ink-muted">
                   {faq.answer}
                 </AccordionContent>
               </AccordionItem>
@@ -268,12 +268,12 @@ export default function Pricing() {
         </motion.div>
       </main>
 
-      <footer className="border-t border-white/10 p-6 md:p-8 flex flex-col md:flex-row justify-between items-center text-xs text-white/40 gap-4">
+      <footer className="border-t border-line p-6 md:p-8 flex flex-col md:flex-row justify-between items-center text-xs text-ink-faint gap-4">
         <div>© 2026 BevPro Inc. — The hospitality intelligence platform.</div>
         <div className="flex gap-6">
-          <a href="#" className="hover:text-white transition-colors">Privacy</a>
-          <a href="#" className="hover:text-white transition-colors">Terms</a>
-          <Link href="/docs" className="hover:text-white transition-colors">Documentation</Link>
+          <a href="#" className="hover:text-ink transition-colors">Privacy</a>
+          <a href="#" className="hover:text-ink transition-colors">Terms</a>
+          <Link href="/docs" className="hover:text-ink transition-colors">Documentation</Link>
         </div>
       </footer>
     </div>

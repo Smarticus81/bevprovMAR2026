@@ -40,7 +40,7 @@ export function Navbar() {
   return (
     <>
       <motion.header
-        className="fixed top-0 w-full z-50 px-6 py-8 flex justify-between items-center text-xs tracking-widest uppercase font-medium text-white/70"
+        className="fixed top-0 w-full z-50 px-6 py-8 flex justify-between items-center text-xs tracking-widest uppercase font-medium text-ink-secondary"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1, ease: "easeOut" }}
@@ -48,34 +48,34 @@ export function Navbar() {
         <div className="flex items-center gap-12">
           <Link href="/" className="flex items-center gap-2.5 mr-4">
             <BevProLogo size={28} />
-            <BevProWordmark className="text-white" size="text-lg" />
+            <BevProWordmark className="text-ink" size="text-lg" />
           </Link>
           <nav className="hidden md:flex gap-8">
             <button
               data-testid="nav-agents"
               onClick={() => setOpenModal("agents")}
-              className="hover:text-white transition-colors cursor-pointer bg-transparent border-none outline-none"
+              className="hover:text-ink transition-colors cursor-pointer bg-transparent border-none outline-none"
             >
               Agents
             </button>
             <button
               data-testid="nav-integrations"
               onClick={() => setOpenModal("integrations")}
-              className="hover:text-white transition-colors cursor-pointer bg-transparent border-none outline-none"
+              className="hover:text-ink transition-colors cursor-pointer bg-transparent border-none outline-none"
             >
               Integrations
             </button>
             <button
               data-testid="nav-venues"
               onClick={() => setOpenModal("venues")}
-              className="hover:text-white transition-colors cursor-pointer bg-transparent border-none outline-none"
+              className="hover:text-ink transition-colors cursor-pointer bg-transparent border-none outline-none"
             >
               Venues
             </button>
             <button
               data-testid="nav-how-it-works"
               onClick={() => setOpenModal("how-it-works")}
-              className="hover:text-white transition-colors cursor-pointer bg-transparent border-none outline-none"
+              className="hover:text-ink transition-colors cursor-pointer bg-transparent border-none outline-none"
             >
               How It Works
             </button>
@@ -83,18 +83,18 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-6">
-          <Link href="/login" data-testid="link-sign-in" className="hidden md:block hover:text-white transition-colors">Sign In</Link>
-          <Link href="/register" data-testid="link-start-building" className="border border-white/20 rounded-full px-5 py-2 hover:bg-white hover:text-black transition-all duration-300">
+          <Link href="/login" data-testid="link-sign-in" className="hidden md:block hover:text-ink transition-colors">Sign In</Link>
+          <Link href="/register" data-testid="link-start-building" className="border border-line-strong rounded-full px-5 py-2 hover:bg-ink hover:text-page transition-all duration-300">
             Start Building
           </Link>
         </div>
       </motion.header>
 
       <Dialog open={openModal === "agents"} onOpenChange={(open) => !open && setOpenModal(null)}>
-        <DialogContent className="bg-black/95 border-white/10 text-white max-w-xl backdrop-blur-xl">
+        <DialogContent className="bg-page/95 border-line text-ink max-w-xl backdrop-blur-xl">
           <DialogHeader>
-            <DialogTitle className="text-white text-xl tracking-wide">AI Agent Types</DialogTitle>
-            <DialogDescription className="text-white/50">
+            <DialogTitle className="text-ink text-xl tracking-wide">AI Agent Types</DialogTitle>
+            <DialogDescription className="text-ink-muted">
               Five specialized agents working together to run your venue.
             </DialogDescription>
           </DialogHeader>
@@ -102,13 +102,13 @@ export function Navbar() {
             {AGENT_TYPES.map((agent) => {
               const Icon = agent.icon;
               return (
-                <div key={agent.name} data-testid={`modal-agent-${agent.name.toLowerCase().replace(/\s+/g, "-")}`} className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                  <div className="mt-0.5 p-2 rounded-lg bg-white/[0.06]">
-                    <Icon size={16} className="text-[#C9A96E]" />
+                <div key={agent.name} data-testid={`modal-agent-${agent.name.toLowerCase().replace(/\s+/g, "-")}`} className="flex items-start gap-3 p-3 rounded-xl bg-surface-1 border border-line-subtle">
+                  <div className="mt-0.5 p-2 rounded-lg bg-surface-3">
+                    <Icon size={16} className="text-accent" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-white/90">{agent.name}</p>
-                    <p className="text-xs text-white/50 mt-0.5 leading-relaxed">{agent.desc}</p>
+                    <p className="text-sm font-medium text-ink-secondary">{agent.name}</p>
+                    <p className="text-xs text-ink-muted mt-0.5 leading-relaxed">{agent.desc}</p>
                   </div>
                 </div>
               );
@@ -118,10 +118,10 @@ export function Navbar() {
       </Dialog>
 
       <Dialog open={openModal === "integrations"} onOpenChange={(open) => !open && setOpenModal(null)}>
-        <DialogContent className="bg-black/95 border-white/10 text-white max-w-xl backdrop-blur-xl">
+        <DialogContent className="bg-page/95 border-line text-ink max-w-xl backdrop-blur-xl">
           <DialogHeader>
-            <DialogTitle className="text-white text-xl tracking-wide">Integrations</DialogTitle>
-            <DialogDescription className="text-white/50">
+            <DialogTitle className="text-ink text-xl tracking-wide">Integrations</DialogTitle>
+            <DialogDescription className="text-ink-muted">
               Connect your existing tools and data sources seamlessly.
             </DialogDescription>
           </DialogHeader>
@@ -129,13 +129,13 @@ export function Navbar() {
             {INTEGRATIONS.map((item) => {
               const Icon = item.icon;
               return (
-                <div key={item.name} data-testid={`modal-integration-${item.name.toLowerCase().replace(/\s+/g, "-")}`} className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                  <div className="mt-0.5 p-2 rounded-lg bg-white/[0.06]">
-                    <Icon size={16} className="text-[#C9A96E]" />
+                <div key={item.name} data-testid={`modal-integration-${item.name.toLowerCase().replace(/\s+/g, "-")}`} className="flex items-start gap-3 p-3 rounded-xl bg-surface-1 border border-line-subtle">
+                  <div className="mt-0.5 p-2 rounded-lg bg-surface-3">
+                    <Icon size={16} className="text-accent" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-white/90">{item.name}</p>
-                    <p className="text-xs text-white/50 mt-0.5 leading-relaxed">{item.desc}</p>
+                    <p className="text-sm font-medium text-ink-secondary">{item.name}</p>
+                    <p className="text-xs text-ink-muted mt-0.5 leading-relaxed">{item.desc}</p>
                   </div>
                 </div>
               );
@@ -145,34 +145,34 @@ export function Navbar() {
       </Dialog>
 
       <Dialog open={openModal === "venues"} onOpenChange={(open) => !open && setOpenModal(null)}>
-        <DialogContent className="bg-black/95 border-white/10 text-white max-w-xl backdrop-blur-xl">
+        <DialogContent className="bg-page/95 border-line text-ink max-w-xl backdrop-blur-xl">
           <DialogHeader>
-            <DialogTitle className="text-white text-xl tracking-wide">Multi-Venue Support</DialogTitle>
-            <DialogDescription className="text-white/50">
+            <DialogTitle className="text-ink text-xl tracking-wide">Multi-Venue Support</DialogTitle>
+            <DialogDescription className="text-ink-muted">
               Built for operators managing one location or a hundred.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-2">
-            <div data-testid="modal-venues-info" className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-3">
+            <div data-testid="modal-venues-info" className="p-4 rounded-xl bg-surface-1 border border-line-subtle space-y-3">
               <div className="flex items-start gap-3">
-                <Building2 size={16} className="text-[#C9A96E] mt-0.5 shrink-0" />
+                <Building2 size={16} className="text-accent mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-white/90">Multi-Tenant Architecture</p>
-                  <p className="text-xs text-white/50 mt-0.5 leading-relaxed">Each venue gets its own isolated data, agents, and configurations. Staff only see what they need.</p>
+                  <p className="text-sm font-medium text-ink-secondary">Multi-Tenant Architecture</p>
+                  <p className="text-xs text-ink-muted mt-0.5 leading-relaxed">Each venue gets its own isolated data, agents, and configurations. Staff only see what they need.</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Building2 size={16} className="text-[#C9A96E] mt-0.5 shrink-0" />
+                <Building2 size={16} className="text-accent mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-white/90">Centralized Dashboard</p>
-                  <p className="text-xs text-white/50 mt-0.5 leading-relaxed">Operators see performance across all venues in one view. Drill into any location instantly.</p>
+                  <p className="text-sm font-medium text-ink-secondary">Centralized Dashboard</p>
+                  <p className="text-xs text-ink-muted mt-0.5 leading-relaxed">Operators see performance across all venues in one view. Drill into any location instantly.</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <Building2 size={16} className="text-[#C9A96E] mt-0.5 shrink-0" />
+                <Building2 size={16} className="text-accent mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-white/90">Per-Venue Agents</p>
-                  <p className="text-xs text-white/50 mt-0.5 leading-relaxed">Deploy different agent configurations per location — each with its own menu, POS connection, and voice personality.</p>
+                  <p className="text-sm font-medium text-ink-secondary">Per-Venue Agents</p>
+                  <p className="text-xs text-ink-muted mt-0.5 leading-relaxed">Deploy different agent configurations per location — each with its own menu, POS connection, and voice personality.</p>
                 </div>
               </div>
             </div>
@@ -181,28 +181,28 @@ export function Navbar() {
       </Dialog>
 
       <Dialog open={openModal === "how-it-works"} onOpenChange={(open) => !open && setOpenModal(null)}>
-        <DialogContent className="bg-black/95 border-white/10 text-white max-w-xl backdrop-blur-xl">
+        <DialogContent className="bg-page/95 border-line text-ink max-w-xl backdrop-blur-xl">
           <DialogHeader>
-            <DialogTitle className="text-white text-xl tracking-wide">How It Works</DialogTitle>
-            <DialogDescription className="text-white/50">
+            <DialogTitle className="text-ink text-xl tracking-wide">How It Works</DialogTitle>
+            <DialogDescription className="text-ink-muted">
               From setup to live in three simple steps.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             {HOW_IT_WORKS.map((item) => (
-              <div key={item.step} data-testid={`modal-step-${item.step}`} className="flex items-start gap-4 p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                <div className="w-8 h-8 rounded-full bg-[#C9A96E]/20 border border-[#C9A96E]/30 flex items-center justify-center shrink-0">
-                  <span className="text-sm font-semibold text-[#C9A96E]">{item.step}</span>
+              <div key={item.step} data-testid={`modal-step-${item.step}`} className="flex items-start gap-4 p-4 rounded-xl bg-surface-1 border border-line-subtle">
+                <div className="w-8 h-8 rounded-full bg-accent-bg border border-accent-border flex items-center justify-center shrink-0">
+                  <span className="text-sm font-semibold text-accent">{item.step}</span>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-white/90">{item.title}</p>
-                  <p className="text-xs text-white/50 mt-0.5 leading-relaxed">{item.desc}</p>
+                  <p className="text-sm font-medium text-ink-secondary">{item.title}</p>
+                  <p className="text-xs text-ink-muted mt-0.5 leading-relaxed">{item.desc}</p>
                 </div>
               </div>
             ))}
             <div className="pt-2 flex justify-center">
               <Link href="/register" onClick={() => setOpenModal(null)}>
-                <button data-testid="modal-get-started" className="flex items-center gap-2 bg-[#C9A96E] text-black px-6 py-2.5 rounded-full text-sm font-medium hover:bg-[#D4B87A] transition-colors">
+                <button data-testid="modal-get-started" className="flex items-center gap-2 bg-accent text-black px-6 py-2.5 rounded-full text-sm font-medium hover:bg-accent-hover transition-colors">
                   Get Started <ArrowRight size={14} />
                 </button>
               </Link>

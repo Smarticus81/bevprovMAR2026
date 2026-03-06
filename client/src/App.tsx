@@ -25,8 +25,8 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <Loader2 className="w-6 h-6 text-white/40 animate-spin" />
+      <div className="min-h-screen bg-page flex items-center justify-center">
+        <Loader2 className="w-6 h-6 text-ink-faint animate-spin" />
       </div>
     );
   }
@@ -40,8 +40,8 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 
 function LazyFallback() {
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center">
-      <Loader2 className="w-6 h-6 text-white/40 animate-spin" />
+    <div className="min-h-screen bg-page flex items-center justify-center">
+      <Loader2 className="w-6 h-6 text-ink-faint animate-spin" />
     </div>
   );
 }

@@ -125,44 +125,44 @@ function AppStorePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
               data-testid="banner-featured"
-              className="relative mb-10 cursor-pointer group border-b border-white/[0.06] pb-8"
+              className="relative mb-10 cursor-pointer group border-b border-line-subtle pb-8"
               onClick={() => setSelectedAgent(bevoneItem)}
             >
               <div className="relative z-10 flex items-center gap-6 sm:gap-8">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 bg-[#C9A96E]/10 flex items-center justify-center border border-[#C9A96E]/20 flex-shrink-0 group-hover:bg-[#C9A96E]/15 transition-all duration-500">
-                  <Sparkles className="w-10 h-10 sm:w-12 sm:h-12 text-[#C9A96E]" />
+                <div className="w-20 h-20 sm:w-24 sm:h-24 bg-accent-bg flex items-center justify-center border border-accent-border flex-shrink-0 group-hover:bg-accent-bg transition-all duration-500">
+                  <Sparkles className="w-10 h-10 sm:w-12 sm:h-12 text-accent" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2.5 mb-1.5">
-                    <span className="text-xs font-semibold text-[#C9A96E] uppercase tracking-[0.15em]">Featured</span>
-                    <Star className="w-3.5 h-3.5 text-[#C9A96E] fill-[#C9A96E]" />
+                    <span className="text-xs font-semibold text-accent uppercase tracking-[0.15em]">Featured</span>
+                    <Star className="w-3.5 h-3.5 text-accent fill-[#C9A96E]" />
                   </div>
-                  <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight" data-testid="text-featured-name">
+                  <h2 className="text-2xl sm:text-3xl font-bold text-ink tracking-tight" data-testid="text-featured-name">
                     BevOne
                   </h2>
-                  <p className="text-[13px] text-white/45 mt-1.5 max-w-md leading-relaxed" data-testid="text-featured-description">
+                  <p className="text-[13px] text-ink-faint mt-1.5 max-w-md leading-relaxed" data-testid="text-featured-description">
                     {AGENT_TYPE_DESCRIPTIONS["bevone"]}
                   </p>
                   <div className="flex flex-wrap items-center gap-2 mt-4">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[#C9A96E]/70 text-xs font-medium border border-[#C9A96E]/15 bg-[#C9A96E]/5">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-accent/70 text-xs font-medium border border-accent-border bg-accent-bg">
                       <Wrench className="w-3.5 h-3.5" /> 20+ Tools
                     </span>
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[#C9A96E]/70 text-xs font-medium border border-[#C9A96E]/15 bg-[#C9A96E]/5">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-accent/70 text-xs font-medium border border-accent-border bg-accent-bg">
                       <Volume2 className="w-3.5 h-3.5" /> Voice
                     </span>
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[#C9A96E]/70 text-xs font-medium border border-[#C9A96E]/15 bg-[#C9A96E]/5">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-accent/70 text-xs font-medium border border-accent-border bg-accent-bg">
                       <Zap className="w-3.5 h-3.5" /> All-in-One
                     </span>
                   </div>
                 </div>
-                <div className="hidden sm:flex flex-shrink-0 w-10 h-10 items-center justify-center border border-white/[0.06] group-hover:border-[#C9A96E]/30 transition-colors">
-                  <ArrowRight className="w-5 h-5 text-white/30 group-hover:text-[#C9A96E] transition-colors" />
+                <div className="hidden sm:flex flex-shrink-0 w-10 h-10 items-center justify-center border border-line-subtle group-hover:border-accent-border transition-colors">
+                  <ArrowRight className="w-5 h-5 text-ink-faint group-hover:text-accent transition-colors" />
                 </div>
               </div>
             </motion.div>
           )}
 
-          <div className="flex items-center gap-0 mb-8 border-b border-white/[0.06] overflow-x-auto">
+          <div className="flex items-center gap-0 mb-8 border-b border-line-subtle overflow-x-auto">
             {CATEGORY_TABS.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeCategory === tab.key;
@@ -173,8 +173,8 @@ function AppStorePage() {
                   onClick={() => setActiveCategory(tab.key)}
                   className={`relative flex items-center gap-2 px-5 py-4 text-base font-medium whitespace-nowrap transition-all duration-200 ${
                     isActive
-                      ? "text-[#C9A96E]"
-                      : "text-white/40 hover:text-white/60"
+                      ? "text-accent"
+                      : "text-ink-faint hover:text-ink-secondary"
                   }`}
                 >
                   <Icon className="w-5 h-5" />
@@ -182,7 +182,7 @@ function AppStorePage() {
                   {isActive && (
                     <motion.div
                       layoutId="category-indicator"
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#C9A96E]"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent"
                       transition={{ type: "spring", stiffness: 400, damping: 30 }}
                     />
                   )}
@@ -194,11 +194,11 @@ function AppStorePage() {
           {isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="p-5 bg-white/[0.02] border border-white/[0.04] animate-pulse">
-                  <div className="w-10 h-10 bg-white/10 mb-4" />
-                  <div className="h-4 bg-white/10 w-3/4 mb-2" />
-                  <div className="h-3 bg-white/5 w-full mb-1" />
-                  <div className="h-3 bg-white/5 w-2/3" />
+                <div key={i} className="p-5 bg-surface-1 border border-line-subtle animate-pulse">
+                  <div className="w-10 h-10 bg-surface-4 mb-4" />
+                  <div className="h-4 bg-surface-4 w-3/4 mb-2" />
+                  <div className="h-3 bg-surface-2 w-full mb-1" />
+                  <div className="h-3 bg-surface-2 w-2/3" />
                 </div>
               ))}
             </div>
@@ -209,9 +209,9 @@ function AppStorePage() {
               className="text-center py-20"
               data-testid="text-empty-state"
             >
-              <Layers className="w-12 h-12 text-white/10 mx-auto mb-4" />
-              <p className="text-white/50 text-lg font-medium">No agents in this category</p>
-              <p className="text-white/25 text-sm mt-1">Try selecting a different category</p>
+              <Layers className="w-12 h-12 text-ink-ghost mx-auto mb-4" />
+              <p className="text-ink-muted text-lg font-medium">No agents in this category</p>
+              <p className="text-ink-faint text-sm mt-1">Try selecting a different category</p>
             </motion.div>
           ) : (
             <motion.div
@@ -234,13 +234,13 @@ function AppStorePage() {
                       transition={{ duration: 0.3, delay: index * 0.04 }}
                       data-testid={`card-agent-${item.id}`}
                       onClick={() => setSelectedAgent(item)}
-                      className="relative group cursor-pointer bg-white/[0.02] border border-white/[0.06] hover:border-[#C9A96E]/20 transition-all duration-300 p-5"
+                      className="relative group cursor-pointer bg-surface-1 border border-line-subtle hover:border-accent-border transition-all duration-300 p-5"
                     >
-                      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-[#C9A96E] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-accent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                       <div className="flex items-start justify-between mb-4">
-                        <div className="w-10 h-10 bg-[#C9A96E]/10 flex items-center justify-center border border-[#C9A96E]/15 group-hover:bg-[#C9A96E]/15 transition-all duration-300">
-                          <Icon className="w-5 h-5 text-[#C9A96E]" />
+                        <div className="w-10 h-10 bg-accent-bg flex items-center justify-center border border-accent-border group-hover:bg-accent-bg transition-all duration-300">
+                          <Icon className="w-5 h-5 text-accent" />
                         </div>
                         <span
                           data-testid={`badge-status-${item.id}`}
@@ -248,9 +248,9 @@ function AppStorePage() {
                             isActive
                               ? "text-emerald-400 bg-emerald-500/10 border border-emerald-500/20"
                               : isDraft
-                              ? "text-[#C9A96E] bg-[#C9A96E]/10 border border-[#C9A96E]/20"
+                              ? "text-accent bg-accent-bg border border-accent-border"
                               : item.isTemplate
-                              ? "text-white/40 bg-white/[0.04] border border-white/[0.06]"
+                              ? "text-ink-faint bg-surface-2 border border-line-subtle"
                               : "text-blue-400 bg-blue-500/10 border border-blue-500/20"
                           }`}
                         >
@@ -259,20 +259,20 @@ function AppStorePage() {
                       </div>
 
                       <h3
-                        className="font-semibold text-white text-base mb-1 truncate"
+                        className="font-semibold text-ink text-base mb-1 truncate"
                         data-testid={`text-agent-name-${item.id}`}
                       >
                         {item.name}
                       </h3>
-                      <p className="text-xs text-white/40 mb-2" data-testid={`text-agent-type-${item.id}`}>
+                      <p className="text-xs text-ink-faint mb-2" data-testid={`text-agent-type-${item.id}`}>
                         {AGENT_TYPE_LABELS[item.type]}
                       </p>
-                      <p className="text-[13px] text-white/45 leading-relaxed line-clamp-2 mb-4 min-h-[2.5rem]">
+                      <p className="text-[13px] text-ink-faint leading-relaxed line-clamp-2 mb-4 min-h-[2.5rem]">
                         {item.description}
                       </p>
 
-                      <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
-                        <span className="text-xs text-white/40 font-medium">{toolCount} tools</span>
+                      <div className="flex items-center justify-between pt-3 border-t border-line-subtle">
+                        <span className="text-xs text-ink-faint font-medium">{toolCount} tools</span>
                         <button
                           data-testid={`button-action-${item.id}`}
                           onClick={(e) => {
@@ -285,8 +285,8 @@ function AppStorePage() {
                           }}
                           className={`px-5 py-2 text-sm font-semibold transition-all duration-200 ${
                             isActive || isDraft
-                              ? "bg-white/[0.06] text-white/60 hover:bg-white/[0.10] hover:text-white border border-white/[0.06]"
-                              : "bg-[#C9A96E] text-black hover:bg-[#C9A96E]/90"
+                              ? "bg-surface-3 text-ink-secondary hover:bg-surface-4 hover:text-ink border border-line-subtle"
+                              : "bg-accent text-black hover:bg-accent/90"
                           }`}
                         >
                           {isActive || isDraft ? "Open" : "Get"}
@@ -309,7 +309,7 @@ function AppStorePage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 bg-black/70 backdrop-blur-md z-50"
+              className="fixed inset-0 bg-backdrop backdrop-blur-md z-50"
               onClick={() => setSelectedAgent(null)}
               data-testid="overlay-detail"
             />
@@ -318,17 +318,17 @@ function AppStorePage() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="fixed bottom-0 left-0 right-0 z-50 bg-[#0a0a0a] max-h-[85vh] overflow-y-auto border-t border-[#C9A96E]/20"
+              className="fixed bottom-0 left-0 right-0 z-50 bg-card max-h-[85vh] overflow-y-auto border-t border-accent-border"
               data-testid="sheet-agent-detail"
             >
-              <div className="sticky top-0 bg-[#0a0a0a] z-10 pt-3 pb-2 px-6">
-                <div className="w-10 h-0.5 bg-[#C9A96E]/30 mx-auto mb-4" />
+              <div className="sticky top-0 bg-card z-10 pt-3 pb-2 px-6">
+                <div className="w-10 h-0.5 bg-accent/30 mx-auto mb-4" />
                 <button
                   data-testid="button-close-detail"
                   onClick={() => setSelectedAgent(null)}
-                  className="absolute top-4 right-4 p-2.5 hover:bg-white/[0.06] transition-colors"
+                  className="absolute top-4 right-4 p-2.5 hover:bg-surface-3 transition-colors"
                 >
-                  <X className="w-5 h-5 text-white/50" />
+                  <X className="w-5 h-5 text-ink-muted" />
                 </button>
               </div>
 
@@ -390,60 +390,60 @@ function AgentDetailContent({
   return (
     <div>
       <div className="flex items-start gap-5 mb-8">
-        <div className="w-16 h-16 bg-[#C9A96E]/10 flex items-center justify-center border border-[#C9A96E]/20 flex-shrink-0">
-          <Icon className="w-8 h-8 text-[#C9A96E]" />
+        <div className="w-16 h-16 bg-accent-bg flex items-center justify-center border border-accent-border flex-shrink-0">
+          <Icon className="w-8 h-8 text-accent" />
         </div>
         <div className="flex-1 min-w-0">
-          <h2 className="text-2xl font-bold text-white tracking-tight" data-testid="text-detail-name">
+          <h2 className="text-2xl font-bold text-ink tracking-tight" data-testid="text-detail-name">
             {item.name}
           </h2>
-          <p className="text-sm text-white/45 mt-1" data-testid="text-detail-type">
+          <p className="text-sm text-ink-faint mt-1" data-testid="text-detail-type">
             {AGENT_TYPE_LABELS[item.type]}
           </p>
           <div className="flex items-center gap-2 mt-3">
             <span
               data-testid="badge-detail-status"
               className={`inline-flex items-center px-3 py-1 text-xs font-semibold border ${
-                isActive ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-white/[0.04] text-white/45 border-white/[0.06]"
+                isActive ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-surface-2 text-ink-faint border-line-subtle"
               }`}
             >
               {isActive ? "Active" : item.isTemplate ? "Available" : item.status}
             </span>
-            <span className="inline-flex items-center px-3 py-1 text-xs font-medium bg-white/[0.03] text-white/40 border border-white/[0.06]">
+            <span className="inline-flex items-center px-3 py-1 text-xs font-medium bg-surface-1 text-ink-faint border border-line-subtle">
               {tools.length} tools
             </span>
           </div>
         </div>
       </div>
 
-      <div className="mb-6 pb-6 border-b border-white/[0.06]">
-        <h3 className="text-sm font-semibold text-[#C9A96E]/70 uppercase tracking-[0.15em] mb-3">About</h3>
-        <p className="text-[15px] text-white/50 leading-relaxed" data-testid="text-detail-description">
+      <div className="mb-6 pb-6 border-b border-line-subtle">
+        <h3 className="text-sm font-semibold text-accent/70 uppercase tracking-[0.15em] mb-3">About</h3>
+        <p className="text-[15px] text-ink-muted leading-relaxed" data-testid="text-detail-description">
           {item.description}
         </p>
       </div>
 
-      <div className="mb-6 pb-6 border-b border-white/[0.06]">
-        <h3 className="text-sm font-semibold text-[#C9A96E]/70 uppercase tracking-[0.15em] mb-3">
+      <div className="mb-6 pb-6 border-b border-line-subtle">
+        <h3 className="text-sm font-semibold text-accent/70 uppercase tracking-[0.15em] mb-3">
           Capabilities
         </h3>
         <div className="space-y-4" data-testid="list-tools">
           {Object.entries(toolsByCategory).map(([category, categoryTools]) => (
             <div key={category}>
-              <p className="text-xs font-medium text-white/40 uppercase tracking-wider mb-2">{category}</p>
+              <p className="text-xs font-medium text-ink-faint uppercase tracking-wider mb-2">{category}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {categoryTools.map((tool) => (
                   <div
                     key={tool.name}
                     data-testid={`tool-${tool.name}`}
-                    className="flex items-start gap-3 p-3 bg-white/[0.02] border border-white/[0.04] hover:border-[#C9A96E]/15 transition-colors"
+                    className="flex items-start gap-3 p-3 bg-surface-1 border border-line-subtle hover:border-accent-border transition-colors"
                   >
-                    <div className="w-7 h-7 bg-[#C9A96E]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Wrench className="w-3.5 h-3.5 text-[#C9A96E]/60" />
+                    <div className="w-7 h-7 bg-accent-bg flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Wrench className="w-3.5 h-3.5 text-accent/60" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-white/60">{tool.name.replace(/_/g, " ")}</p>
-                      <p className="text-xs text-white/40 mt-0.5 leading-relaxed">{tool.description}</p>
+                      <p className="text-sm font-medium text-ink-secondary">{tool.name.replace(/_/g, " ")}</p>
+                      <p className="text-xs text-ink-faint mt-0.5 leading-relaxed">{tool.description}</p>
                     </div>
                   </div>
                 ))}
@@ -454,8 +454,8 @@ function AgentDetailContent({
       </div>
 
       <div className="mb-8">
-        <h3 className="text-sm font-semibold text-[#C9A96E]/70 uppercase tracking-[0.15em] mb-3">Voice Configuration</h3>
-        <div className="bg-white/[0.02] p-4 space-y-3 border border-white/[0.04]" data-testid="section-voice-config">
+        <h3 className="text-sm font-semibold text-accent/70 uppercase tracking-[0.15em] mb-3">Voice Configuration</h3>
+        <div className="bg-surface-1 p-4 space-y-3 border border-line-subtle" data-testid="section-voice-config">
           {[
             { label: "Voice", value: (voiceConfig?.voice as string) || "Default" },
             { label: "Language", value: (voiceConfig?.language as string) || "English" },
@@ -463,19 +463,19 @@ function AgentDetailContent({
             { label: "VAD Sensitivity", value: String((voiceConfig?.vadSensitivity as number) || 0.5) },
           ].map(({ label, value }) => (
             <div key={label} className="flex justify-between items-center text-sm">
-              <span className="text-white/45">{label}</span>
-              <span className="text-white/60 font-medium text-sm bg-white/[0.03] px-3 py-1.5 border border-white/[0.06]">{value}</span>
+              <span className="text-ink-faint">{label}</span>
+              <span className="text-ink-secondary font-medium text-sm bg-surface-1 px-3 py-1.5 border border-line-subtle">{value}</span>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="sticky bottom-0 bg-[#0a0a0a] pt-4 pb-2 border-t border-white/[0.06]">
+      <div className="sticky bottom-0 bg-card pt-4 pb-2 border-t border-line-subtle">
         {!item.isTemplate ? (
           <button
             data-testid="button-open-agent"
             onClick={() => onOpen(item)}
-            className="w-full py-4 bg-[#C9A96E] text-black font-semibold text-base hover:bg-[#C9A96E]/90 transition-all duration-200"
+            className="w-full py-4 bg-accent text-black font-semibold text-base hover:bg-accent/90 transition-all duration-200"
           >
             Configure Agent
           </button>
@@ -484,7 +484,7 @@ function AgentDetailContent({
             data-testid="button-activate"
             onClick={handleActivate}
             disabled={activating}
-            className="w-full py-4 bg-[#C9A96E] text-black font-semibold text-base hover:bg-[#C9A96E]/90 transition-all duration-200 disabled:opacity-50"
+            className="w-full py-4 bg-accent text-black font-semibold text-base hover:bg-accent/90 transition-all duration-200 disabled:opacity-50"
           >
             {activating ? "Creating..." : "Create Agent"}
           </button>

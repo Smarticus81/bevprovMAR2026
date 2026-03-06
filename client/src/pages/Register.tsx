@@ -73,8 +73,8 @@ export default function Register() {
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: "url('/register-bg.png')" }}
       />
-      <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/60" />
+      <div className="absolute inset-0 bg-gradient-to-r from-page/90 via-page/70 to-page/40" />
+      <div className="absolute inset-0 bg-gradient-to-t from-page/80 via-transparent to-page/60" />
 
       <div className="relative z-10 min-h-screen flex">
         <div className="w-full lg:w-[520px] xl:w-[560px] flex flex-col justify-center px-8 sm:px-12 lg:px-16 py-12">
@@ -85,13 +85,13 @@ export default function Register() {
           >
             <Link href="/" className="inline-flex items-center gap-2.5 mb-10" data-testid="link-home">
               <BevProLogo size={32} />
-              <BevProWordmark className="text-xl text-white" />
+              <BevProWordmark className="text-xl text-ink" />
             </Link>
 
-            <h1 className="text-3xl font-light text-white tracking-tight mb-2">
+            <h1 className="text-3xl font-light text-ink tracking-tight mb-2">
               Get started
             </h1>
-            <p className="text-white/50 text-base mb-8">
+            <p className="text-ink-muted text-base mb-8">
               Set up your venue and start building voice agents
             </p>
 
@@ -109,12 +109,12 @@ export default function Register() {
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               <div>
-                <label htmlFor="venueName" className="text-xs uppercase tracking-[0.15em] text-white/50 font-medium block mb-2">Venue Name</label>
+                <label htmlFor="venueName" className="text-xs uppercase tracking-[0.15em] text-ink-muted font-medium block mb-2">Venue Name</label>
                 <input
                   id="venueName"
                   data-testid="input-venue-name"
                   placeholder="The Grand Ballroom"
-                  className="w-full bg-white/[0.04] border-0 border-b border-white/10 rounded-none px-0 py-4 text-base text-white placeholder:text-white/30 focus:outline-none focus:border-[#C9A96E]/50 transition-colors"
+                  className="w-full bg-surface-2 border-0 border-b border-line rounded-none px-0 py-4 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-accent/50 transition-colors"
                   {...register("venueName")}
                 />
                 {errors.venueName && (
@@ -123,12 +123,12 @@ export default function Register() {
               </div>
 
               <div>
-                <label htmlFor="name" className="text-xs uppercase tracking-[0.15em] text-white/50 font-medium block mb-2">Full Name</label>
+                <label htmlFor="name" className="text-xs uppercase tracking-[0.15em] text-ink-muted font-medium block mb-2">Full Name</label>
                 <input
                   id="name"
                   data-testid="input-name"
                   placeholder="Jane Smith"
-                  className="w-full bg-white/[0.04] border-0 border-b border-white/10 rounded-none px-0 py-4 text-base text-white placeholder:text-white/30 focus:outline-none focus:border-[#C9A96E]/50 transition-colors"
+                  className="w-full bg-surface-2 border-0 border-b border-line rounded-none px-0 py-4 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-accent/50 transition-colors"
                   {...register("name")}
                 />
                 {errors.name && (
@@ -137,13 +137,13 @@ export default function Register() {
               </div>
 
               <div>
-                <label htmlFor="email" className="text-xs uppercase tracking-[0.15em] text-white/50 font-medium block mb-2">Email</label>
+                <label htmlFor="email" className="text-xs uppercase tracking-[0.15em] text-ink-muted font-medium block mb-2">Email</label>
                 <input
                   id="email"
                   data-testid="input-email"
                   type="email"
                   placeholder="jane@venue.com"
-                  className="w-full bg-white/[0.04] border-0 border-b border-white/10 rounded-none px-0 py-4 text-base text-white placeholder:text-white/30 focus:outline-none focus:border-[#C9A96E]/50 transition-colors"
+                  className="w-full bg-surface-2 border-0 border-b border-line rounded-none px-0 py-4 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-accent/50 transition-colors"
                   {...register("email")}
                 />
                 {errors.email && (
@@ -152,13 +152,13 @@ export default function Register() {
               </div>
 
               <div>
-                <label htmlFor="password" className="text-xs uppercase tracking-[0.15em] text-white/50 font-medium block mb-2">Password</label>
+                <label htmlFor="password" className="text-xs uppercase tracking-[0.15em] text-ink-muted font-medium block mb-2">Password</label>
                 <input
                   id="password"
                   data-testid="input-password"
                   type="password"
                   placeholder="••••••••"
-                  className="w-full bg-white/[0.04] border-0 border-b border-white/10 rounded-none px-0 py-4 text-base text-white placeholder:text-white/30 focus:outline-none focus:border-[#C9A96E]/50 transition-colors"
+                  className="w-full bg-surface-2 border-0 border-b border-line rounded-none px-0 py-4 text-base text-ink placeholder:text-ink-faint focus:outline-none focus:border-accent/50 transition-colors"
                   {...register("password")}
                 />
                 {errors.password && (
@@ -167,7 +167,7 @@ export default function Register() {
               </div>
 
               <div className="pt-1">
-                <label className="text-xs uppercase tracking-[0.15em] text-white/50 font-medium block mb-3">Plan</label>
+                <label className="text-xs uppercase tracking-[0.15em] text-ink-muted font-medium block mb-3">Plan</label>
                 <div className="flex gap-2">
                   {PLANS.map((plan) => (
                     <button
@@ -177,13 +177,13 @@ export default function Register() {
                       onClick={() => setSelectedPlan(plan.id)}
                       className={`flex-1 relative py-3 px-3 text-center transition-all duration-300 ${
                         selectedPlan === plan.id
-                          ? "border-b-2 border-[#C9A96E] text-white"
-                          : "border-b border-white/10 text-white/35 hover:text-white/60"
+                          ? "border-b-2 border-accent text-ink"
+                          : "border-b border-line text-ink-faint hover:text-ink-secondary"
                       }`}
                     >
                       {selectedPlan === plan.id && (
                         <div className="absolute top-2 right-2">
-                          <Check size={10} className="text-[#C9A96E]" />
+                          <Check size={10} className="text-accent" />
                         </div>
                       )}
                       <div className="text-base font-medium">{plan.name}</div>
@@ -200,7 +200,7 @@ export default function Register() {
                   type="submit"
                   data-testid="button-register"
                   disabled={registerUser.isPending}
-                  className="w-full flex items-center justify-center gap-2 bg-[#C9A96E] text-black py-4 text-base font-semibold tracking-wide uppercase hover:bg-[#D4B87A] disabled:opacity-50 transition-all duration-300"
+                  className="w-full flex items-center justify-center gap-2 bg-accent text-black py-4 text-base font-semibold tracking-wide uppercase hover:bg-accent-hover disabled:opacity-50 transition-all duration-300"
                 >
                   {registerUser.isPending ? (
                     <Loader2 size={16} className="animate-spin" />
@@ -217,14 +217,14 @@ export default function Register() {
             {authConfig?.googleEnabled && (
               <>
                 <div className="flex items-center gap-4 my-5">
-                  <div className="flex-1 h-px bg-white/8" />
-                  <span className="text-[11px] text-white/25 uppercase tracking-widest">or</span>
-                  <div className="flex-1 h-px bg-white/8" />
+                  <div className="flex-1 h-px bg-surface-4" />
+                  <span className="text-[11px] text-ink-faint uppercase tracking-widest">or</span>
+                  <div className="flex-1 h-px bg-surface-4" />
                 </div>
                 <a
                   href="/api/auth/google"
                   data-testid="button-google-register"
-                  className="flex items-center justify-center gap-3 w-full border border-white/10 text-white/70 py-4 text-base font-medium hover:bg-white/5 hover:text-white transition-all duration-300"
+                  className="flex items-center justify-center gap-3 w-full border border-line text-ink-secondary py-4 text-base font-medium hover:bg-surface-2 hover:text-ink transition-all duration-300"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
@@ -237,9 +237,9 @@ export default function Register() {
               </>
             )}
 
-            <p className="mt-8 text-base text-white/40">
+            <p className="mt-8 text-base text-ink-faint">
               Already have an account?{" "}
-              <Link href="/login" data-testid="link-login" className="text-white/60 hover:text-white transition-colors">
+              <Link href="/login" data-testid="link-login" className="text-ink-secondary hover:text-ink transition-colors">
                 Sign in
               </Link>
             </p>
@@ -253,12 +253,12 @@ export default function Register() {
             transition={{ duration: 0.8, delay: 0.3 }}
             className="max-w-sm"
           >
-            <div className="backdrop-blur-md bg-black/30 border border-white/10 rounded-xl p-6">
+            <div className="bg-card/80 backdrop-blur-md border border-line rounded-xl p-6">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-2 h-2 rounded-full bg-[#C9A96E] animate-pulse" />
-                <span className="text-[11px] uppercase tracking-[0.2em] text-[#C9A96E]/80 font-medium">Live at Venue</span>
+                <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+                <span className="text-[11px] uppercase tracking-[0.2em] text-accent/80 font-medium">Live at Venue</span>
               </div>
-              <p className="text-white/70 text-sm leading-relaxed">
+              <p className="text-ink-secondary text-sm leading-relaxed">
                 Voice-powered ordering, inventory tracking, and venue management — all through a single earbud.
               </p>
             </div>

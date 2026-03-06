@@ -204,16 +204,14 @@ export default function Dashboard() {
                     </div>
                     <h3 className="font-semibold text-white/90 mb-1">{agent.name}</h3>
                     <p className="text-xs text-white/30 mb-3">{meta.label}</p>
-                    <Link href={`/app/${agent.id}`}>
-                      <button
+                    <button
                         data-testid={`button-launch-${agent.id}`}
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/app/${agent.id}`; }}
                         className="flex items-center gap-1.5 border border-white/15 text-white/50 px-3 py-1.5 rounded-full text-xs font-medium hover:bg-white hover:text-black transition-all duration-300"
                       >
                         <ExternalLink size={12} />
                         Launch
                       </button>
-                    </Link>
                   </div>
                 </Link>
               );

@@ -71,9 +71,9 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 - `client/src/components/BevProLogo.tsx` — Animated SVG waveform logo (BevProLogo + BevProBrand components)
 - `client/src/pages/Home.tsx` — Landing page with interactive demo simulator + BevPro logo pulse
 - `client/src/pages/Login.tsx` — Auth login page (+ conditional Google OAuth button)
-- `client/src/pages/Register.tsx` — Auth registration page (+ conditional Google OAuth button)
+- `client/src/pages/Register.tsx` — Cinematic split registration page with venue background image, left-aligned form, golden (#C9A96E) accent
 - `client/src/pages/Dashboard.tsx` — Agent list with CRUD
-- `client/src/pages/AgentBuilder.tsx` — No-code agent configuration (4 tabs: General, Voice, Integrations, Test), wake word config in General tab, dark theme
+- `client/src/pages/AgentBuilder.tsx` — Guided step-by-step agent configuration with left sidebar (Identity → Voice & Behavior → Connections → Test & Launch), progressive disclosure, narrative flow
 - `client/src/pages/AppStore.tsx` — iOS App Store-style agent marketplace
 - `client/src/pages/AgentApp.tsx` — Full-screen voice interface; voice-pos type shows split-screen POS UI with live order display
 - `client/src/pages/VenueData.tsx` — Venue data management (6 tabs: Menu, Inventory, Staff, Bookings, Guests, Suppliers)
@@ -134,9 +134,11 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 
 ## Design
 - Font: Inter (Google Fonts)
+- Accent color: #C9A96E (golden champagne)
 - Landing: Black background, champagne video, x.ai-inspired minimalism
-- Dashboard: Light (#f5f5f7), Apple-esque, sidebar navigation (Agents, Venue Data, App Store)
-- Agent Builder: Dark theme (bg-black, glassmorphic cards, pill tabs) — matches Pricing page
+- Register: Cinematic split layout — full-bleed venue background (register-bg.png), left-aligned form, underline inputs, golden CTA
+- Dashboard: Dark (bg-black), sidebar nav (Agents, Venue Data, App Store)
+- Agent Builder: Guided step flow with left sidebar nav (01 Identity → 02 Voice & Behavior → 03 Connections → 04 Test & Launch). Progressive disclosure, no cards — uses section dividers, underline inputs, toggle switches. Not a dashboard.
 - Pricing: Dark theme (bg-black, white text, glassmorphic tier cards)
 - Mobile app: Full black, iOS-native feel, safe area insets
 - Query keys: All agent queries use `["agents"]` key; venue data uses `["venue", "menu"]` etc.

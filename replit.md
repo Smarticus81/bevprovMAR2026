@@ -72,7 +72,7 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 - `client/src/pages/Home.tsx` — Landing page with interactive demo simulator + BevPro logo pulse
 - `client/src/pages/Login.tsx` — Auth login page (+ conditional Google OAuth button)
 - `client/src/pages/Register.tsx` — Cinematic split registration page with venue background image, left-aligned form, golden (#C9A96E) accent
-- `client/src/pages/Dashboard.tsx` — Agent list with CRUD
+- `client/src/pages/Dashboard.tsx` — Agent list as status rows (not card grid), summary stats, golden accent CTA
 - `client/src/pages/AgentBuilder.tsx` — Guided step-by-step agent configuration with left sidebar (Identity → Voice & Behavior → Connections → Test & Launch), progressive disclosure, narrative flow
 - `client/src/pages/AppStore.tsx` — iOS App Store-style agent marketplace
 - `client/src/pages/AgentApp.tsx` — Full-screen voice interface; voice-pos type shows split-screen POS UI with live order display

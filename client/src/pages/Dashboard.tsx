@@ -1,30 +1,28 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";
-import { Link } from "wouter";
-import { Plus, Mic, Store, Box, Briefcase, Sparkles, Trash2, Bot, ExternalLink } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { Plus, Mic, Store, Box, Briefcase, Sparkles, Trash2, ExternalLink, ArrowRight, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const AGENT_TYPE_META: Record<string, { label: string; icon: any; color: string }> = {
-  "bevone": { label: "BevOne", icon: Sparkles, color: "text-purple-400" },
-  "voice-pos": { label: "Agentic Voice POS", icon: Mic, color: "text-blue-400" },
-  "pos-integration": { label: "POS Integration", icon: Store, color: "text-green-400" },
-  "inventory": { label: "Inventory Manager", icon: Box, color: "text-amber-400" },
-  "venue-admin": { label: "Venue Agent", icon: Briefcase, color: "text-rose-400" },
-};
-
-const STATUS_BADGE: Record<string, string> = {
-  draft: "border-white/10 text-white/40",
-  active: "border-green-500/30 text-green-400",
-  paused: "border-yellow-500/30 text-yellow-400",
+const AGENT_TYPE_META: Record<string, { label: string; icon: any; shortLabel: string }> = {
+  "bevone": { label: "BevOne — All-in-One", icon: Sparkles, shortLabel: "BevOne" },
+  "voice-pos": { label: "Agentic Voice POS", icon: Mic, shortLabel: "Voice POS" },
+  "pos-integration": { label: "POS Integration", icon: Store, shortLabel: "POS" },
+  "inventory": { label: "Inventory Manager", icon: Box, shortLabel: "Inventory" },
+  "venue-admin": { label: "Venue Agent", icon: Briefcase, shortLabel: "Venue" },
 };
 
 export default function Dashboard() {
   const queryClient = useQueryClient();
+  const { organization } = useAuth();
   const [showCreate, setShowCreate] = useState(false);
   const [newAgentName, setNewAgentName] = useState("");
   const [newAgentType, setNewAgentType] = useState("bevone");
+
+  const [, navigate] = useLocation();
 
   const { data: agents = [], isLoading } = useQuery({
     queryKey: ["agents"],
@@ -57,23 +55,55 @@ export default function Dashboard() {
     },
   });
 
+  const activeCount = agents.filter((a: any) => a.status === "active").length;
+  const draftCount = agents.filter((a: any) => a.status === "draft").length;
+
   return (
     <DashboardLayout>
-      <div className="p-6 lg:p-10 max-w-6xl">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-semibold text-white">Voice Agents</h1>
-            <p className="text-sm text-white/30 mt-1">Create and manage your venue's voice assistants.</p>
-          </div>
-          <button
-            data-testid="button-create-agent"
-            onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 border border-white/20 text-white px-4 py-2.5 rounded-full text-sm font-medium hover:bg-white hover:text-black transition-all duration-300"
-          >
-            <Plus size={16} />
-            New Agent
-          </button>
+      <div className="max-w-3xl mx-auto px-6 py-10 lg:py-16">
+        <div className="mb-12">
+          <p className="text-[10px] uppercase tracking-[0.25em] text-[#C9A96E]/50 font-medium mb-3">
+            {organization?.name || "Your Venue"}
+          </p>
+          <h1 className="text-3xl font-light text-white tracking-tight mb-2" data-testid="text-dashboard-title">
+            Voice Agents
+          </h1>
+          <p className="text-sm text-white/30 max-w-md">
+            Build and manage voice assistants for your venue. Each agent handles a specific part of your operations.
+          </p>
         </div>
+
+        {!isLoading && agents.length > 0 && (
+          <div className="flex items-center gap-6 mb-10 pb-8 border-b border-white/[0.04]">
+            <div>
+              <p className="text-2xl font-light text-white">{agents.length}</p>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/20 mt-1">Total</p>
+            </div>
+            <div className="w-px h-8 bg-white/[0.06]" />
+            <div>
+              <p className="text-2xl font-light text-emerald-400">{activeCount}</p>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/20 mt-1">Active</p>
+            </div>
+            {draftCount > 0 && (
+              <>
+                <div className="w-px h-8 bg-white/[0.06]" />
+                <div>
+                  <p className="text-2xl font-light text-white/40">{draftCount}</p>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-white/20 mt-1">Drafts</p>
+                </div>
+              </>
+            )}
+            <div className="flex-1" />
+            <button
+              data-testid="button-create-agent"
+              onClick={() => setShowCreate(true)}
+              className="flex items-center gap-2 bg-[#C9A96E] text-black px-4 py-2 text-sm font-semibold hover:bg-[#D4B87A] transition-all duration-300"
+            >
+              <Plus size={14} />
+              New Agent
+            </button>
+          </div>
+        )}
 
         <AnimatePresence>
           {showCreate && (
@@ -81,51 +111,57 @@ export default function Dashboard() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
               onClick={() => setShowCreate(false)}
             >
               <motion.div
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-black rounded-2xl p-6 w-full max-w-lg shadow-xl border border-white/10"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 12 }}
+                className="bg-[#0A0A0A] w-full max-w-lg border border-white/[0.08]"
                 onClick={(e) => e.stopPropagation()}
               >
-                <h2 className="text-lg font-semibold text-white mb-4">Create Voice Agent</h2>
+                <div className="p-6 border-b border-white/[0.06]">
+                  <h2 className="text-lg font-light text-white">Create Voice Agent</h2>
+                  <p className="text-xs text-white/25 mt-1">Choose a type and give your agent a name to get started.</p>
+                </div>
 
-                <div className="space-y-4">
+                <div className="p-6 space-y-6">
                   <div>
-                    <label className="text-sm font-medium text-white/40 block mb-1.5">Agent Name</label>
+                    <label className="text-[11px] uppercase tracking-[0.15em] text-white/25 font-medium block mb-3">Agent Name</label>
                     <input
                       data-testid="input-agent-name"
                       type="text"
                       value={newAgentName}
                       onChange={(e) => setNewAgentName(e.target.value)}
                       placeholder="e.g., Front Bar POS"
-                      className="w-full bg-transparent border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-white/30 transition-colors"
+                      className="w-full bg-transparent border-0 border-b border-white/10 px-0 py-3 text-[15px] text-white placeholder:text-white/15 focus:outline-none focus:border-[#C9A96E]/40 transition-colors"
+                      autoFocus
                     />
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-white/40 block mb-2">Agent Type</label>
-                    <div className="grid grid-cols-1 gap-2">
+                    <label className="text-[11px] uppercase tracking-[0.15em] text-white/25 font-medium block mb-3">Agent Type</label>
+                    <div className="space-y-0.5">
                       {Object.entries(AGENT_TYPE_META).map(([type, meta]) => {
                         const Icon = meta.icon;
+                        const selected = newAgentType === type;
                         return (
                           <button
                             key={type}
                             data-testid={`button-type-${type}`}
                             onClick={() => setNewAgentType(type)}
-                            className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-300 text-left ${
-                              newAgentType === type
-                                ? "border-white/30 bg-white/[0.04]"
-                                : "border-white/5 hover:border-white/15 bg-transparent"
+                            className={`w-full flex items-center gap-3 px-3 py-3 text-left transition-all duration-200 relative ${
+                              selected
+                                ? "bg-white/[0.04] text-white"
+                                : "text-white/30 hover:text-white/50 hover:bg-white/[0.02]"
                             }`}
                           >
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center border border-white/10 ${meta.color}`}>
-                              <Icon size={18} />
-                            </div>
-                            <span className="text-sm font-medium text-white/80">{meta.label}</span>
+                            {selected && (
+                              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-[#C9A96E]" />
+                            )}
+                            <Icon size={16} className={selected ? "text-[#C9A96E]" : "text-white/15"} />
+                            <span className="text-sm font-medium">{meta.label}</span>
                           </button>
                         );
                       })}
@@ -133,10 +169,11 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-3 mt-6">
+                <div className="flex items-center justify-between p-6 border-t border-white/[0.06]">
                   <button
                     onClick={() => setShowCreate(false)}
-                    className="px-4 py-2 text-sm text-white/40 hover:text-white transition-colors"
+                    className="text-sm text-white/25 hover:text-white/50 transition-colors"
+                    data-testid="button-cancel-create"
                   >
                     Cancel
                   </button>
@@ -144,9 +181,10 @@ export default function Dashboard() {
                     data-testid="button-confirm-create"
                     onClick={() => createMutation.mutate({ name: newAgentName, type: newAgentType })}
                     disabled={!newAgentName.trim() || createMutation.isPending}
-                    className="border border-white/20 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-white hover:text-black disabled:opacity-50 transition-all duration-300"
+                    className="flex items-center gap-2 bg-[#C9A96E] text-black px-5 py-2 text-sm font-semibold hover:bg-[#D4B87A] disabled:opacity-40 transition-all duration-300"
                   >
                     {createMutation.isPending ? "Creating..." : "Create Agent"}
+                    <ArrowRight size={14} />
                   </button>
                 </div>
               </motion.div>
@@ -155,67 +193,103 @@ export default function Dashboard() {
         </AnimatePresence>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="space-y-0">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white/[0.02] rounded-2xl p-6 animate-pulse h-48 border border-white/5" />
+              <div key={i} className="py-6 border-b border-white/[0.04] animate-pulse">
+                <div className="h-4 w-40 bg-white/[0.04] mb-2" />
+                <div className="h-3 w-24 bg-white/[0.02]" />
+              </div>
             ))}
           </div>
         ) : agents.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="w-16 h-16 border border-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Bot size={32} className="text-white/20" />
+          <div className="py-20">
+            <div className="max-w-sm">
+              <h2 className="text-xl font-light text-white mb-2">No agents yet</h2>
+              <p className="text-sm text-white/25 mb-8 leading-relaxed">
+                Create your first voice agent to start automating your venue operations — from taking orders to managing inventory.
+              </p>
+              <button
+                data-testid="button-create-first-agent"
+                onClick={() => setShowCreate(true)}
+                className="flex items-center gap-2 bg-[#C9A96E] text-black px-5 py-2.5 text-sm font-semibold hover:bg-[#D4B87A] transition-all duration-300"
+              >
+                <Plus size={14} />
+                Create Your First Agent
+              </button>
             </div>
-            <h3 className="text-lg font-medium text-white mb-1">No agents yet</h3>
-            <p className="text-sm text-white/30 mb-6">Create your first voice agent to get started.</p>
-            <button
-              data-testid="button-create-first-agent"
-              onClick={() => setShowCreate(true)}
-              className="border border-white/20 text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-white hover:text-black transition-all duration-300"
-            >
-              Create Your First Agent
-            </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {agents.map((agent: any) => {
+          <div>
+            {agents.map((agent: any, index: number) => {
               const meta = AGENT_TYPE_META[agent.type] || AGENT_TYPE_META.bevone;
               const Icon = meta.icon;
+              const isActive = agent.status === "active";
               return (
-                <Link key={agent.id} href={`/dashboard/agents/${agent.id}`}>
+                <motion.div
+                  key={agent.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                >
                   <div
                     data-testid={`card-agent-${agent.id}`}
-                    className="bg-white/[0.02] rounded-2xl p-6 hover:bg-white/[0.04] transition-all duration-300 cursor-pointer group border border-white/10 hover:border-white/20"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => navigate(`/dashboard/agents/${agent.id}`)}
+                    onKeyDown={(e) => { if (e.key === "Enter") navigate(`/dashboard/agents/${agent.id}`); }}
+                    className="flex items-center gap-4 py-5 border-b border-white/[0.04] hover:bg-white/[0.015] transition-all duration-200 -mx-3 px-3 cursor-pointer group"
                   >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center border border-white/10 ${meta.color}`}>
-                        <Icon size={22} />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium border ${STATUS_BADGE[agent.status] || STATUS_BADGE.draft}`}>
-                          {agent.status}
-                        </span>
-                        <button
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteMutation.mutate(agent.id); }}
-                          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-white/5 text-white/20 hover:text-red-400 transition-all"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <span className={`${isActive ? "text-[#C9A96E]" : "text-white/15"} transition-colors`}>
+                        <Icon size={18} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-[15px] font-medium text-white/80 truncate group-hover:text-white transition-colors">
+                            {agent.name}
+                          </h3>
+                          <span className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.15em] font-medium ${
+                            isActive ? "text-emerald-400/70" : "text-white/20"
+                          }`}>
+                            <span className={`w-1 h-1 rounded-full ${isActive ? "bg-emerald-400" : "bg-white/20"}`} />
+                            {agent.status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-white/20 mt-0.5">{meta.shortLabel}</p>
                       </div>
                     </div>
-                    <h3 className="font-semibold text-white/90 mb-1">{agent.name}</h3>
-                    <p className="text-xs text-white/30 mb-3">{meta.label}</p>
-                    <button
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
                         data-testid={`button-launch-${agent.id}`}
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/app/${agent.id}`; }}
-                        className="flex items-center gap-1.5 border border-white/15 text-white/50 px-3 py-1.5 rounded-full text-xs font-medium hover:bg-white hover:text-black transition-all duration-300"
+                        onClick={(e) => { e.stopPropagation(); window.location.href = `/app/${agent.id}`; }}
+                        className="text-[11px] uppercase tracking-[0.1em] text-white/20 hover:text-[#C9A96E] px-2 py-1 transition-colors"
                       >
-                        <ExternalLink size={12} />
                         Launch
                       </button>
+                      <button
+                        data-testid={`button-delete-${agent.id}`}
+                        aria-label={`Delete ${agent.name}`}
+                        onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(agent.id); }}
+                        className="opacity-0 group-hover:opacity-100 p-1.5 text-white/15 hover:text-red-400/70 transition-all"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                      <ChevronRight size={14} className="text-white/10 group-hover:text-white/25 transition-colors" />
+                    </div>
                   </div>
-                </Link>
+                </motion.div>
               );
             })}
+
+            <button
+              data-testid="button-create-agent-bottom"
+              onClick={() => setShowCreate(true)}
+              className="flex items-center gap-2 text-white/20 hover:text-white/40 text-sm py-5 transition-colors"
+            >
+              <Plus size={14} />
+              Add another agent
+            </button>
           </div>
         )}
       </div>

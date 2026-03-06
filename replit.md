@@ -117,6 +117,7 @@ BevPro is a multi-tenant, no-code voice agent builder platform for event and wed
 - `POST /api/voice/session` — Create WebRTC session (ephemeral token via OPENAI_API_KEY)
 - `POST /api/voice/tool-call` — Execute tool call (with orgId)
 - `POST /api/voice/chat` — Chat completions with tool calling (via Replit AI integration)
+- `POST /api/voice/transcribe` — Whisper transcription for wake word detection (multipart, field: "audio", max 2MB)
 
 ### MCP (Model Context Protocol)
 - `GET /api/mcp/:agentId` — Discovery endpoint (server info, tool list)

@@ -3,8 +3,11 @@ import { requireAuth } from "./auth";
 import { storage } from "./storage";
 import { openai } from "./replit_integrations/audio/client";
 import { executeToolCall, getOpenAIToolDefinitions, buildSystemPrompt, autoEnableToolsForAgent } from "./tools";
+import multer from "multer";
+import OpenAI from "openai";
 
 const voice = Router();
+const whisperUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } });
 
 function getRealtimeApiKey(): string | null {
   const key = process.env.OPENAI_API_KEY;
@@ -163,6 +166,33 @@ voice.post("/api/voice/chat", requireAuth, async (req, res) => {
   } catch (error: any) {
     console.error("Chat error:", error);
     res.status(500).json({ error: "Chat failed: " + error.message });
+  }
+});
+
+voice.post("/api/voice/transcribe", requireAuth, whisperUpload.single("audio"), async (req, res) => {
+  try {
+    const file = req.file;
+    if (!file) return res.status(400).json({ error: "No audio file provided" });
+
+    const apiKey = getRealtimeApiKey();
+    if (!apiKey) {
+      return res.status(503).json({ error: "OpenAI API key not configured" });
+    }
+
+    const directOpenAI = new OpenAI({ apiKey });
+    const { toFile } = await import("openai/uploads");
+    const audioFile = await toFile(file.buffer, "audio.webm", { type: file.mimetype || "audio/webm" });
+
+    const transcription = await directOpenAI.audio.transcriptions.create({
+      file: audioFile,
+      model: "whisper-1",
+      language: "en",
+    });
+
+    return res.json({ text: transcription.text || "" });
+  } catch (error: any) {
+    console.error("Transcribe error:", error.message);
+    return res.status(500).json({ error: "Transcription failed" });
   }
 });
 

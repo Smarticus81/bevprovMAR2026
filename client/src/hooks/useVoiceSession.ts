@@ -83,8 +83,12 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const startTimeRef = useRef<number>(0);
   const greetingRef = useRef<string | null>(null);
-  const speechRecRef = useRef<any>(null);
   const wakeWordConfigRef = useRef<WakeWordConfig | undefined>(wakeWordConfig);
+  const wakeWordActiveRef = useRef<boolean>(false);
+  const wakeMediaStreamRef = useRef<MediaStream | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const recordingLoopRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const recordingInFlightRef = useRef<boolean>(false);
 
   useEffect(() => {
     wakeWordConfigRef.current = wakeWordConfig;
@@ -94,15 +98,20 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
     setState((s) => ({ ...s, transcript: [...s.transcript, entry] }));
   }, []);
 
-  const stopSpeechRecognition = useCallback(() => {
-    if (speechRecRef.current) {
-      try {
-        speechRecRef.current.onresult = null;
-        speechRecRef.current.onerror = null;
-        speechRecRef.current.onend = null;
-        speechRecRef.current.abort();
-      } catch (_e) {}
-      speechRecRef.current = null;
+  const stopWakeWordListening = useCallback(() => {
+    wakeWordActiveRef.current = false;
+    recordingInFlightRef.current = false;
+    if (recordingLoopRef.current) {
+      clearTimeout(recordingLoopRef.current);
+      recordingLoopRef.current = null;
+    }
+    if (recorderRef.current) {
+      try { recorderRef.current.stop(); } catch (_e) {}
+      recorderRef.current = null;
+    }
+    if (wakeMediaStreamRef.current) {
+      wakeMediaStreamRef.current.getTracks().forEach(t => t.stop());
+      wakeMediaStreamRef.current = null;
     }
   }, []);
 
@@ -128,7 +137,7 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
   const connect = useCallback(async () => {
     if (!agentId) return;
 
-    stopSpeechRecognition();
+    stopWakeWordListening();
     setState((s) => ({ ...s, status: "connecting", error: null, transcript: [], returningToStandby: false }));
 
     try {
@@ -213,7 +222,7 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
                 for (const shutdownPhrase of cfg.shutdownPhrases) {
                   if (phraseMatchesWithLevenshtein(text, shutdownPhrase, cfg.levenshteinThreshold)) {
                     disconnectVoice();
-                    stopSpeechRecognition();
+                    stopWakeWordListening();
                     setState({
                       status: "idle",
                       isListening: false,
@@ -337,10 +346,10 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
         error: error.message || "Connection failed",
       }));
     }
-  }, [agentId, addTranscript, stopSpeechRecognition, disconnectVoice]);
+  }, [agentId, addTranscript, stopWakeWordListening, disconnectVoice]);
 
   const startWakeWordListeningInternal = useCallback(() => {
-    stopSpeechRecognition();
+    stopWakeWordListening();
     setState((s) => ({
       ...s,
       status: "wake-listening",
@@ -352,77 +361,130 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
       returningToStandby: false,
     }));
 
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      setState((s) => ({ ...s, status: "error", error: "Speech recognition not supported in this browser" }));
-      return;
-    }
+    wakeWordActiveRef.current = true;
 
-    const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = "en-US";
-    speechRecRef.current = recognition;
+    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+      if (!wakeWordActiveRef.current) {
+        stream.getTracks().forEach(t => t.stop());
+        return;
+      }
+      wakeMediaStreamRef.current = stream;
 
-    recognition.onresult = (event: any) => {
-      const cfg = wakeWordConfigRef.current;
-      if (!cfg) return;
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (phraseMatchesWithLevenshtein(transcript, cfg.phrase, cfg.levenshteinThreshold)) {
-          stopSpeechRecognition();
-          connect();
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/webm")
+        ? "audio/webm"
+        : null;
+
+      if (!mimeType) {
+        setState((s) => ({
+          ...s,
+          status: "error",
+          error: "Your browser does not support audio recording for wake word detection. Please use Chrome or Safari.",
+        }));
+        return;
+      }
+
+      const recordAndCheck = () => {
+        if (!wakeWordActiveRef.current || !wakeMediaStreamRef.current) return;
+        if (recordingInFlightRef.current) return;
+        recordingInFlightRef.current = true;
+
+        let recorder: MediaRecorder;
+        try {
+          recorder = new MediaRecorder(wakeMediaStreamRef.current, { mimeType });
+        } catch {
+          recordingInFlightRef.current = false;
+          setState((s) => ({
+            ...s,
+            status: "error",
+            error: "Failed to start audio recorder. Please try a different browser.",
+          }));
           return;
         }
-      }
-    };
+        recorderRef.current = recorder;
+        const chunks: BlobPart[] = [];
 
-    let fatalError = false;
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) chunks.push(e.data);
+        };
 
-    recognition.onerror = (event: any) => {
-      if (event.error === "aborted" || event.error === "no-speech") return;
-      console.error("Speech recognition error:", event.error);
-      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
-        fatalError = true;
-        stopSpeechRecognition();
-        setState((s) => ({
-          ...s,
-          status: "error",
-          error: "Microphone access denied. Please allow microphone permissions and ensure you're using a supported browser (Chrome or Safari).",
-        }));
-      } else if (event.error === "network") {
-        fatalError = true;
-        stopSpeechRecognition();
-        setState((s) => ({
-          ...s,
-          status: "error",
-          error: "Speech recognition requires an internet connection.",
-        }));
-      }
-    };
+        recorder.onstop = async () => {
+          recorderRef.current = null;
 
-    recognition.onend = () => {
-      if (fatalError) return;
-      if (speechRecRef.current === recognition) {
-        try {
-          recognition.start();
-        } catch (_e) {}
-      }
-    };
+          if (!wakeWordActiveRef.current) {
+            recordingInFlightRef.current = false;
+            return;
+          }
 
-    try {
-      recognition.start();
-    } catch (e: any) {
-      setState((s) => ({ ...s, status: "error", error: "Failed to start speech recognition. Try using Chrome or Safari." }));
-    }
-  }, [connect, stopSpeechRecognition]);
+          if (chunks.length === 0 || new Blob(chunks).size < 1000) {
+            recordingInFlightRef.current = false;
+            if (wakeWordActiveRef.current) {
+              recordingLoopRef.current = setTimeout(recordAndCheck, 200);
+            }
+            return;
+          }
+
+          const blob = new Blob(chunks, { type: mimeType });
+
+          try {
+            const formData = new FormData();
+            formData.append("audio", blob, "wake.webm");
+            const res = await fetch("/api/voice/transcribe", {
+              method: "POST",
+              credentials: "include",
+              body: formData,
+            });
+
+            if (!wakeWordActiveRef.current) {
+              recordingInFlightRef.current = false;
+              return;
+            }
+
+            if (res.ok) {
+              const { text } = await res.json();
+              const cfg = wakeWordConfigRef.current;
+              if (cfg && text && phraseMatchesWithLevenshtein(text, cfg.phrase, cfg.levenshteinThreshold)) {
+                recordingInFlightRef.current = false;
+                stopWakeWordListening();
+                connect();
+                return;
+              }
+            }
+          } catch (err) {
+            console.error("Wake word transcription error:", err);
+          }
+
+          recordingInFlightRef.current = false;
+          if (wakeWordActiveRef.current) {
+            recordingLoopRef.current = setTimeout(recordAndCheck, 200);
+          }
+        };
+
+        recorder.start();
+        setTimeout(() => {
+          if (recorder.state === "recording") {
+            try { recorder.stop(); } catch (_e) {}
+          }
+        }, 2500);
+      };
+
+      recordAndCheck();
+    }).catch((err) => {
+      setState((s) => ({
+        ...s,
+        status: "error",
+        error: "Microphone access required. Please allow microphone permissions.",
+      }));
+    });
+  }, [connect, stopWakeWordListening]);
 
   const startWakeWordListening = useCallback(() => {
     startWakeWordListeningInternal();
   }, [startWakeWordListeningInternal]);
 
   const disconnect = useCallback(() => {
-    stopSpeechRecognition();
+    stopWakeWordListening();
     disconnectVoice();
     setState({
       status: "idle",
@@ -433,7 +495,7 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
       error: null,
       returningToStandby: false,
     });
-  }, [stopSpeechRecognition, disconnectVoice]);
+  }, [stopWakeWordListening, disconnectVoice]);
 
   const toggleMute = useCallback(() => {
     if (mediaStreamRef.current) {

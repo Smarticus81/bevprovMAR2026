@@ -9,10 +9,17 @@ import OpenAI from "openai";
 const voice = Router();
 const whisperUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } });
 
+const VALID_REALTIME_VOICES = ["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse", "marin", "cedar"] as const;
+
 function getRealtimeApiKey(): string | null {
   const key = process.env.OPENAI_API_KEY;
   if (!key || key === "_DUMMY_API_KEY_" || key.includes("DUMMY")) return null;
   return key;
+}
+
+function sanitizeVoice(voice: string | undefined): string {
+  if (voice && (VALID_REALTIME_VOICES as readonly string[]).includes(voice)) return voice;
+  return "alloy";
 }
 
 voice.post("/api/voice/session", requireAuth, async (req, res) => {
@@ -53,12 +60,17 @@ voice.post("/api/voice/session", requireAuth, async (req, res) => {
       },
       body: JSON.stringify({
         model: "gpt-4o-mini-realtime-preview",
-        voice: config.voice || "alloy",
+        voice: sanitizeVoice(config.voice),
         instructions: systemPrompt,
         tools: toolDefs,
         max_response_output_tokens: 4096,
         input_audio_transcription: { model: "whisper-1" },
-        turn_detection: { type: "server_vad", threshold: 0.5, silence_duration_ms: 500, prefix_padding_ms: 300 },
+        turn_detection: {
+          type: "server_vad",
+          threshold: config.vadSensitivity ?? 0.5,
+          silence_duration_ms: 500,
+          prefix_padding_ms: 300,
+        },
       }),
     });
 
@@ -77,7 +89,7 @@ voice.post("/api/voice/session", requireAuth, async (req, res) => {
     return res.json({
       token: session.client_secret?.value,
       sessionId: session.id,
-      voice: config.voice || "alloy",
+      voice: sanitizeVoice(config.voice),
       tools: toolDefs.map((t: any) => t.name),
       agentName: agent.name,
       agentType: agent.type,
@@ -141,9 +153,10 @@ voice.post("/api/voice/chat", requireAuth, async (req, res) => {
       chatMessages.push(assistantMessage as any);
 
       for (const tc of assistantMessage.tool_calls) {
-        const args = JSON.parse(tc.function.arguments);
-        const result = await executeToolCall(tc.function.name, args, user.organizationId);
-        toolCalls.push({ name: tc.function.name, args, result });
+        const fn = (tc as any).function;
+        const args = JSON.parse(fn.arguments);
+        const result = await executeToolCall(fn.name, args, user.organizationId);
+        toolCalls.push({ name: fn.name, args, result });
 
         chatMessages.push({
           role: "tool" as const,
@@ -182,7 +195,9 @@ voice.post("/api/voice/transcribe", requireAuth, whisperUpload.single("audio"), 
 
     const directOpenAI = new OpenAI({ apiKey });
     const { toFile } = await import("openai/uploads");
-    const audioFile = await toFile(file.buffer, "audio.webm", { type: file.mimetype || "audio/webm" });
+    const ext = file.originalname?.split(".").pop() || "webm";
+    const mimeType = file.mimetype || "audio/webm";
+    const audioFile = await toFile(file.buffer, `audio.${ext}`, { type: mimeType });
 
     const transcription = await directOpenAI.audio.transcriptions.create({
       file: audioFile,

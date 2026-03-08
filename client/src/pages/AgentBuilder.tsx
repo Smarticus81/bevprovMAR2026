@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getAuthHeaders } from "@/lib/queryClient";
 import { getToolsForAgentType } from "@/lib/agentTools";
 import type { Agent, AgentConfig, ExternalDbConfig, RagConfig, RagDocument } from "@shared/schema";
 import { AGENT_TYPE_LABELS } from "@shared/schema";
@@ -15,7 +15,7 @@ import {
   ChevronDown, ChevronRight, Circle, Zap, ExternalLink
 } from "lucide-react";
 
-const VOICES = ["alloy", "echo", "fable", "onyx", "nova", "shimmer"] as const;
+const VOICES = ["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse", "marin", "cedar"] as const;
 const LANGUAGES = [
   { value: "en", label: "English" },
   { value: "es", label: "Spanish" },
@@ -115,7 +115,7 @@ export default function AgentBuilder() {
   const { data: agent, isLoading } = useQuery<Agent>({
     queryKey: ["agents", id],
     queryFn: async () => {
-      const res = await fetch(`/api/agents/${id}`, { credentials: "include" });
+      const res = await fetch(`/api/agents/${id}`, { credentials: "include", headers: getAuthHeaders() });
       if (!res.ok) throw new Error("Agent not found");
       return res.json();
     },
@@ -125,7 +125,7 @@ export default function AgentBuilder() {
   const { data: documents = [], isLoading: documentsLoading } = useQuery<RagDocument[]>({
     queryKey: ["agents", id, "documents"],
     queryFn: async () => {
-      const res = await fetch(`/api/agents/${id}/documents`, { credentials: "include" });
+      const res = await fetch(`/api/agents/${id}/documents`, { credentials: "include", headers: getAuthHeaders() });
       if (!res.ok) throw new Error("Failed to fetch documents");
       return res.json();
     },
@@ -140,6 +140,7 @@ export default function AgentBuilder() {
         method: "POST",
         body: formData,
         credentials: "include",
+        headers: getAuthHeaders(),
       });
       if (!res.ok) {
         const text = await res.text();
@@ -381,6 +382,13 @@ export default function AgentBuilder() {
               <span className="text-base font-semibold text-ink truncate max-w-[160px]">{name || "Untitled"}</span>
             </div>
             <div className="flex items-center gap-2">
+              <button
+                data-testid="switch-activate-mobile"
+                onClick={() => setIsActive(!isActive)}
+                className="shrink-0"
+              >
+                <StatusPill active={isActive} />
+              </button>
               <Link href={`/app/${id}`} className="flex items-center gap-1.5 border border-line text-ink-muted px-3 py-2 text-sm font-medium" data-testid="button-launch-agent-mobile">
                 <ExternalLink size={13} />
                 Launch
@@ -661,9 +669,9 @@ export default function AgentBuilder() {
                               data-testid="slider-levenshtein-threshold"
                               type="range"
                               min={1}
-                              max={5}
+                              max={3}
                               step={1}
-                              value={levenshteinThreshold}
+                              value={Math.min(levenshteinThreshold, 3)}
                               onChange={(e) => setLevenshteinThreshold(Number(e.target.value))}
                               className="w-full accent-accent"
                             />
@@ -881,14 +889,31 @@ export default function AgentBuilder() {
                   </div>
 
                   <div className="space-y-6">
-                    <div className="flex items-center gap-3 p-4 bg-surface-1 border border-line-subtle">
-                      <div className={`w-2 h-2 rounded-full ${isActive ? "bg-emerald-400" : "bg-amber-400"}`} />
-                      <span className="text-sm text-ink-muted">
-                        {isActive
-                          ? "Your agent is active and ready to test."
-                          : "Your agent is in draft mode. Set it to active to enable voice sessions."
-                        }
-                      </span>
+                    <div className="flex items-center justify-between gap-3 p-4 bg-surface-1 border border-line-subtle">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-2 h-2 rounded-full ${isActive ? "bg-emerald-400" : "bg-amber-400"}`} />
+                        <span className="text-sm text-ink-muted">
+                          {isActive
+                            ? "Your agent is active and ready to test."
+                            : "Your agent is in draft mode. Activate it to enable voice sessions."
+                          }
+                        </span>
+                      </div>
+                      <button
+                        data-testid="button-activate-test-step"
+                        onClick={() => {
+                          setIsActive(!isActive);
+                          // Auto-save when toggling status from the test step
+                          setTimeout(() => saveMutation.mutate(), 100);
+                        }}
+                        className={`shrink-0 px-4 py-2 text-sm font-semibold rounded transition-all duration-300 ${
+                          isActive
+                            ? "bg-emerald-500/15 text-emerald-400 hover:bg-red-500/15 hover:text-red-400"
+                            : "bg-accent text-black hover:bg-accent-hover"
+                        }`}
+                      >
+                        {isActive ? "Deactivate" : "Activate"}
+                      </button>
                     </div>
                     <VoiceTestPanel agentId={parseInt(id!)} agentName={name} />
                   </div>

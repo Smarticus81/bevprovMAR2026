@@ -1,10 +1,10 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getAuthHeaders } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Plus, Mic, Store, Box, Briefcase, Sparkles, Trash2, ExternalLink, ArrowRight, ChevronRight } from "lucide-react";
+import { Plus, Mic, Store, Box, Briefcase, Sparkles, Trash2, ExternalLink, ArrowRight, ChevronRight, Power } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const AGENT_TYPE_META: Record<string, { label: string; icon: any; shortLabel: string }> = {
@@ -27,7 +27,7 @@ export default function Dashboard() {
   const { data: agents = [], isLoading } = useQuery({
     queryKey: ["agents"],
     queryFn: async () => {
-      const res = await fetch("/api/agents", { credentials: "include" });
+      const res = await fetch("/api/agents", { credentials: "include", headers: getAuthHeaders() });
       if (!res.ok) throw new Error("Failed to load agents");
       return res.json();
     },
@@ -49,6 +49,16 @@ export default function Dashboard() {
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
       await apiRequest("DELETE", `/api/agents/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["agents"] });
+    },
+  });
+
+  const toggleStatusMutation = useMutation({
+    mutationFn: async ({ id, currentStatus }: { id: number; currentStatus: string }) => {
+      const newStatus = currentStatus === "active" ? "draft" : "active";
+      await apiRequest("PATCH", `/api/agents/${id}`, { status: newStatus });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["agents"] });
@@ -270,6 +280,19 @@ export default function Dashboard() {
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0 self-center">
+                        <button
+                          data-testid={`button-toggle-status-${agent.id}`}
+                          aria-label={isActive ? `Deactivate ${agent.name}` : `Activate ${agent.name}`}
+                          onClick={(e) => { e.stopPropagation(); toggleStatusMutation.mutate({ id: agent.id, currentStatus: agent.status }); }}
+                          className={`flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.05em] px-3 py-2 rounded transition-colors ${
+                            isActive
+                              ? "text-emerald-400/80 hover:text-red-400 bg-emerald-400/10 hover:bg-red-400/10"
+                              : "text-ink-faint hover:text-emerald-400 bg-surface-2 hover:bg-emerald-400/10"
+                          }`}
+                        >
+                          <Power size={13} />
+                          <span className="hidden sm:inline">{isActive ? "Active" : "Activate"}</span>
+                        </button>
                         <button
                           data-testid={`button-launch-${agent.id}`}
                           onClick={(e) => { e.stopPropagation(); window.location.href = `/app/${agent.id}`; }}

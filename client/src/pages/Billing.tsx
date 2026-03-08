@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getAuthHeaders } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { Check, CreditCard, ExternalLink, Loader2, ArrowUpRight, Shield, Zap, Crown, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
@@ -49,7 +49,7 @@ export default function Billing() {
   const { data: subscription, isLoading: subLoading } = useQuery({
     queryKey: ["billing", "subscription"],
     queryFn: async () => {
-      const r = await fetch("/api/billing/subscription", { credentials: "include" });
+      const r = await fetch("/api/billing/subscription", { credentials: "include", headers: getAuthHeaders() });
       return r.json();
     },
   });
@@ -57,7 +57,7 @@ export default function Billing() {
   const { data: limits } = useQuery({
     queryKey: ["billing", "limits"],
     queryFn: async () => {
-      const r = await fetch("/api/billing/limits", { credentials: "include" });
+      const r = await fetch("/api/billing/limits", { credentials: "include", headers: getAuthHeaders() });
       return r.json();
     },
   });

@@ -199,6 +199,14 @@ export const suppliers = pgTable("suppliers", {
   organizationId: integer("organization_id").references(() => organizations.id).notNull(),
 });
 
+// Mobile app session tokens (for iOS/Android x-session-id auth)
+export const mobileSessions = pgTable("mobile_sessions", {
+  id: text("id").primaryKey(), // crypto.randomBytes(32).toString("hex")
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export interface OrderItem {
   name: string;
   quantity: number;
@@ -320,3 +328,5 @@ export type InsertRagDocument = z.infer<typeof insertRagDocumentSchema>;
 export type RagDocument = typeof ragDocuments.$inferSelect;
 export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
 export type Supplier = typeof suppliers.$inferSelect;
+
+export type MobileSession = typeof mobileSessions.$inferSelect;

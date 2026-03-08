@@ -6,7 +6,7 @@
 :root {
   --page-bg: #FAF8F5;
   --page-deep: #F2EDE6;
-  --card-bg: #FFFFFF;
+  --card-bg: rgba(255, 255, 255, 0.70);
   --ink: #2C2418;
   --ink-secondary: #5C5043;
   --ink-muted: #8A7E72;
@@ -30,8 +30,8 @@
   --agent-bubble-border: rgba(0,0,0,0.08);
   --selection-bg: rgba(176,140,62,0.20);
   --selection-text: #2C2418;
-  --input-bg: #FFFFFF;
-  --input-border: rgba(0,0,0,0.12);
+  --input-bg: rgba(255, 255, 255, 0.55);
+  --input-border: rgba(0,0,0,0.08);
   --input-focus: rgba(176,140,62,0.40);
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
   --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
@@ -146,7 +146,19 @@
   .glass-input {
     background: var(--input-bg);
     border: 1px solid var(--input-border);
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  :root:not(.dark) .glass-input {
+    background: rgba(255, 255, 255, 0.55);
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  }
+
+  :root:not(.dark) .glass-input:focus-within {
+    background: rgba(255, 255, 255, 0.62);
+    border-color: var(--input-focus);
   }
 
   .glass-input:focus-within {

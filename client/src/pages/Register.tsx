@@ -76,8 +76,8 @@ export default function Register() {
       <div className="absolute inset-0 bg-gradient-to-r from-page/90 via-page/70 to-page/40" />
       <div className="absolute inset-0 bg-gradient-to-t from-page/80 via-transparent to-page/60" />
 
-      <div className="relative z-10 min-h-screen flex">
-        <div className="w-full lg:w-[520px] xl:w-[560px] flex flex-col justify-center px-8 sm:px-12 lg:px-16 py-12">
+      <div className="relative z-10 min-h-screen flex items-center justify-center">
+        <div className="w-full max-w-[560px] flex flex-col justify-center px-8 sm:px-12 py-12">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -246,7 +246,7 @@ export default function Register() {
           </motion.div>
         </div>
 
-        <div className="hidden lg:flex flex-1 items-end justify-end p-12">
+        <div className="hidden lg:block absolute bottom-12 right-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -256,10 +256,10 @@ export default function Register() {
             <div className="bg-card/80 backdrop-blur-md border border-line rounded-xl p-6">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-                <span className="text-[11px] uppercase tracking-[0.2em] text-accent/80 font-medium">Live at Venue</span>
+                <span className="text-[11px] uppercase tracking-[0.2em] text-accent/80 font-medium">BevPro AI</span>
               </div>
               <p className="text-ink-secondary text-sm leading-relaxed">
-                Voice-powered ordering, inventory tracking, and venue management — all through a single earbud.
+                Real-time voice agents for ordering, inventory, and venue operations — fully automated.
               </p>
             </div>
           </motion.div>

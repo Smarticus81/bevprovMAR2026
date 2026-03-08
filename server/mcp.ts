@@ -33,7 +33,7 @@ function jsonRpcResult(id: string | number | null, result: unknown): JsonRpcResp
 mcpRouter.post("/api/mcp/:agentId", requireAuth, async (req: Request, res: Response) => {
   try {
     const user = req.user as any;
-    const agentId = parseInt(req.params.agentId as string);
+    const agentId = parseInt((Array.isArray(req.params.agentId) ? req.params.agentId[0] : req.params.agentId) as string);
 
     if (isNaN(agentId)) {
       return res.status(400).json(jsonRpcError(null, -32600, "Invalid agentId"));
@@ -137,7 +137,7 @@ mcpRouter.post("/api/mcp/:agentId", requireAuth, async (req: Request, res: Respo
 
 mcpRouter.get("/api/mcp/:agentId", requireAuth, async (req: Request, res: Response) => {
   const user = req.user as any;
-  const agentId = parseInt(req.params.agentId as string);
+  const agentId = parseInt((Array.isArray(req.params.agentId) ? req.params.agentId[0] : req.params.agentId) as string);
 
   if (isNaN(agentId)) {
     return res.status(400).json({ error: "Invalid agentId" });

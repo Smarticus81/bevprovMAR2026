@@ -8,9 +8,18 @@ import { mcpRouter } from "./mcp";
 import { autoEnableToolsForAgent } from "./tools";
 import { z } from "zod";
 import multer from "multer";
+import path from "path";
+import fs from "fs";
+import pg from "pg";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
+
+/** Safely extract a single string param from Express 5 req.params (which may be string | string[]). */
+function param(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) return value[0] || "";
+  return value || "";
+}
 
 const PLAN_LIMITS: Record<string, { agents: number; venues: number }> = {
   starter: { agents: 2, venues: 1 },
@@ -84,7 +93,7 @@ export async function registerRoutes(
 
   app.get("/api/agents/:id", requireAuth, async (req, res) => {
     const user = req.user as any;
-    const agent = await storage.getAgentById(parseInt(req.params.id), user.organizationId);
+    const agent = await storage.getAgentById(parseInt(param(req.params.id)), user.organizationId);
     if (!agent) return res.status(404).json({ error: "Agent not found" });
     return res.json(agent);
   });
@@ -97,7 +106,7 @@ export async function registerRoutes(
       if (req.body[key] !== undefined) updates[key] = req.body[key];
     }
     const agent = await storage.updateAgent(
-      parseInt(req.params.id),
+      parseInt(param(req.params.id)),
       user.organizationId,
       updates
     );
@@ -107,14 +116,14 @@ export async function registerRoutes(
 
   app.delete("/api/agents/:id", requireAuth, async (req, res) => {
     const user = req.user as any;
-    const deleted = await storage.deleteAgent(parseInt(req.params.id), user.organizationId);
+    const deleted = await storage.deleteAgent(parseInt(param(req.params.id)), user.organizationId);
     if (!deleted) return res.status(404).json({ error: "Agent not found" });
     return res.status(204).send();
   });
 
   app.get("/api/agents/:id/tools", requireAuth, async (req, res) => {
     const user = req.user as any;
-    const agent = await storage.getAgentById(parseInt(req.params.id), user.organizationId);
+    const agent = await storage.getAgentById(parseInt(param(req.params.id)), user.organizationId);
     if (!agent) return res.status(404).json({ error: "Agent not found" });
     const tools = await storage.getToolsByAgent(agent.id);
     return res.json(tools);
@@ -122,7 +131,7 @@ export async function registerRoutes(
 
   app.put("/api/agents/:id/tools", requireAuth, async (req, res) => {
     const user = req.user as any;
-    const agent = await storage.getAgentById(parseInt(req.params.id), user.organizationId);
+    const agent = await storage.getAgentById(parseInt(param(req.params.id)), user.organizationId);
     if (!agent) return res.status(404).json({ error: "Agent not found" });
     const tools = await storage.setAgentTools(agent.id, req.body.tools || []);
     return res.json(tools);
@@ -181,14 +190,14 @@ export async function registerRoutes(
 
   app.patch("/api/venue/menu/:id", requireAuth, async (req, res) => {
     const user = req.user as any;
-    const item = await storage.updateMenuItem(parseInt(req.params.id), user.organizationId, req.body);
+    const item = await storage.updateMenuItem(parseInt(param(req.params.id)), user.organizationId, req.body);
     if (!item) return res.status(404).json({ error: "Item not found" });
     return res.json(item);
   });
 
   app.delete("/api/venue/menu/:id", requireAuth, async (req, res) => {
     const user = req.user as any;
-    const deleted = await storage.deleteMenuItem(parseInt(req.params.id), user.organizationId);
+    const deleted = await storage.deleteMenuItem(parseInt(param(req.params.id)), user.organizationId);
     if (!deleted) return res.status(404).json({ error: "Item not found" });
     return res.status(204).send();
   });
@@ -218,14 +227,14 @@ export async function registerRoutes(
 
   app.patch("/api/venue/inventory/:id", requireAuth, async (req, res) => {
     const user = req.user as any;
-    const item = await storage.updateInventoryItem(parseInt(req.params.id), user.organizationId, req.body);
+    const item = await storage.updateInventoryItem(parseInt(param(req.params.id)), user.organizationId, req.body);
     if (!item) return res.status(404).json({ error: "Item not found" });
     return res.json(item);
   });
 
   app.delete("/api/venue/inventory/:id", requireAuth, async (req, res) => {
     const user = req.user as any;
-    const deleted = await storage.deleteInventoryItem(parseInt(req.params.id), user.organizationId);
+    const deleted = await storage.deleteInventoryItem(parseInt(param(req.params.id)), user.organizationId);
     if (!deleted) return res.status(404).json({ error: "Item not found" });
     return res.status(204).send();
   });
@@ -253,14 +262,14 @@ export async function registerRoutes(
 
   app.patch("/api/venue/staff/:id", requireAuth, async (req, res) => {
     const user = req.user as any;
-    const member = await storage.updateStaffMember(parseInt(req.params.id), user.organizationId, req.body);
+    const member = await storage.updateStaffMember(parseInt(param(req.params.id)), user.organizationId, req.body);
     if (!member) return res.status(404).json({ error: "Staff member not found" });
     return res.json(member);
   });
 
   app.delete("/api/venue/staff/:id", requireAuth, async (req, res) => {
     const user = req.user as any;
-    const deleted = await storage.deleteStaffMember(parseInt(req.params.id), user.organizationId);
+    const deleted = await storage.deleteStaffMember(parseInt(param(req.params.id)), user.organizationId);
     if (!deleted) return res.status(404).json({ error: "Staff member not found" });
     return res.status(204).send();
   });
@@ -292,14 +301,14 @@ export async function registerRoutes(
 
   app.patch("/api/venue/bookings/:id", requireAuth, async (req, res) => {
     const user = req.user as any;
-    const booking = await storage.updateBooking(parseInt(req.params.id), user.organizationId, req.body);
+    const booking = await storage.updateBooking(parseInt(param(req.params.id)), user.organizationId, req.body);
     if (!booking) return res.status(404).json({ error: "Booking not found" });
     return res.json(booking);
   });
 
   app.delete("/api/venue/bookings/:id", requireAuth, async (req, res) => {
     const user = req.user as any;
-    const deleted = await storage.deleteBooking(parseInt(req.params.id), user.organizationId);
+    const deleted = await storage.deleteBooking(parseInt(param(req.params.id)), user.organizationId);
     if (!deleted) return res.status(404).json({ error: "Booking not found" });
     return res.status(204).send();
   });
@@ -328,14 +337,14 @@ export async function registerRoutes(
 
   app.patch("/api/venue/guests/:id", requireAuth, async (req, res) => {
     const user = req.user as any;
-    const guest = await storage.updateGuest(parseInt(req.params.id), user.organizationId, req.body);
+    const guest = await storage.updateGuest(parseInt(param(req.params.id)), user.organizationId, req.body);
     if (!guest) return res.status(404).json({ error: "Guest not found" });
     return res.json(guest);
   });
 
   app.delete("/api/venue/guests/:id", requireAuth, async (req, res) => {
     const user = req.user as any;
-    const deleted = await storage.deleteGuest(parseInt(req.params.id), user.organizationId);
+    const deleted = await storage.deleteGuest(parseInt(param(req.params.id)), user.organizationId);
     if (!deleted) return res.status(404).json({ error: "Guest not found" });
     return res.status(204).send();
   });
@@ -364,14 +373,14 @@ export async function registerRoutes(
 
   app.patch("/api/venue/suppliers/:id", requireAuth, async (req, res) => {
     const user = req.user as any;
-    const supplier = await storage.updateSupplier(parseInt(req.params.id), user.organizationId, req.body);
+    const supplier = await storage.updateSupplier(parseInt(param(req.params.id)), user.organizationId, req.body);
     if (!supplier) return res.status(404).json({ error: "Supplier not found" });
     return res.json(supplier);
   });
 
   app.delete("/api/venue/suppliers/:id", requireAuth, async (req, res) => {
     const user = req.user as any;
-    const deleted = await storage.deleteSupplier(parseInt(req.params.id), user.organizationId);
+    const deleted = await storage.deleteSupplier(parseInt(param(req.params.id)), user.organizationId);
     if (!deleted) return res.status(404).json({ error: "Supplier not found" });
     return res.status(204).send();
   });
@@ -400,14 +409,14 @@ export async function registerRoutes(
 
   app.patch("/api/venue/tasks/:id", requireAuth, async (req, res) => {
     const user = req.user as any;
-    const task = await storage.updateTask(parseInt(req.params.id), user.organizationId, req.body);
+    const task = await storage.updateTask(parseInt(param(req.params.id)), user.organizationId, req.body);
     if (!task) return res.status(404).json({ error: "Task not found" });
     return res.json(task);
   });
 
   app.delete("/api/venue/tasks/:id", requireAuth, async (req, res) => {
     const user = req.user as any;
-    const deleted = await storage.deleteTask(parseInt(req.params.id), user.organizationId);
+    const deleted = await storage.deleteTask(parseInt(param(req.params.id)), user.organizationId);
     if (!deleted) return res.status(404).json({ error: "Task not found" });
     return res.status(204).send();
   });
@@ -431,7 +440,7 @@ export async function registerRoutes(
 
   app.get("/api/agents/:id/documents", requireAuth, async (req, res) => {
     const user = req.user as any;
-    const agentId = parseInt(req.params.id);
+    const agentId = parseInt(param(req.params.id));
     const agent = await storage.getAgentById(agentId, user.organizationId);
     if (!agent) return res.status(404).json({ error: "Agent not found" });
     const docs = await storage.getRagDocuments(agentId, user.organizationId);
@@ -440,7 +449,7 @@ export async function registerRoutes(
 
   app.post("/api/agents/:id/documents", requireAuth, upload.single("file"), async (req, res) => {
     const user = req.user as any;
-    const agentId = parseInt(req.params.id);
+    const agentId = parseInt(param(req.params.id));
     const agent = await storage.getAgentById(agentId, user.organizationId);
     if (!agent) return res.status(404).json({ error: "Agent not found" });
 
@@ -465,8 +474,8 @@ export async function registerRoutes(
 
   app.delete("/api/agents/:id/documents/:docId", requireAuth, async (req, res) => {
     const user = req.user as any;
-    const agentId = parseInt(req.params.id);
-    const docId = parseInt(req.params.docId);
+    const agentId = parseInt(param(req.params.id));
+    const docId = parseInt(param(req.params.docId));
     const agent = await storage.getAgentById(agentId, user.organizationId);
     if (!agent) return res.status(404).json({ error: "Agent not found" });
     const deleted = await storage.deleteRagDocument(docId, user.organizationId);
@@ -476,7 +485,7 @@ export async function registerRoutes(
 
   app.get("/api/agents/:id/documents/search", requireAuth, async (req, res) => {
     const user = req.user as any;
-    const agentId = parseInt(req.params.id);
+    const agentId = parseInt(param(req.params.id));
     const query = (req.query.q as string) || "";
     if (!query) return res.status(400).json({ error: "Query parameter 'q' is required" });
     const results = await storage.searchRagDocuments(agentId, user.organizationId, query);
@@ -597,7 +606,7 @@ export async function registerRoutes(
         await storage.updateOrganization(org.id, { stripeCustomerId: customerId });
       }
 
-      const domain = process.env.REPLIT_DOMAINS?.split(",")[0];
+      const domain = process.env.RAILWAY_PUBLIC_DOMAIN || process.env.REPLIT_DOMAINS?.split(",")[0];
       const baseUrl = domain ? `https://${domain}` : "http://localhost:5000";
 
       const session = await stripe.checkout.sessions.create({
@@ -626,7 +635,7 @@ export async function registerRoutes(
 
     try {
       const stripe = await getUncachableStripeClient();
-      const domain = process.env.REPLIT_DOMAINS?.split(",")[0];
+      const domain = process.env.RAILWAY_PUBLIC_DOMAIN || process.env.REPLIT_DOMAINS?.split(",")[0];
       const baseUrl = domain ? `https://${domain}` : "http://localhost:5000";
 
       const session = await stripe.billingPortal.sessions.create({
@@ -684,6 +693,129 @@ export async function registerRoutes(
     } catch (err: any) {
       console.error("Sync subscription error:", err.message);
       return res.status(500).json({ error: "Failed to sync subscription" });
+    }
+  });
+
+  // ========== FILE UPLOAD (for iOS app) ==========
+  const uploadsDir = path.resolve(process.cwd(), "uploads");
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+  const fileUpload = multer({
+    dest: uploadsDir,
+    limits: { fileSize: 10 * 1024 * 1024 },
+  });
+
+  app.post("/api/files/upload", fileUpload.single("file"), (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file provided" });
+    }
+    const fileInfo = {
+      id: req.file.filename,
+      name: req.file.originalname,
+      size: req.file.size,
+      mimeType: req.file.mimetype,
+      path: `/api/files/${req.file.filename}`,
+      uploadedAt: new Date().toISOString(),
+    };
+    return res.json(fileInfo);
+  });
+
+  app.get("/api/files/:id", (req, res) => {
+    const filePath = path.resolve(uploadsDir, param(req.params.id));
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: "File not found" });
+    }
+    return res.sendFile(filePath);
+  });
+
+  // ========== DATABASE ENDPOINTS ==========
+  app.post("/api/db/connect", requireAuth, async (req, res) => {
+    const { connectionString, name } = req.body;
+    const dbUrl = connectionString || process.env.DATABASE_URL;
+    if (!dbUrl) {
+      return res.status(400).json({ error: "No connection string provided and DATABASE_URL not set" });
+    }
+
+    let client: pg.Client | null = null;
+    try {
+      client = new pg.Client({ connectionString: dbUrl, connectionTimeoutMillis: 5000 });
+      await client.connect();
+      const tablesResult = await client.query(
+        `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name`
+      );
+      const dbName = dbUrl.split("/").pop()?.split("?")[0] || "database";
+      let host = "localhost";
+      try { host = new URL(dbUrl).hostname; } catch {}
+      await client.end();
+      return res.json({
+        status: "connected",
+        name: name || dbName,
+        host,
+        database: dbName,
+        tables: tablesResult.rows.map((r: any) => r.table_name),
+        tableCount: tablesResult.rows.length,
+      });
+    } catch (err: any) {
+      if (client) { try { await client.end(); } catch {} }
+      return res.status(500).json({ status: "error", error: err.message || "Failed to connect" });
+    }
+  });
+
+  app.post("/api/db/query", requireAuth, async (req, res) => {
+    const { connectionString, query } = req.body;
+    if (!query) {
+      return res.status(400).json({ error: "No query provided" });
+    }
+    const upperQuery = query.trim().toUpperCase();
+    if (!upperQuery.startsWith("SELECT") && !upperQuery.startsWith("WITH") && !upperQuery.startsWith("EXPLAIN")) {
+      return res.status(400).json({ error: "Only SELECT queries are allowed" });
+    }
+    const dbUrl = connectionString || process.env.DATABASE_URL;
+    if (!dbUrl) {
+      return res.status(400).json({ error: "No connection string provided" });
+    }
+
+    let client: pg.Client | null = null;
+    try {
+      client = new pg.Client({ connectionString: dbUrl, connectionTimeoutMillis: 5000 });
+      await client.connect();
+      await client.query("SET statement_timeout = '5000'");
+      const result = await client.query(query);
+      await client.end();
+      return res.json({
+        rows: result.rows.slice(0, 100),
+        rowCount: result.rowCount,
+        fields: result.fields.map((f: any) => f.name),
+      });
+    } catch (err: any) {
+      if (client) { try { await client.end(); } catch {} }
+      return res.status(500).json({ error: err.message || "Query failed" });
+    }
+  });
+
+  app.get("/api/db/tables", requireAuth, async (_req, res) => {
+    const dbUrl = process.env.DATABASE_URL;
+    if (!dbUrl) {
+      return res.status(400).json({ error: "DATABASE_URL not set" });
+    }
+
+    let client: pg.Client | null = null;
+    try {
+      client = new pg.Client({ connectionString: dbUrl, connectionTimeoutMillis: 5000 });
+      await client.connect();
+      const tablesResult = await client.query(`
+        SELECT t.table_name,
+               (SELECT count(*) FROM information_schema.columns c WHERE c.table_name = t.table_name AND c.table_schema = 'public') as column_count
+        FROM information_schema.tables t
+        WHERE t.table_schema = 'public'
+        ORDER BY t.table_name
+      `);
+      await client.end();
+      return res.json({ tables: tablesResult.rows });
+    } catch (err: any) {
+      if (client) { try { await client.end(); } catch {} }
+      return res.status(500).json({ error: err.message || "Failed to fetch tables" });
     }
   });
 

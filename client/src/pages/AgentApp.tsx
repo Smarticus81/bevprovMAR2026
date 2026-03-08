@@ -2,6 +2,7 @@ import { useParams } from "wouter";
 import { useVoiceSession, type TranscriptEntry, type WakeWordConfig } from "@/hooks/useVoiceSession";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
+import { getAuthHeaders } from "@/lib/queryClient";
 import { ArrowLeft, Mic, MicOff, PhoneOff, Wrench, ShoppingCart, DollarSign, CreditCard, User, Hash, Receipt, Volume2, Upload, FileText, Loader2, X, Wifi, WifiOff, Clock } from "lucide-react";
 import { BevProLogo } from "@/components/BevProLogo";
 import { motion, AnimatePresence } from "framer-motion";
@@ -158,7 +159,7 @@ const AGENT_TYPE_LABELS: Record<string, string> = {
   "pos-integration": "POS Integration",
   "voice-pos": "Voice POS",
   "inventory": "Inventory Manager",
-  "venue": "Venue Agent",
+  "venue-admin": "Venue Agent",
   "bevone": "BevOne",
 };
 
@@ -522,6 +523,7 @@ function FileUploadButton({ agentId }: { agentId: number }) {
       const res = await fetch(`/api/agents/${agentId}/documents`, {
         method: "POST",
         credentials: "include",
+        headers: getAuthHeaders(),
         body: formData,
       });
       if (!res.ok) {
@@ -671,7 +673,9 @@ function VoiceControls({ voice, wakeWordConfig }: { voice: ReturnType<typeof use
             <div className="w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-full bg-surface-3 border border-line flex items-center justify-center">
               <Loader2 size={28} className="text-accent/60 animate-spin" />
             </div>
-            <p className="text-ink-faint text-sm">Connecting...</p>
+            <p className="text-ink-faint text-sm">
+              {voice.transcript.length > 0 ? "Reconnecting..." : "Connecting..."}
+            </p>
           </div>
         ) : (
           <div className="flex items-center gap-5 sm:gap-6">
@@ -728,7 +732,10 @@ export default function AgentApp() {
   const { data: agent } = useQuery({
     queryKey: ["agent-app", agentId],
     queryFn: async () => {
-      const res = await fetch(`/api/agents/${agentId}`, { credentials: "include" });
+      const res = await fetch(`/api/agents/${agentId}`, {
+        credentials: "include",
+        headers: getAuthHeaders(),
+      });
       if (!res.ok) return null;
       return res.json();
     },
@@ -736,13 +743,17 @@ export default function AgentApp() {
   });
 
   const agentConfig = agent?.config as AgentConfig | null;
-  const wakeWordConfig: WakeWordConfig | undefined = agentConfig?.wakeWord?.enabled ? {
-    enabled: true,
-    phrase: agentConfig.wakeWord.phrase || "hey bev",
-    endPhrases: agentConfig.wakeWord.endPhrases || [],
-    shutdownPhrases: agentConfig.wakeWord.shutdownPhrases || [],
-    levenshteinThreshold: agentConfig.wakeWord.levenshteinThreshold ?? 2,
-  } : undefined;
+  const wakeWordConfig: WakeWordConfig | undefined = useMemo(() => {
+    if (!agentConfig?.wakeWord?.enabled) return undefined;
+    const wk = agentConfig.wakeWord;
+    return {
+      enabled: true,
+      phrase: wk.phrase || "hey bev",
+      endPhrases: wk.endPhrases?.length ? wk.endPhrases : ["goodbye", "we are done", "that's all"],
+      shutdownPhrases: wk.shutdownPhrases?.length ? wk.shutdownPhrases : ["stop listening", "shut down"],
+      levenshteinThreshold: wk.levenshteinThreshold ?? 2,
+    };
+  }, [agentConfig?.wakeWord]);
 
   const voice = useVoiceSession(id, wakeWordConfig);
 

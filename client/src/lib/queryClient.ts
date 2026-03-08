@@ -1,5 +1,31 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+const SESSION_STORAGE_KEY = "bevpro-session-id";
+
+/** Store a mobile session token (used by Capacitor iOS/Android apps) */
+export function setSessionToken(token: string | null) {
+  if (token) {
+    localStorage.setItem(SESSION_STORAGE_KEY, token);
+  } else {
+    localStorage.removeItem(SESSION_STORAGE_KEY);
+  }
+}
+
+/** Retrieve the stored mobile session token */
+export function getSessionToken(): string | null {
+  return localStorage.getItem(SESSION_STORAGE_KEY);
+}
+
+/** Build headers that include x-session-id when available (for Capacitor mobile auth) */
+export function getAuthHeaders(extra?: Record<string, string>): Record<string, string> {
+  const headers: Record<string, string> = { ...extra };
+  const token = getSessionToken();
+  if (token) {
+    headers["x-session-id"] = token;
+  }
+  return headers;
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -12,9 +38,11 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  const headers = getAuthHeaders(data ? { "Content-Type": "application/json" } : undefined);
+
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
@@ -31,6 +59,7 @@ export const getQueryFn: <T>(options: {
   async ({ queryKey }) => {
     const res = await fetch(queryKey.join("/") as string, {
       credentials: "include",
+      headers: getAuthHeaders(),
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

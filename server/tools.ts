@@ -17,28 +17,34 @@ interface ToolCatalogEntry {
   agentTypes: string[];
 }
 
+// All agent types get ALL tools — no artificial limits
+const ALL_TYPES = ["pos-integration", "voice-pos", "inventory", "venue-admin", "bevone"];
+
 const TOOL_CATALOG: ToolCatalogEntry[] = [
-  { name: "square_pos_sync", category: "POS", agentTypes: ["pos-integration", "voice-pos", "bevone"] },
-  { name: "toast_pos_sync", category: "POS", agentTypes: ["pos-integration", "voice-pos", "bevone"] },
-  { name: "payment_processing", category: "POS", agentTypes: ["pos-integration", "voice-pos", "bevone"] },
-  { name: "receipt_generation", category: "POS", agentTypes: ["pos-integration", "voice-pos", "bevone"] },
-  { name: "tab_management", category: "POS", agentTypes: ["pos-integration", "voice-pos", "bevone"] },
-  { name: "menu_lookup", category: "POS", agentTypes: ["pos-integration", "voice-pos", "bevone"] },
-  { name: "voice_ordering", category: "Voice POS", agentTypes: ["voice-pos", "bevone"] },
-  { name: "split_checks", category: "Voice POS", agentTypes: ["voice-pos", "bevone"] },
-  { name: "customer_lookup", category: "Voice POS", agentTypes: ["voice-pos", "bevone"] },
-  { name: "stock_tracking", category: "Inventory", agentTypes: ["inventory", "bevone"] },
-  { name: "low_stock_alerts", category: "Inventory", agentTypes: ["inventory", "bevone"] },
-  { name: "supplier_management", category: "Inventory", agentTypes: ["inventory", "bevone"] },
-  { name: "waste_tracking", category: "Inventory", agentTypes: ["inventory", "bevone"] },
-  { name: "auto_reorder", category: "Inventory", agentTypes: ["inventory", "bevone"] },
-  { name: "inventory_pos_sync", category: "Inventory", agentTypes: ["inventory", "bevone"] },
-  { name: "calendar_booking", category: "Operations", agentTypes: ["venue-admin", "bevone"] },
-  { name: "staff_scheduling", category: "Operations", agentTypes: ["venue-admin", "bevone"] },
-  { name: "financial_reports", category: "Operations", agentTypes: ["venue-admin", "bevone"] },
-  { name: "guest_management", category: "Operations", agentTypes: ["venue-admin", "bevone"] },
-  { name: "vendor_coordination", category: "Operations", agentTypes: ["venue-admin", "bevone"] },
-  { name: "task_assignments", category: "Operations", agentTypes: ["venue-admin", "bevone"] },
+  { name: "square_pos_sync", category: "POS", agentTypes: ALL_TYPES },
+  { name: "toast_pos_sync", category: "POS", agentTypes: ALL_TYPES },
+  { name: "payment_processing", category: "POS", agentTypes: ALL_TYPES },
+  { name: "receipt_generation", category: "POS", agentTypes: ALL_TYPES },
+  { name: "tab_management", category: "POS", agentTypes: ALL_TYPES },
+  { name: "menu_lookup", category: "POS", agentTypes: ALL_TYPES },
+  { name: "voice_ordering", category: "Voice POS", agentTypes: ALL_TYPES },
+  { name: "split_checks", category: "Voice POS", agentTypes: ALL_TYPES },
+  { name: "customer_lookup", category: "Voice POS", agentTypes: ALL_TYPES },
+  { name: "stock_tracking", category: "Inventory", agentTypes: ALL_TYPES },
+  { name: "low_stock_alerts", category: "Inventory", agentTypes: ALL_TYPES },
+  { name: "supplier_management", category: "Inventory", agentTypes: ALL_TYPES },
+  { name: "waste_tracking", category: "Inventory", agentTypes: ALL_TYPES },
+  { name: "auto_reorder", category: "Inventory", agentTypes: ALL_TYPES },
+  { name: "inventory_pos_sync", category: "Inventory", agentTypes: ALL_TYPES },
+  { name: "calendar_booking", category: "Operations", agentTypes: ALL_TYPES },
+  { name: "staff_scheduling", category: "Operations", agentTypes: ALL_TYPES },
+  { name: "financial_reports", category: "Operations", agentTypes: ALL_TYPES },
+  { name: "guest_management", category: "Operations", agentTypes: ALL_TYPES },
+  { name: "vendor_coordination", category: "Operations", agentTypes: ALL_TYPES },
+  { name: "task_assignments", category: "Operations", agentTypes: ALL_TYPES },
+  { name: "knowledge_base_search", category: "Knowledge", agentTypes: ALL_TYPES },
+  { name: "read_document", category: "Knowledge", agentTypes: ALL_TYPES },
+  { name: "list_documents", category: "Knowledge", agentTypes: ALL_TYPES },
 ];
 
 export function getToolsForAgentType(agentType: string): ToolCatalogEntry[] {
@@ -146,6 +152,14 @@ const TOOL_DEFINITIONS: Record<string, { description: string; parameters: Record
   knowledge_base_search: {
     description: "Search the agent's uploaded knowledge base documents for relevant information. Use this when a user asks about policies, procedures, menus, or venue-specific information that might be in uploaded files.",
     parameters: { type: "object", properties: { query: { type: "string", description: "Search query to find relevant knowledge base content" } }, required: ["query"] },
+  },
+  read_document: {
+    description: "Read the full content of a specific uploaded knowledge base document by its ID or filename. Use this after searching to read a complete document.",
+    parameters: { type: "object", properties: { documentId: { type: "number", description: "Document ID to read" }, filename: { type: "string", description: "Filename to search for and read" } }, required: [] },
+  },
+  list_documents: {
+    description: "List all uploaded knowledge base documents available to this agent. Shows filenames, sizes, and upload dates.",
+    parameters: { type: "object", properties: {}, required: [] },
   },
 };
 
@@ -697,26 +711,104 @@ export async function executeToolCall(toolName: string, args: Record<string, unk
         const query = (args.query as string) || "";
         const agentId = (args._agentId as number) || 0;
         if (!query) return { success: true, result: { message: "No search query provided", results: [] } };
-        let maxResults = 5;
+        let maxResults = 10;
         if (agentId) {
           const agent = await storage.getAgentById(agentId, orgId);
           if (agent) {
             const cfg = (agent.config || {}) as AgentConfig;
-            maxResults = cfg.rag?.maxResults || 5;
+            maxResults = cfg.rag?.maxResults || 10;
           }
         }
+        // Search across content and filenames with word-level matching
         const docs = await storage.searchRagDocuments(agentId, orgId, query, maxResults);
         if (docs.length === 0) {
-          return { success: true, result: { message: "No relevant documents found in the knowledge base.", results: [] } };
+          // Fallback: list all available documents so the agent knows what's there
+          const allDocs = await storage.listAllRagDocuments(orgId, agentId > 0 ? agentId : undefined);
+          if (allDocs.length > 0) {
+            return {
+              success: true,
+              result: {
+                message: `No documents matched "${query}", but ${allDocs.length} document(s) are available: ${allDocs.map(d => d.filename).join(", ")}. Try searching with different keywords or use read_document to read a specific file.`,
+                results: [],
+                availableDocuments: allDocs.map(d => ({ id: d.id, filename: d.filename })),
+              },
+            };
+          }
+          return { success: true, result: { message: "No documents found in the knowledge base. Upload documents first.", results: [] } };
         }
         return {
           success: true,
           result: {
             message: `Found ${docs.length} relevant document(s)`,
             results: docs.map(d => ({
+              id: d.id,
               filename: d.filename,
-              content: d.content.substring(0, 2000),
+              content: d.content.substring(0, 6000),
+              sizeBytes: d.sizeBytes,
             })),
+          },
+        };
+      }
+
+      case "read_document": {
+        const docId = args.documentId as number | undefined;
+        const filename = (args.filename as string) || "";
+        const agentId = (args._agentId as number) || 0;
+
+        if (docId) {
+          const doc = await storage.getDocumentById(docId, orgId);
+          if (!doc) return { success: false, result: { error: `Document #${docId} not found.` } };
+          return {
+            success: true,
+            result: {
+              id: doc.id,
+              filename: doc.filename,
+              contentType: doc.contentType,
+              sizeBytes: doc.sizeBytes,
+              content: doc.content,
+              message: `Document "${doc.filename}" (${doc.sizeBytes} bytes)`,
+            },
+          };
+        }
+
+        if (filename) {
+          const allDocs = await storage.listAllRagDocuments(orgId, agentId > 0 ? agentId : undefined);
+          const match = allDocs.find(d => d.filename.toLowerCase().includes(filename.toLowerCase()));
+          if (!match) return { success: false, result: { error: `No document matching "${filename}" found.`, available: allDocs.map(d => d.filename) } };
+          return {
+            success: true,
+            result: {
+              id: match.id,
+              filename: match.filename,
+              contentType: match.contentType,
+              sizeBytes: match.sizeBytes,
+              content: match.content,
+              message: `Document "${match.filename}" (${match.sizeBytes} bytes)`,
+            },
+          };
+        }
+
+        return { success: false, result: { error: "Provide either documentId or filename to read a document." } };
+      }
+
+      case "list_documents": {
+        const agentId = (args._agentId as number) || 0;
+        const docs = await storage.listAllRagDocuments(orgId, agentId > 0 ? agentId : undefined);
+        if (docs.length === 0) {
+          return { success: true, result: { message: "No documents uploaded yet.", documents: [] } };
+        }
+        return {
+          success: true,
+          result: {
+            documents: docs.map(d => ({
+              id: d.id,
+              filename: d.filename,
+              contentType: d.contentType,
+              sizeBytes: d.sizeBytes,
+              uploadedAt: d.createdAt,
+            })),
+            count: docs.length,
+            message: `${docs.length} document(s) available: ${docs.map(d => `${d.filename} (${d.sizeBytes} bytes)`).join(", ")}`,
           },
         };
       }
@@ -748,21 +840,37 @@ export function getOpenAIToolDefinitions(enabledTools: AgentTool[]): Array<{ typ
 
 export function buildSystemPrompt(agent: Agent): string {
   const config = (agent.config || {}) as AgentConfig;
+
+  // ── Role description per agent type ──
   const typeDescriptions: Record<string, string> = {
-    "pos-integration": "You are a POS integration assistant for a venue. Help with orders, payments, tab management, and POS system operations. You have access to the venue's real menu, inventory, and order data.",
-    "voice-pos": "You are a voice-controlled point of sale system. Take orders, manage tabs, process payments, and look up menu items through natural conversation. All data is real and comes from the venue's actual database.",
-    "inventory": "You are an inventory management assistant. Track real stock levels, manage suppliers, handle reordering, and log waste. All inventory data comes from the venue's actual database.",
-    "venue-admin": "You are a venue administration assistant. Help with bookings, staff scheduling, financial reports, guest management, and event coordination. All data is real and comes from the venue's database.",
-    "bevone": "You are BevOne, the comprehensive all-in-one venue assistant. You handle POS operations, inventory, bookings, staffing, guest management, and everything a venue needs. All data is real — you're working with the venue's actual database.",
+    "pos-integration": "You are a POS integration assistant for a hospitality venue. You help with orders, payments, tab management, and POS operations.",
+    "voice-pos": "You are a voice-controlled point-of-sale assistant. You take orders, manage tabs, process payments, and look up menu items through natural conversation.",
+    "inventory": "You are an inventory management assistant. You track stock levels, manage suppliers, handle reordering, and log waste.",
+    "venue-admin": "You are a venue administration assistant. You help with bookings, staff scheduling, financial reports, guest management, and event coordination.",
+    "bevone": "You are BevOne, the comprehensive all-in-one venue operations assistant. You handle POS, inventory, bookings, staffing, guest management, and all venue operations.",
   };
 
-  let prompt = typeDescriptions[agent.type] || "You are a helpful venue assistant with access to real venue data.";
-  prompt += `\n\nYour name is "${agent.name}".`;
-  prompt += "\nYou work at a real beverage and event venue. All tool results come from the venue's actual database.";
-  prompt += "\nBe concise, friendly, and professional. When using tools, briefly explain what you're doing.";
-  prompt += "\nAlways confirm actions before processing payments, placing orders, or making bookings.";
-  prompt += "\nWhen looking up items, use the exact data returned by the tools — never make up prices or availability.";
+  let prompt = typeDescriptions[agent.type] || "You are a helpful venue assistant.";
+  prompt += `\nYour name is "${agent.name}".`;
 
+  // ── CRITICAL: Anti-hallucination rules ──
+  prompt += `
+
+=== STRICT DATA RULES ===
+1. NEVER invent, fabricate, or guess data. Every piece of information you share (menu items, prices, inventory levels, bookings, staff, guests, orders, suppliers) MUST come from a tool call result.
+2. If the user asks about something and you have NOT yet called the relevant tool, call the tool FIRST, then answer based on the result.
+3. If a tool returns no results or an error, say so honestly: "I don't have that information right now" or "No matching items were found." NEVER fill in with made-up data.
+4. Do NOT assume menu items, prices, stock levels, staff names, booking dates, or any venue-specific information exist unless a tool has confirmed them in this conversation.
+5. When you present numbers (prices, quantities, totals, counts), use ONLY the exact values returned by the tools. Do not round, estimate, or approximate.
+6. If the user asks for something outside your tool capabilities, clearly explain what you can and cannot do.
+
+=== RESPONSE GUIDELINES ===
+- Be concise, friendly, and professional. Keep voice responses short — 1-3 sentences when possible.
+- When using a tool, briefly say what you're doing ("Let me check the menu..." / "Looking up that booking...").
+- Always confirm destructive or financial actions before executing: payments, placing orders, creating bookings, closing tabs.
+- If you're unsure about the user's request, ask a clarifying question rather than guessing.`;
+
+  // ── Language ──
   if (config.language && config.language !== "en") {
     const languageNames: Record<string, string> = {
       es: "Spanish", fr: "French", de: "German", it: "Italian",
@@ -772,20 +880,23 @@ export function buildSystemPrompt(agent: Agent): string {
     prompt += `\n\nIMPORTANT: Respond in ${langName}. All your spoken and text responses must be in ${langName}.`;
   }
 
+  // ── Speech pacing ──
   if (config.speed && config.speed !== 1) {
     if (config.speed < 1) {
-      prompt += `\n\nSpeak slowly and clearly. Take your time with each response. Use a calm, measured pace.`;
+      prompt += `\n\nSpeak slowly and clearly. Take your time with each response.`;
     } else if (config.speed > 1.3) {
-      prompt += `\n\nSpeak quickly and efficiently. Be brief and to the point. Keep responses short and snappy.`;
+      prompt += `\n\nSpeak quickly and efficiently. Be brief and to the point.`;
     } else if (config.speed > 1) {
-      prompt += `\n\nSpeak at a slightly faster than normal pace. Be concise in your responses.`;
+      prompt += `\n\nSpeak at a slightly faster than normal pace. Be concise.`;
     }
   }
 
+  // ── Conversation length limit ──
   if (config.maxConversationLength) {
-    prompt += `\n\nLimit conversations to approximately ${config.maxConversationLength} exchanges. After reaching this limit, politely wrap up the conversation and suggest the customer reach out again if they need more help.`;
+    prompt += `\n\nLimit conversations to approximately ${config.maxConversationLength} exchanges. After reaching this limit, politely wrap up.`;
   }
 
+  // ── Greeting & fallback ──
   if (config.greeting) {
     prompt += `\n\nGreet users with: "${config.greeting}"`;
   }
@@ -793,12 +904,19 @@ export function buildSystemPrompt(agent: Agent): string {
     prompt += `\n\nIf you can't help with something, say: "${config.fallbackMessage}"`;
   }
 
+  // ── Knowledge base (RAG) ──
   if (config.rag?.enabled) {
-    prompt += `\n\nYou have access to a knowledge base with uploaded documents. When users ask about policies, procedures, venue-specific info, or anything that might be documented, use the knowledge_base_search tool to find relevant information before answering.`;
+    prompt += `\n\nYou have access to a knowledge base with uploaded documents. When users ask about policies, procedures, venue-specific info, or anything that might be documented, use the knowledge_base_search tool FIRST before answering. Do NOT guess at document contents — always search.`;
   }
 
+  // ── Wake word ──
   if (config.wakeWord?.enabled) {
-    prompt += `\n\nThis agent uses wake word activation. The user said "${config.wakeWord.phrase}" to activate you. Be responsive and ready to help immediately.`;
+    prompt += `\n\nThis agent uses wake word activation. The user said "${config.wakeWord.phrase}" to start. Be responsive immediately.`;
+  }
+
+  // ── Custom instructions (appended last so they can override defaults) ──
+  if (config.systemPrompt) {
+    prompt += `\n\n--- Custom Instructions ---\n${config.systemPrompt}`;
   }
 
   return prompt;

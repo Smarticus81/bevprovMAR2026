@@ -30,7 +30,7 @@ async function initStripe() {
 
     const stripeSync = await getStripeSync();
 
-    const domain = process.env.REPLIT_DOMAINS?.split(",")[0];
+    const domain = process.env.RAILWAY_PUBLIC_DOMAIN || process.env.REPLIT_DOMAINS?.split(",")[0];
     if (domain) {
       console.log("Setting up managed webhook...");
       const webhookBaseUrl = `https://${domain}`;
@@ -77,6 +77,45 @@ app.post(
   }
 );
 
+// CORS support for Capacitor iOS/Android app, Expo dev, tunnels, and native mobile
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  // Allow Capacitor origins, Expo, local network, tunnels, and no-origin (native mobile apps)
+  const allowedOrigin =
+    !origin ||
+    origin.startsWith("capacitor://") ||
+    origin.startsWith("ionic://") ||
+    origin.startsWith("http://localhost") ||
+    origin.startsWith("http://127.0.0.1") ||
+    origin.startsWith("http://192.168.") ||
+    origin.startsWith("http://10.") ||
+    origin.startsWith("http://172.") ||
+    origin.endsWith(".loca.lt") ||
+    origin.endsWith(".trycloudflare.com") ||
+    origin.endsWith(".repl.co") ||
+    origin.endsWith(".replit.dev") ||
+    origin.endsWith(".replit.app") ||
+    origin.endsWith(".up.railway.app") ||
+    origin.endsWith(".railway.app");
+
+  if (allowedOrigin) {
+    res.setHeader("Access-Control-Allow-Origin", origin || "*");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+    );
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization, X-Requested-With, x-session-id"
+    );
+  }
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 app.use(
   express.json({
     verify: (req, _res, buf) => {
@@ -86,6 +125,11 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false }));
+
+// Health check endpoint for Railway
+app.get("/api/health", (_req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
 
 setupAuth(app);
 
@@ -155,7 +199,6 @@ app.use((req, res, next) => {
     {
       port,
       host: "0.0.0.0",
-      reusePort: true,
     },
     () => {
       log(`serving on port ${port}`);

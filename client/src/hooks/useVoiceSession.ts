@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { getAuthHeaders } from "@/lib/queryClient";
 
 export interface TranscriptEntry {
   role: "user" | "assistant" | "tool";
@@ -36,6 +37,15 @@ const PREWARM_TTL_MS = 50_000;
 const WAKE_CHUNK_MS = 1500;
 const WAKE_GAP_MS = 50;
 
+// Shared audio constraints for echo cancellation and noise suppression
+const MIC_CONSTRAINTS: MediaStreamConstraints = {
+  audio: {
+    echoCancellation: true,
+    noiseSuppression: true,
+    autoGainControl: true,
+  },
+};
+
 function levenshteinDistance(a: string, b: string): number {
   const an = a.length;
   const bn = b.length;
@@ -59,14 +69,24 @@ function levenshteinDistance(a: string, b: string): number {
   return matrix[an][bn];
 }
 
+/** Strip punctuation so Whisper artefacts like "Bye." don't skew matching */
+function normalizeWord(w: string): string {
+  return w.replace(/[^a-z0-9]/g, "");
+}
+
 function phraseMatchesWithLevenshtein(transcript: string, phrase: string, threshold: number): boolean {
-  const tWords = transcript.toLowerCase().split(/\s+/).filter(Boolean);
-  const pWords = phrase.toLowerCase().split(/\s+/).filter(Boolean);
+  const tWords = transcript.toLowerCase().split(/\s+/).map(normalizeWord).filter(Boolean);
+  const pWords = phrase.toLowerCase().split(/\s+/).map(normalizeWord).filter(Boolean);
   if (pWords.length === 0) return false;
+  // Transcript must have at least as many words as the phrase
+  if (tWords.length < pWords.length) return false;
   for (let i = 0; i <= tWords.length - pWords.length; i++) {
     let allMatch = true;
     for (let j = 0; j < pWords.length; j++) {
-      if (levenshteinDistance(tWords[i + j], pWords[j]) > threshold) {
+      // Cap threshold per-word relative to the target word length to prevent
+      // short words (e.g. "hey") from matching wildly different words at high thresholds.
+      const wordThreshold = Math.min(threshold, Math.max(1, Math.floor(pWords[j].length * 0.4)));
+      if (levenshteinDistance(tWords[i + j], pWords[j]) > wordThreshold) {
         allMatch = false;
         break;
       }
@@ -99,6 +119,21 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
   const recorderRef = useRef<MediaRecorder | null>(null);
   const recordingLoopRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recordingInFlightRef = useRef<boolean>(false);
+  const startedViaWakeWordRef = useRef<boolean>(false);
+  const startWakeWordListeningRef = useRef<(() => void) | null>(null);
+  const intentionalDisconnectRef = useRef<boolean>(false);
+  const disconnectedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const keepAliveRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const autoReconnectCountRef = useRef<number>(0);
+  const lastTranscriptRef = useRef<TranscriptEntry[]>([]);
+  const connectRef = useRef<((reuseStream?: MediaStream) => Promise<void>) | null>(null);
+  const reconnectingRef = useRef<boolean>(false);
+  const greetingPlayingRef = useRef<boolean>(false);
+
+  const MAX_AUTO_RECONNECTS = 3;
+  const DISCONNECTED_GRACE_MS = 5000;
+  const KEEP_ALIVE_MS = 20000;
+  const GREETING_IMMUNITY_MS = 4000;
 
   const prewarmedSessionRef = useRef<PrewarmedSession | null>(null);
   const prewarmIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -116,7 +151,7 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
     try {
       const res = await fetch("/api/voice/session", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders({ "Content-Type": "application/json" }),
         credentials: "include",
         body: JSON.stringify({ agentId }),
       });
@@ -169,7 +204,21 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
     stopPrewarmLoop();
   }, [stopPrewarmLoop]);
 
+  const clearTimers = useCallback(() => {
+    if (disconnectedTimerRef.current) {
+      clearTimeout(disconnectedTimerRef.current);
+      disconnectedTimerRef.current = null;
+    }
+    if (keepAliveRef.current) {
+      clearInterval(keepAliveRef.current);
+      keepAliveRef.current = null;
+    }
+  }, []);
+
   const disconnectVoice = useCallback(() => {
+    intentionalDisconnectRef.current = true;
+    greetingPlayingRef.current = false;
+    clearTimers();
     if (dcRef.current) {
       dcRef.current.close();
       dcRef.current = null;
@@ -182,11 +231,47 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
       mediaStreamRef.current.getTracks().forEach((t) => t.stop());
       mediaStreamRef.current = null;
     }
+    if (audioContextRef.current) {
+      try { audioContextRef.current.close(); } catch (_) {}
+      audioContextRef.current = null;
+    }
     if (audioRef.current) {
       audioRef.current.srcObject = null;
       audioRef.current.src = "";
     }
-  }, []);
+  }, [clearTimers]);
+
+  const handleUnexpectedDrop = useCallback(() => {
+    disconnectVoice();
+    const canRetry = autoReconnectCountRef.current < MAX_AUTO_RECONNECTS && !reconnectingRef.current;
+    if (canRetry && connectRef.current) {
+      autoReconnectCountRef.current += 1;
+      reconnectingRef.current = true;
+      console.info(`Auto-reconnecting (attempt ${autoReconnectCountRef.current}/${MAX_AUTO_RECONNECTS})...`);
+      setState((s) => ({
+        ...s,
+        status: "connecting",
+        isListening: false,
+        isSpeaking: false,
+        error: null,
+      }));
+      // Short delay before reconnect to let network settle
+      setTimeout(() => {
+        reconnectingRef.current = false;
+        connectRef.current?.();
+      }, 800);
+    } else {
+      setState((s) => ({
+        ...s,
+        status: "error",
+        isListening: false,
+        isSpeaking: false,
+        error: "Voice connection lost. Please reconnect.",
+      }));
+    }
+  }, [disconnectVoice]);
+
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   const connectWithSession = useCallback(async (token: string, greeting: string | null, existingStream?: MediaStream) => {
     const pc = new RTCPeerConnection();
@@ -196,10 +281,83 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
       audioRef.current = new Audio();
       audioRef.current.autoplay = true;
     }
+    // iOS: ensure audio plays through loudspeaker, not earpiece
+    const audio = audioRef.current;
+    audio.setAttribute("playsinline", "true");
+    audio.volume = 1.0;
 
     pc.ontrack = (event) => {
-      audioRef.current!.srcObject = event.streams[0];
+      const remoteStream = event.streams[0];
+      audio.srcObject = remoteStream;
+
+      // Route through Web Audio API to force iOS loudspeaker output
+      // iOS routes raw <audio> WebRTC through the earpiece by default;
+      // an AudioContext destination always uses the main speaker.
+      try {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioCtx) {
+          if (audioContextRef.current) {
+            try { audioContextRef.current.close(); } catch (_) {}
+          }
+          const ctx = new AudioCtx();
+          audioContextRef.current = ctx;
+          const source = ctx.createMediaStreamSource(remoteStream);
+          // Gain node at full volume to ensure loud speaker output
+          const gain = ctx.createGain();
+          gain.gain.value = 1.0;
+          source.connect(gain);
+          gain.connect(ctx.destination);
+          // Resume context (required for iOS autoplay policy)
+          if (ctx.state === "suspended") {
+            ctx.resume().catch(() => {});
+          }
+        }
+      } catch (audioCtxErr) {
+        console.warn("AudioContext speaker routing failed, falling back to <audio> element:", audioCtxErr);
+      }
+
       setState((s) => ({ ...s, isSpeaking: true }));
+    };
+
+    // Monitor WebRTC connection state — use grace period for "disconnected" (transient)
+    pc.onconnectionstatechange = () => {
+      if (intentionalDisconnectRef.current) return;
+      const connState = pc.connectionState;
+
+      if (connState === "connected") {
+        // Recovered from a transient disconnect — cancel pending grace timer
+        if (disconnectedTimerRef.current) {
+          clearTimeout(disconnectedTimerRef.current);
+          disconnectedTimerRef.current = null;
+          console.info("WebRTC recovered to connected state");
+        }
+        return;
+      }
+
+      if (connState === "failed") {
+        // Unrecoverable — tear down immediately
+        console.warn("WebRTC connection failed");
+        if (disconnectedTimerRef.current) {
+          clearTimeout(disconnectedTimerRef.current);
+          disconnectedTimerRef.current = null;
+        }
+        handleUnexpectedDrop();
+        return;
+      }
+
+      if (connState === "disconnected") {
+        // Temporary — give ICE a chance to recover before tearing down
+        if (!disconnectedTimerRef.current) {
+          console.warn("WebRTC disconnected — waiting for recovery...");
+          disconnectedTimerRef.current = setTimeout(() => {
+            disconnectedTimerRef.current = null;
+            if (pc.connectionState !== "connected" && !intentionalDisconnectRef.current) {
+              console.warn("WebRTC did not recover within grace period");
+              handleUnexpectedDrop();
+            }
+          }, DISCONNECTED_GRACE_MS);
+        }
+      }
     };
 
     let stream: MediaStream;
@@ -207,7 +365,7 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
       stream = existingStream;
     } else {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream = await navigator.mediaDevices.getUserMedia(MIC_CONSTRAINTS);
       } catch (micErr: any) {
         throw new Error("Microphone access required. Please allow microphone permission and ensure a mic is connected.");
       }
@@ -219,13 +377,37 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
     dcRef.current = dc;
     greetingRef.current = greeting;
 
+    // Detect data channel closing unexpectedly (not from our own disconnectVoice call)
+    dc.onclose = () => {
+      if (intentionalDisconnectRef.current) return;
+      console.warn("Data channel closed unexpectedly");
+      if (pcRef.current === pc) {
+        handleUnexpectedDrop();
+      }
+    };
+
     dc.onmessage = async (event) => {
       const msg = JSON.parse(event.data);
 
       switch (msg.type) {
         case "session.created":
           setState((s) => ({ ...s, status: "connected", isListening: true }));
+          // Start keep-alive pings to prevent session timeout
+          if (keepAliveRef.current) clearInterval(keepAliveRef.current);
+          keepAliveRef.current = setInterval(() => {
+            if (dc.readyState === "open") {
+              try {
+                dc.send(JSON.stringify({ type: "input_audio_buffer.commit" }));
+              } catch {}
+            }
+          }, KEEP_ALIVE_MS);
           if (greetingRef.current && dc.readyState === "open") {
+            // Mute mic during greeting to prevent echo from triggering VAD
+            greetingPlayingRef.current = true;
+            const micTrack = mediaStreamRef.current?.getAudioTracks()[0];
+            if (micTrack) micTrack.enabled = false;
+            setState((s) => ({ ...s, isListening: false }));
+
             dc.send(JSON.stringify({
               type: "response.create",
               response: {
@@ -239,15 +421,19 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
         case "conversation.item.input_audio_transcription.completed":
           if (msg.transcript) {
             addTranscript({ role: "user", text: msg.transcript, timestamp: Date.now() });
+            // Skip end/shutdown phrase checks during greeting immunity window
+            if (greetingPlayingRef.current) break;
+            // Only check end/shutdown phrases if session was started via wake word
             const cfg = wakeWordConfigRef.current;
-            if (cfg?.enabled) {
+            if (cfg?.enabled && startedViaWakeWordRef.current) {
               const text = msg.transcript.toLowerCase();
               for (const endPhrase of cfg.endPhrases) {
                 if (phraseMatchesWithLevenshtein(text, endPhrase, cfg.levenshteinThreshold)) {
                   setState((s) => ({ ...s, returningToStandby: true }));
                   setTimeout(() => {
                     disconnectVoice();
-                    startWakeWordListeningInternal();
+                    // Use ref to call the latest version, avoiding stale closure
+                    startWakeWordListeningRef.current?.();
                   }, 1500);
                   return;
                 }
@@ -278,6 +464,23 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
             addTranscript({ role: "assistant", text: msg.transcript, timestamp: Date.now() });
             setState((s) => ({ ...s, latency: lat, isSpeaking: false }));
           }
+          // Re-enable mic after assistant finishes speaking (greeting or response)
+          if (greetingPlayingRef.current) {
+            greetingPlayingRef.current = false;
+            const micTrack = mediaStreamRef.current?.getAudioTracks()[0];
+            if (micTrack) micTrack.enabled = true;
+            setState((s) => ({ ...s, isListening: true }));
+          }
+          break;
+
+        case "response.done":
+          // Fallback: re-enable mic if greeting flag is still set (e.g. empty response)
+          if (greetingPlayingRef.current) {
+            greetingPlayingRef.current = false;
+            const micTrack = mediaStreamRef.current?.getAudioTracks()[0];
+            if (micTrack) micTrack.enabled = true;
+            setState((s) => ({ ...s, isListening: true }));
+          }
           break;
 
         case "input_audio_buffer.speech_started":
@@ -303,7 +506,7 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
           try {
             const toolRes = await fetch("/api/voice/tool-call", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: getAuthHeaders({ "Content-Type": "application/json" }),
               credentials: "include",
               body: JSON.stringify({ toolName, arguments: toolArgs, agentId }),
             });
@@ -371,7 +574,7 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
       sdp: await sdpRes.text(),
     });
     await pc.setRemoteDescription(answer);
-  }, [agentId, addTranscript, disconnectVoice]);
+  }, [agentId, addTranscript, disconnectVoice, handleUnexpectedDrop]);
 
   const connect = useCallback(async (reuseStream?: MediaStream) => {
     if (!agentId) return;
@@ -379,8 +582,24 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
     const cachedSession = prewarmedSessionRef.current;
     prewarmedSessionRef.current = null;
 
+    // Track whether this session was initiated via wake word (has reuseStream from wake mic)
+    startedViaWakeWordRef.current = !!reuseStream;
+
     stopWakeWordListening();
-    setState((s) => ({ ...s, status: "connecting", error: null, transcript: [], returningToStandby: false }));
+    intentionalDisconnectRef.current = false;
+    greetingPlayingRef.current = false;
+
+    // Only reset reconnect counter on fresh user-initiated connects (not auto-reconnects)
+    if (!reconnectingRef.current) {
+      autoReconnectCountRef.current = 0;
+    }
+
+    // Preserve transcript during auto-reconnect, clear on fresh connect
+    if (reconnectingRef.current) {
+      setState((s) => ({ ...s, status: "connecting", error: null, returningToStandby: false }));
+    } else {
+      setState((s) => ({ ...s, status: "connecting", error: null, transcript: [], returningToStandby: false }));
+    }
 
     try {
       let token: string;
@@ -392,7 +611,7 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
       } else {
         const tokenRes = await fetch("/api/voice/session", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: getAuthHeaders({ "Content-Type": "application/json" }),
           credentials: "include",
           body: JSON.stringify({ agentId }),
         });
@@ -425,6 +644,11 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
     }
   }, [agentId, stopWakeWordListening, connectWithSession]);
 
+  // Keep connectRef in sync so handleUnexpectedDrop can call the latest version
+  useEffect(() => {
+    connectRef.current = connect;
+  }, [connect]);
+
   const startWakeWordListeningInternal = useCallback(() => {
     stopWakeWordListening();
     setState((s) => ({
@@ -442,17 +666,24 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
 
     startPrewarmLoop();
 
-    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+    navigator.mediaDevices.getUserMedia(MIC_CONSTRAINTS).then((stream) => {
       if (!wakeWordActiveRef.current) {
         stream.getTracks().forEach(t => t.stop());
         return;
       }
       wakeMediaStreamRef.current = stream;
 
+      // Detect supported audio MIME type — iOS Safari only supports mp4/aac, not webm
       const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
         ? "audio/webm;codecs=opus"
         : MediaRecorder.isTypeSupported("audio/webm")
         ? "audio/webm"
+        : MediaRecorder.isTypeSupported("audio/mp4")
+        ? "audio/mp4"
+        : MediaRecorder.isTypeSupported("audio/aac")
+        ? "audio/aac"
+        : MediaRecorder.isTypeSupported("audio/mpeg")
+        ? "audio/mpeg"
         : null;
 
       if (!mimeType) {
@@ -464,8 +695,36 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
         return;
       }
 
+      // Determine file extension for the transcription upload based on MIME type
+      const mimeExtMap: Record<string, string> = {
+        "audio/webm;codecs=opus": "webm",
+        "audio/webm": "webm",
+        "audio/mp4": "m4a",
+        "audio/aac": "aac",
+        "audio/mpeg": "mp3",
+      };
+      const wakeFileExt = mimeExtMap[mimeType] || "webm";
+
       const recordAndCheck = () => {
         if (!wakeWordActiveRef.current || !wakeMediaStreamRef.current) return;
+        // Check that the audio track is still alive
+        const tracks = wakeMediaStreamRef.current.getAudioTracks();
+        if (tracks.length === 0 || tracks[0].readyState !== "live") {
+          console.warn("Wake word mic track ended, reacquiring...");
+          wakeMediaStreamRef.current = null;
+          navigator.mediaDevices.getUserMedia(MIC_CONSTRAINTS).then((newStream) => {
+            if (!wakeWordActiveRef.current) {
+              newStream.getTracks().forEach(t => t.stop());
+              return;
+            }
+            wakeMediaStreamRef.current = newStream;
+            recordingInFlightRef.current = false;
+            recordAndCheck();
+          }).catch(() => {
+            recordingInFlightRef.current = false;
+          });
+          return;
+        }
         if (recordingInFlightRef.current) return;
         recordingInFlightRef.current = true;
 
@@ -496,7 +755,8 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
             return;
           }
 
-          if (chunks.length === 0 || new Blob(chunks).size < 800) {
+          // Lower threshold so short wake phrases aren't filtered out
+          if (chunks.length === 0 || new Blob(chunks).size < 200) {
             recordingInFlightRef.current = false;
             if (wakeWordActiveRef.current) {
               recordingLoopRef.current = setTimeout(recordAndCheck, WAKE_GAP_MS);
@@ -508,10 +768,11 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
 
           try {
             const formData = new FormData();
-            formData.append("audio", blob, "wake.webm");
+            formData.append("audio", blob, `wake.${wakeFileExt}`);
             const res = await fetch("/api/voice/transcribe", {
               method: "POST",
               credentials: "include",
+              headers: getAuthHeaders(),
               body: formData,
             });
 
@@ -532,13 +793,15 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
                   recordingLoopRef.current = null;
                 }
                 if (recorderRef.current) {
-                  try { recorderRef.current.stop(); } catch (_e) {}
+                  try { (recorderRef.current as MediaRecorder).stop(); } catch (_e) {}
                   recorderRef.current = null;
                 }
                 wakeMediaStreamRef.current = null;
                 connect(wakeStream || undefined);
                 return;
               }
+            } else {
+              console.warn("Wake word transcription failed:", res.status);
             }
           } catch (err) {
             console.error("Wake word transcription error:", err);
@@ -568,6 +831,11 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
     });
   }, [connect, stopWakeWordListening, startPrewarmLoop]);
 
+  // Keep ref in sync so connectWithSession's closure always calls the latest version
+  useEffect(() => {
+    startWakeWordListeningRef.current = startWakeWordListeningInternal;
+  }, [startWakeWordListeningInternal]);
+
   const startWakeWordListening = useCallback(() => {
     startWakeWordListeningInternal();
   }, [startWakeWordListeningInternal]);
@@ -575,6 +843,7 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
   const disconnect = useCallback(() => {
     stopWakeWordListening();
     disconnectVoice();
+    startedViaWakeWordRef.current = false;
     setState({
       status: "idle",
       isListening: false,

@@ -91,7 +91,7 @@ export function Navbar() {
       </motion.header>
 
       <Dialog open={openModal === "agents"} onOpenChange={(open) => !open && setOpenModal(null)}>
-        <DialogContent className="bg-page/95 border-line text-ink max-w-xl backdrop-blur-xl">
+        <DialogContent className="bg-page/90 dark:bg-page/95 border-line text-ink max-w-xl backdrop-blur-2xl rounded-2xl shadow-lg">
           <DialogHeader>
             <DialogTitle className="text-ink text-xl tracking-wide">AI Agent Types</DialogTitle>
             <DialogDescription className="text-ink-muted">
@@ -118,7 +118,7 @@ export function Navbar() {
       </Dialog>
 
       <Dialog open={openModal === "integrations"} onOpenChange={(open) => !open && setOpenModal(null)}>
-        <DialogContent className="bg-page/95 border-line text-ink max-w-xl backdrop-blur-xl">
+        <DialogContent className="bg-page/90 dark:bg-page/95 border-line text-ink max-w-xl backdrop-blur-2xl rounded-2xl shadow-lg">
           <DialogHeader>
             <DialogTitle className="text-ink text-xl tracking-wide">Integrations</DialogTitle>
             <DialogDescription className="text-ink-muted">
@@ -145,7 +145,7 @@ export function Navbar() {
       </Dialog>
 
       <Dialog open={openModal === "venues"} onOpenChange={(open) => !open && setOpenModal(null)}>
-        <DialogContent className="bg-page/95 border-line text-ink max-w-xl backdrop-blur-xl">
+        <DialogContent className="bg-page/90 dark:bg-page/95 border-line text-ink max-w-xl backdrop-blur-2xl rounded-2xl shadow-lg">
           <DialogHeader>
             <DialogTitle className="text-ink text-xl tracking-wide">Multi-Venue Support</DialogTitle>
             <DialogDescription className="text-ink-muted">
@@ -181,7 +181,7 @@ export function Navbar() {
       </Dialog>
 
       <Dialog open={openModal === "how-it-works"} onOpenChange={(open) => !open && setOpenModal(null)}>
-        <DialogContent className="bg-page/95 border-line text-ink max-w-xl backdrop-blur-xl">
+        <DialogContent className="bg-page/90 dark:bg-page/95 border-line text-ink max-w-xl backdrop-blur-2xl rounded-2xl shadow-lg">
           <DialogHeader>
             <DialogTitle className="text-ink text-xl tracking-wide">How It Works</DialogTitle>
             <DialogDescription className="text-ink-muted">

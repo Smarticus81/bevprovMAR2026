@@ -1,9 +1,10 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Navbar } from "@/components/layout/Navbar";
-import { Mic, Store, Box, Briefcase, Sparkles, ChevronRight } from "lucide-react";
+import { Mic, Store, Box, Briefcase, Sparkles, ChevronRight, Sun, Moon } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "wouter";
 import { BevProLogo, BevProWordmark } from "@/components/BevProLogo";
+import { useTheme } from "@/hooks/useTheme";
 
 import champagneVideo from "@/assets/videos/champagne-bg.mp4";
 
@@ -56,6 +57,7 @@ export default function Home() {
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const { theme, toggleTheme, isDark } = useTheme();
 
   const clearTimers = useCallback(() => {
     timeoutRef.current.forEach(clearTimeout);
@@ -252,8 +254,25 @@ export default function Home() {
         animate={{ opacity: 1 }}
         transition={{ delay: 1, duration: 1 }}
       >
-        <div>
+        <div className="flex items-center gap-3">
           © 2026 BevPro Inc. — The hospitality intelligence platform.
+          <button
+            onClick={toggleTheme}
+            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            className="opacity-40 hover:opacity-80 transition-all duration-300 p-1.5 rounded-full hover:bg-surface-2"
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={theme}
+                initial={{ opacity: 0, rotate: -30, scale: 0.8 }}
+                animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                exit={{ opacity: 0, rotate: 30, scale: 0.8 }}
+                transition={{ duration: 0.25 }}
+              >
+                {isDark ? <Sun size={13} /> : <Moon size={13} />}
+              </motion.div>
+            </AnimatePresence>
+          </button>
         </div>
         <div className="flex gap-6">
           <a href="#" className="hover:text-ink transition-colors">Privacy</a>

@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getAuthHeaders } from "@/lib/queryClient";
 import { Plus, Trash2, X, Check, Package, UtensilsCrossed, Users, Calendar, Star, Truck, Upload, FileText, Database, AlertCircle, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -275,7 +275,7 @@ function BulkImportSection() {
 function MenuTab() {
   const qc = useQueryClient();
   const [adding, setAdding] = useState(false);
-  const { data: items = [] } = useQuery({ queryKey: ["venue", "menu"], queryFn: async () => { const r = await fetch("/api/venue/menu", { credentials: "include" }); return r.json(); } });
+  const { data: items = [] } = useQuery({ queryKey: ["venue", "menu"], queryFn: async () => { const r = await fetch("/api/venue/menu", { credentials: "include", headers: getAuthHeaders() }); return r.json(); } });
   const create = useMutation({ mutationFn: async (d: any) => { await apiRequest("POST", "/api/venue/menu", d); }, onSuccess: () => { qc.invalidateQueries({ queryKey: ["venue", "menu"] }); setAdding(false); } });
   const del = useMutation({ mutationFn: async (id: number) => { await apiRequest("DELETE", `/api/venue/menu/${id}`); }, onSuccess: () => qc.invalidateQueries({ queryKey: ["venue", "menu"] }) });
   const toggle = useMutation({ mutationFn: async ({ id, available }: { id: number; available: boolean }) => { await apiRequest("PATCH", `/api/venue/menu/${id}`, { available }); }, onSuccess: () => qc.invalidateQueries({ queryKey: ["venue", "menu"] }) });
@@ -319,7 +319,7 @@ function MenuTab() {
 function InventoryTab() {
   const qc = useQueryClient();
   const [adding, setAdding] = useState(false);
-  const { data: items = [] } = useQuery({ queryKey: ["venue", "inventory"], queryFn: async () => { const r = await fetch("/api/venue/inventory", { credentials: "include" }); return r.json(); } });
+  const { data: items = [] } = useQuery({ queryKey: ["venue", "inventory"], queryFn: async () => { const r = await fetch("/api/venue/inventory", { credentials: "include", headers: getAuthHeaders() }); return r.json(); } });
   const create = useMutation({ mutationFn: async (d: any) => { await apiRequest("POST", "/api/venue/inventory", d); }, onSuccess: () => { qc.invalidateQueries({ queryKey: ["venue", "inventory"] }); setAdding(false); } });
   const del = useMutation({ mutationFn: async (id: number) => { await apiRequest("DELETE", `/api/venue/inventory/${id}`); }, onSuccess: () => qc.invalidateQueries({ queryKey: ["venue", "inventory"] }) });
 
@@ -360,7 +360,7 @@ function InventoryTab() {
 function StaffTab() {
   const qc = useQueryClient();
   const [adding, setAdding] = useState(false);
-  const { data: staff = [] } = useQuery({ queryKey: ["venue", "staff"], queryFn: async () => { const r = await fetch("/api/venue/staff", { credentials: "include" }); return r.json(); } });
+  const { data: staff = [] } = useQuery({ queryKey: ["venue", "staff"], queryFn: async () => { const r = await fetch("/api/venue/staff", { credentials: "include", headers: getAuthHeaders() }); return r.json(); } });
   const create = useMutation({ mutationFn: async (d: any) => { await apiRequest("POST", "/api/venue/staff", d); }, onSuccess: () => { qc.invalidateQueries({ queryKey: ["venue", "staff"] }); setAdding(false); } });
   const del = useMutation({ mutationFn: async (id: number) => { await apiRequest("DELETE", `/api/venue/staff/${id}`); }, onSuccess: () => qc.invalidateQueries({ queryKey: ["venue", "staff"] }) });
 
@@ -395,7 +395,7 @@ function StaffTab() {
 function BookingsTab() {
   const qc = useQueryClient();
   const [adding, setAdding] = useState(false);
-  const { data: bookingsList = [] } = useQuery({ queryKey: ["venue", "bookings"], queryFn: async () => { const r = await fetch("/api/venue/bookings", { credentials: "include" }); return r.json(); } });
+  const { data: bookingsList = [] } = useQuery({ queryKey: ["venue", "bookings"], queryFn: async () => { const r = await fetch("/api/venue/bookings", { credentials: "include", headers: getAuthHeaders() }); return r.json(); } });
   const create = useMutation({ mutationFn: async (d: any) => { await apiRequest("POST", "/api/venue/bookings", d); }, onSuccess: () => { qc.invalidateQueries({ queryKey: ["venue", "bookings"] }); setAdding(false); } });
   const del = useMutation({ mutationFn: async (id: number) => { await apiRequest("DELETE", `/api/venue/bookings/${id}`); }, onSuccess: () => qc.invalidateQueries({ queryKey: ["venue", "bookings"] }) });
 
@@ -438,7 +438,7 @@ function BookingsTab() {
 function GuestsTab() {
   const qc = useQueryClient();
   const [adding, setAdding] = useState(false);
-  const { data: guestList = [] } = useQuery({ queryKey: ["venue", "guests"], queryFn: async () => { const r = await fetch("/api/venue/guests", { credentials: "include" }); return r.json(); } });
+  const { data: guestList = [] } = useQuery({ queryKey: ["venue", "guests"], queryFn: async () => { const r = await fetch("/api/venue/guests", { credentials: "include", headers: getAuthHeaders() }); return r.json(); } });
   const create = useMutation({ mutationFn: async (d: any) => { await apiRequest("POST", "/api/venue/guests", d); }, onSuccess: () => { qc.invalidateQueries({ queryKey: ["venue", "guests"] }); setAdding(false); } });
   const del = useMutation({ mutationFn: async (id: number) => { await apiRequest("DELETE", `/api/venue/guests/${id}`); }, onSuccess: () => qc.invalidateQueries({ queryKey: ["venue", "guests"] }) });
 
@@ -476,7 +476,7 @@ function GuestsTab() {
 function SuppliersTab() {
   const qc = useQueryClient();
   const [adding, setAdding] = useState(false);
-  const { data: supplierList = [] } = useQuery({ queryKey: ["venue", "suppliers"], queryFn: async () => { const r = await fetch("/api/venue/suppliers", { credentials: "include" }); return r.json(); } });
+  const { data: supplierList = [] } = useQuery({ queryKey: ["venue", "suppliers"], queryFn: async () => { const r = await fetch("/api/venue/suppliers", { credentials: "include", headers: getAuthHeaders() }); return r.json(); } });
   const create = useMutation({ mutationFn: async (d: any) => { await apiRequest("POST", "/api/venue/suppliers", d); }, onSuccess: () => { qc.invalidateQueries({ queryKey: ["venue", "suppliers"] }); setAdding(false); } });
   const del = useMutation({ mutationFn: async (id: number) => { await apiRequest("DELETE", `/api/venue/suppliers/${id}`); }, onSuccess: () => qc.invalidateQueries({ queryKey: ["venue", "suppliers"] }) });
 

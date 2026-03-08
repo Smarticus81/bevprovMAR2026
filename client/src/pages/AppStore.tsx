@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Star, Sparkles, ShoppingCart, Package, Building2, Layers, Mic, ChevronRight, Wrench, Volume2, Zap, ArrowRight } from "lucide-react";
 import { Agent, AGENT_TYPES, AGENT_TYPE_LABELS, AGENT_TYPE_DESCRIPTIONS, AgentType } from "@shared/schema";
 import { getToolsForAgentType } from "@/lib/agentTools";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getAuthHeaders } from "@/lib/queryClient";
 
 const CATEGORY_TABS = [
   { key: "all", label: "All Agents", icon: Layers },
@@ -53,7 +53,7 @@ function AppStorePage() {
   const { data: agents = [], isLoading } = useQuery<Agent[]>({
     queryKey: ["agents"],
     queryFn: async () => {
-      const res = await fetch("/api/agents", { credentials: "include" });
+      const res = await fetch("/api/agents", { credentials: "include", headers: getAuthHeaders() });
       if (!res.ok) throw new Error("Failed to load agents");
       return res.json();
     },

@@ -2,10 +2,14 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import type { Express, Request, Response, NextFunction } from "express";
 import { storage, seedVenueData } from "./storage";
+import { db } from "./db";
+import { mobileSessions, users, organizations } from "@shared/schema";
+import { eq, and, gt } from "drizzle-orm";
 
 const PgSession = connectPgSimple(session);
 
@@ -117,8 +121,9 @@ export function setupAuth(app: Express) {
 
   app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
-      const { email, password, name, venueName, plan } = req.body;
-      if (!email || !password || !name || !venueName) {
+      const { email, password, name, venueName, organizationName, plan } = req.body;
+      const venue = venueName || organizationName;
+      if (!email || !password || !name || !venue) {
         return res.status(400).json({ error: "All fields are required" });
       }
 
@@ -127,9 +132,9 @@ export function setupAuth(app: Express) {
         return res.status(409).json({ error: "Email already registered" });
       }
 
-      const slug = venueName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+      const slug = venue.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
       const org = await storage.createOrganization({
-        name: venueName,
+        name: venue,
         slug: slug + "-" + Date.now(),
         plan: plan || "starter",
       });
@@ -145,10 +150,23 @@ export function setupAuth(app: Express) {
 
       seedVenueData(org.id).catch((err) => console.error("Seed data error:", err));
 
+      // Create mobile session token
+      const sessionToken = crypto.randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      await db.insert(mobileSessions).values({
+        id: sessionToken,
+        userId: user.id,
+        expiresAt,
+      });
+
       req.login(user, (err) => {
         if (err) return res.status(500).json({ error: "Login failed after registration" });
         const { password: _, ...safeUser } = user;
-        return res.status(201).json({ user: safeUser, organization: org });
+        return res.status(201).json({
+          sessionId: sessionToken,
+          user: safeUser,
+          organization: org,
+        });
       });
     } catch (err: any) {
       console.error("Registration error:", err);
@@ -157,21 +175,48 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/auth/login", (req: Request, res: Response, next: NextFunction) => {
-    passport.authenticate("local", (err: any, user: any, info: any) => {
+    passport.authenticate("local", async (err: any, user: any, info: any) => {
       if (err) return next(err);
       if (!user) return res.status(401).json({ error: info?.message || "Invalid credentials" });
-      req.login(user, (err) => {
+      req.login(user, async (err) => {
         if (err) return next(err);
         const { password: _, ...safeUser } = user;
-        return res.json({ user: safeUser });
+
+        // Create mobile session token
+        const sessionToken = crypto.randomBytes(32).toString("hex");
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        await db.insert(mobileSessions).values({
+          id: sessionToken,
+          userId: user.id,
+          expiresAt,
+        });
+
+        let organization = null;
+        if (user.organizationId) {
+          organization = await storage.getOrganization(user.organizationId);
+        }
+
+        return res.json({
+          sessionId: sessionToken,
+          user: safeUser,
+          organization,
+        });
       });
     })(req, res, next);
   });
 
-  app.post("/api/auth/logout", (req: Request, res: Response) => {
+  app.post("/api/auth/logout", async (req: Request, res: Response) => {
+    // Delete mobile session if x-session-id provided
+    const mobileSessionId = req.headers["x-session-id"] as string;
+    if (mobileSessionId) {
+      try {
+        await db.delete(mobileSessions).where(eq(mobileSessions.id, mobileSessionId));
+      } catch {}
+    }
+
     req.logout((err) => {
       if (err) return res.status(500).json({ error: "Logout failed" });
-      return res.json({ success: true });
+      return res.json({ success: true, ok: true });
     });
   });
 
@@ -191,6 +236,35 @@ export function setupAuth(app: Express) {
   }
 
   app.get("/api/auth/me", async (req: Request, res: Response) => {
+    // Support both passport cookies and x-session-id token auth
+    const mobileSessionId = req.headers["x-session-id"] as string;
+
+    if (mobileSessionId) {
+      try {
+        const sessions = await db.select()
+          .from(mobileSessions)
+          .where(
+            and(
+              eq(mobileSessions.id, mobileSessionId),
+              gt(mobileSessions.expiresAt, new Date())
+            )
+          );
+        if (sessions.length === 0) {
+          return res.status(401).json({ error: "Invalid or expired session" });
+        }
+        const user = await storage.getUserById(sessions[0].userId);
+        if (!user) return res.status(401).json({ error: "User not found" });
+        const { password: _, ...safeUser } = user;
+        let organization = null;
+        if (user.organizationId) {
+          organization = await storage.getOrganization(user.organizationId);
+        }
+        return res.json({ user: safeUser, organization });
+      } catch (err) {
+        return res.status(500).json({ error: "Session check failed" });
+      }
+    }
+
     if (!req.isAuthenticated() || !req.user) {
       return res.status(401).json({ error: "Not authenticated" });
     }
@@ -204,9 +278,35 @@ export function setupAuth(app: Express) {
   });
 }
 
-export function requireAuth(req: Request, res: Response, next: NextFunction) {
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ error: "Authentication required" });
+export async function requireAuth(req: Request, res: Response, next: NextFunction) {
+  // Support passport cookie auth
+  if (req.isAuthenticated()) {
+    return next();
   }
-  next();
+
+  // Support mobile x-session-id token auth
+  const mobileSessionId = req.headers["x-session-id"] as string;
+  if (mobileSessionId) {
+    try {
+      const sessions = await db.select()
+        .from(mobileSessions)
+        .where(
+          and(
+            eq(mobileSessions.id, mobileSessionId),
+            gt(mobileSessions.expiresAt, new Date())
+          )
+        );
+      if (sessions.length > 0) {
+        const user = await storage.getUserById(sessions[0].userId);
+        if (user) {
+          (req as any).user = user;
+          return next();
+        }
+      }
+    } catch (err) {
+      console.error("Mobile auth error:", err);
+    }
+  }
+
+  return res.status(401).json({ error: "Authentication required" });
 }

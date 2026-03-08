@@ -114,6 +114,8 @@ export interface IStorage {
   createRagDocument(doc: InsertRagDocument): Promise<RagDocument>;
   deleteRagDocument(id: number, orgId: number): Promise<boolean>;
   searchRagDocuments(agentId: number, orgId: number, query: string, maxResults?: number): Promise<RagDocument[]>;
+  getDocumentById(id: number, orgId: number): Promise<RagDocument | undefined>;
+  listAllRagDocuments(orgId: number, agentId?: number): Promise<RagDocument[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -552,13 +554,43 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchRagDocuments(agentId: number, orgId: number, query: string, maxResults: number = 5): Promise<RagDocument[]> {
+    // Split query into individual words for broader matching
+    const words = query.trim().split(/\s+/).filter(w => w.length >= 2);
+
+    // Try matching each word against content and filename
+    const conditions = [eq(ragDocuments.organizationId, orgId)];
+    // If agentId is provided and non-zero, scope to that agent; otherwise search all org docs
+    if (agentId > 0) {
+      conditions.push(eq(ragDocuments.agentId, agentId));
+    }
+
+    if (words.length > 0) {
+      // Match any word in content OR filename
+      const wordConditions = words.map(w =>
+        sql`(${ilike(ragDocuments.content, `%${w}%`)} OR ${ilike(ragDocuments.filename, `%${w}%`)})`
+      );
+      conditions.push(sql`(${sql.join(wordConditions, sql` OR `)})`);
+    }
+
     return db.select().from(ragDocuments)
-      .where(and(
-        eq(ragDocuments.agentId, agentId),
-        eq(ragDocuments.organizationId, orgId),
-        ilike(ragDocuments.content, `%${query}%`)
-      ))
+      .where(and(...conditions))
       .limit(maxResults);
+  }
+
+  async getDocumentById(id: number, orgId: number): Promise<RagDocument | undefined> {
+    const [result] = await db.select().from(ragDocuments)
+      .where(and(eq(ragDocuments.id, id), eq(ragDocuments.organizationId, orgId)));
+    return result;
+  }
+
+  async listAllRagDocuments(orgId: number, agentId?: number): Promise<RagDocument[]> {
+    const conditions = [eq(ragDocuments.organizationId, orgId)];
+    if (agentId && agentId > 0) {
+      conditions.push(eq(ragDocuments.agentId, agentId));
+    }
+    return db.select().from(ragDocuments)
+      .where(and(...conditions))
+      .orderBy(desc(ragDocuments.createdAt));
   }
 }
 

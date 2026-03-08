@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, setSessionToken, getSessionToken, getAuthHeaders } from "@/lib/queryClient";
 
 interface AuthUser {
   id: number;
@@ -14,6 +14,8 @@ interface AuthOrg {
   name: string;
   slug: string;
   plan: string;
+  stripeCustomerId?: string | null;
+  stripeSubscriptionId?: string | null;
 }
 
 interface AuthData {
@@ -27,7 +29,10 @@ export function useAuth() {
   const { data, isLoading, error } = useQuery<AuthData>({
     queryKey: ["auth"],
     queryFn: async () => {
-      const res = await fetch("/api/auth/me", { credentials: "include" });
+      const res = await fetch("/api/auth/me", {
+        credentials: "include",
+        headers: getAuthHeaders(),
+      });
       if (!res.ok) throw new Error("Not authenticated");
       return res.json();
     },
@@ -40,8 +45,9 @@ export function useAuth() {
       const res = await apiRequest("POST", "/api/auth/login", credentials);
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["auth"] });
+    onSuccess: (data) => {
+      if (data.sessionId) setSessionToken(data.sessionId);
+      queryClient.setQueryData(["auth"], { user: data.user, organization: data.organization });
     },
   });
 
@@ -50,8 +56,9 @@ export function useAuth() {
       const res = await apiRequest("POST", "/api/auth/register", data);
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["auth"] });
+    onSuccess: (data) => {
+      if (data.sessionId) setSessionToken(data.sessionId);
+      queryClient.setQueryData(["auth"], { user: data.user, organization: data.organization });
     },
   });
 
@@ -60,8 +67,10 @@ export function useAuth() {
       await apiRequest("POST", "/api/auth/logout");
     },
     onSuccess: () => {
+      setSessionToken(null);
       queryClient.setQueryData(["auth"], null);
       queryClient.invalidateQueries({ queryKey: ["auth"] });
+      window.location.href = "/";
     },
   });
 

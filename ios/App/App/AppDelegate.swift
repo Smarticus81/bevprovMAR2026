@@ -1,4 +1,5 @@
 import UIKit
+import AVFoundation
 import Capacitor
 
 @UIApplicationMain
@@ -7,7 +8,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // Configure audio session for simultaneous recording and playback.
+        // Without this, WKWebView microphone access (MediaRecorder / getUserMedia)
+        // may silently fail or route audio through the earpiece.
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(
+                .playAndRecord,
+                mode: .voiceChat,
+                options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers]
+            )
+            try session.setActive(true)
+        } catch {
+            print("Failed to configure AVAudioSession: \(error)")
+        }
         return true
     }
 

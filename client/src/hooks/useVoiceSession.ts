@@ -120,7 +120,7 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
   const recordingLoopRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recordingInFlightRef = useRef<boolean>(false);
   const startedViaWakeWordRef = useRef<boolean>(false);
-  const startWakeWordListeningRef = useRef<(() => void) | null>(null);
+  const startWakeWordListeningRef = useRef<((existingStream?: MediaStream) => void) | null>(null);
   const intentionalDisconnectRef = useRef<boolean>(false);
   const disconnectedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const keepAliveRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -431,9 +431,13 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
                 if (phraseMatchesWithLevenshtein(text, endPhrase, cfg.levenshteinThreshold)) {
                   setState((s) => ({ ...s, returningToStandby: true }));
                   setTimeout(() => {
+                    // On iOS, getUserMedia requires a user gesture.  Salvage the
+                    // current mic stream *before* disconnecting so wake-word
+                    // listening can reuse it instead of requesting a new one.
+                    const savedStream = mediaStreamRef.current;
+                    mediaStreamRef.current = null; // prevent disconnectVoice from stopping tracks
                     disconnectVoice();
-                    // Use ref to call the latest version, avoiding stale closure
-                    startWakeWordListeningRef.current?.();
+                    startWakeWordListeningRef.current?.(savedStream ?? undefined);
                   }, 1500);
                   return;
                 }
@@ -649,7 +653,7 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
     connectRef.current = connect;
   }, [connect]);
 
-  const startWakeWordListeningInternal = useCallback(() => {
+  const startWakeWordListeningInternal = useCallback((existingStream?: MediaStream) => {
     stopWakeWordListening();
     setState((s) => ({
       ...s,
@@ -666,7 +670,27 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
 
     startPrewarmLoop();
 
-    navigator.mediaDevices.getUserMedia(MIC_CONSTRAINTS).then((stream) => {
+    // Guard: MediaRecorder API must exist (missing on older iOS WKWebView)
+    if (typeof MediaRecorder === "undefined") {
+      setState((s) => ({
+        ...s,
+        status: "error",
+        error: "Wake word detection is not supported on this device. Please update iOS or use Safari.",
+      }));
+      return;
+    }
+
+    // If we already have a live mic stream (e.g. returning to standby on iOS
+    // where getUserMedia requires a user gesture), reuse it directly.
+    const reuseExisting = existingStream &&
+      existingStream.getAudioTracks().length > 0 &&
+      existingStream.getAudioTracks()[0].readyState === "live";
+
+    const streamPromise = reuseExisting
+      ? Promise.resolve(existingStream!)
+      : navigator.mediaDevices.getUserMedia(MIC_CONSTRAINTS);
+
+    streamPromise.then((stream) => {
       if (!wakeWordActiveRef.current) {
         stream.getTracks().forEach(t => t.stop());
         return;
@@ -744,7 +768,16 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
         const chunks: BlobPart[] = [];
 
         recorder.ondataavailable = (e) => {
-          if (e.data.size > 0) chunks.push(e.data);
+          if (e.data && e.data.size > 0) chunks.push(e.data);
+        };
+
+        recorder.onerror = () => {
+          // Reset in-flight flag so the loop can continue after a recorder error
+          recorderRef.current = null;
+          recordingInFlightRef.current = false;
+          if (wakeWordActiveRef.current) {
+            recordingLoopRef.current = setTimeout(recordAndCheck, WAKE_GAP_MS);
+          }
         };
 
         recorder.onstop = async () => {
@@ -755,8 +788,11 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
             return;
           }
 
-          // Lower threshold so short wake phrases aren't filtered out
-          if (chunks.length === 0 || new Blob(chunks).size < 200) {
+          // On iOS the first chunk can be a bare container header with no
+          // actual audio.  Use a very small threshold (just above 0) so
+          // we don't accidentally filter out short utterances, but still
+          // skip truly empty recordings.
+          if (chunks.length === 0) {
             recordingInFlightRef.current = false;
             if (wakeWordActiveRef.current) {
               recordingLoopRef.current = setTimeout(recordAndCheck, WAKE_GAP_MS);
@@ -813,12 +849,18 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
           }
         };
 
+        // iOS MediaRecorder can take ~200ms to initialise; add a small
+        // buffer so the recorded chunk actually contains audio data.
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+          (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+        const initDelayMs = isIOS ? 250 : 0;
+
         recorder.start();
         setTimeout(() => {
           if (recorder.state === "recording") {
             try { recorder.stop(); } catch (_e) {}
           }
-        }, WAKE_CHUNK_MS);
+        }, WAKE_CHUNK_MS + initDelayMs);
       };
 
       recordAndCheck();
@@ -836,8 +878,8 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
     startWakeWordListeningRef.current = startWakeWordListeningInternal;
   }, [startWakeWordListeningInternal]);
 
-  const startWakeWordListening = useCallback(() => {
-    startWakeWordListeningInternal();
+  const startWakeWordListening = useCallback((existingStream?: MediaStream) => {
+    startWakeWordListeningInternal(existingStream);
   }, [startWakeWordListeningInternal]);
 
   const disconnect = useCallback(() => {

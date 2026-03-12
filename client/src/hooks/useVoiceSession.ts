@@ -682,12 +682,14 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
 
     // If we already have a live mic stream (e.g. returning to standby on iOS
     // where getUserMedia requires a user gesture), reuse it directly.
-    const reuseExisting = existingStream &&
-      existingStream.getAudioTracks().length > 0 &&
-      existingStream.getAudioTracks()[0].readyState === "live";
+    // Guard: onClick handlers pass a MouseEvent — only accept actual MediaStreams.
+    const validStream = existingStream instanceof MediaStream ? existingStream : undefined;
+    const reuseExisting = validStream &&
+      validStream.getAudioTracks().length > 0 &&
+      validStream.getAudioTracks()[0].readyState === "live";
 
     const streamPromise = reuseExisting
-      ? Promise.resolve(existingStream!)
+      ? Promise.resolve(validStream!)
       : navigator.mediaDevices.getUserMedia(MIC_CONSTRAINTS);
 
     streamPromise.then((stream) => {

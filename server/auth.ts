@@ -92,11 +92,17 @@ export function setupAuth(app: Express) {
                 plan: "starter",
               });
 
-              // Create default venue
-              const venue = await storage.createVenue({
-                name: `${displayName}'s Venue`,
-                organizationId: org.id,
-              });
+              // Create default venue (graceful if venues table not yet migrated)
+              let defaultVenueId: number | undefined;
+              try {
+                const venue = await storage.createVenue({
+                  name: `${displayName}'s Venue`,
+                  organizationId: org.id,
+                });
+                defaultVenueId = venue.id;
+              } catch (venueErr) {
+                console.warn("Could not create default venue (table may not exist yet):", (venueErr as Error).message);
+              }
 
               const randomPass = await bcrypt.hash(Math.random().toString(36), 12);
               user = await storage.createUser({
@@ -105,10 +111,10 @@ export function setupAuth(app: Express) {
                 name: displayName,
                 role: "owner",
                 organizationId: org.id,
-                activeVenueId: venue.id,
+                ...(defaultVenueId ? { activeVenueId: defaultVenueId } : {}),
               });
 
-              seedVenueData(org.id, venue.id).catch((err) => console.error("Seed data error:", err));
+              seedVenueData(org.id, defaultVenueId).catch((err) => console.error("Seed data error:", err));
             }
 
             return done(null, user);
@@ -151,11 +157,17 @@ export function setupAuth(app: Express) {
         plan: plan || "starter",
       });
 
-      // Create default venue
-      const defaultVenue = await storage.createVenue({
-        name: venue,
-        organizationId: org.id,
-      });
+      // Create default venue (graceful if venues table not yet migrated)
+      let defaultVenueId: number | undefined;
+      try {
+        const defaultVenue = await storage.createVenue({
+          name: venue,
+          organizationId: org.id,
+        });
+        defaultVenueId = defaultVenue.id;
+      } catch (venueErr) {
+        console.warn("Could not create default venue (table may not exist yet):", (venueErr as Error).message);
+      }
 
       const hashedPassword = await bcrypt.hash(password, 12);
       const user = await storage.createUser({
@@ -164,10 +176,10 @@ export function setupAuth(app: Express) {
         name,
         role: "owner",
         organizationId: org.id,
-        activeVenueId: defaultVenue.id,
+        ...(defaultVenueId ? { activeVenueId: defaultVenueId } : {}),
       });
 
-      seedVenueData(org.id, defaultVenue.id).catch((err) => console.error("Seed data error:", err));
+      seedVenueData(org.id, defaultVenueId).catch((err) => console.error("Seed data error:", err));
 
       // Create mobile session token
       const sessionToken = crypto.randomBytes(32).toString("hex");
@@ -278,7 +290,7 @@ export function setupAuth(app: Express) {
         let userVenues: any[] = [];
         if (user.organizationId) {
           organization = await storage.getOrganization(user.organizationId);
-          userVenues = await storage.getVenuesByOrg(user.organizationId);
+          try { userVenues = await storage.getVenuesByOrg(user.organizationId); } catch (_) {}
         }
         return res.json({ user: safeUser, organization, venues: userVenues });
       } catch (err) {
@@ -295,7 +307,7 @@ export function setupAuth(app: Express) {
     let userVenues: any[] = [];
     if (user.organizationId) {
       organization = await storage.getOrganization(user.organizationId);
-      userVenues = await storage.getVenuesByOrg(user.organizationId);
+      try { userVenues = await storage.getVenuesByOrg(user.organizationId); } catch (_) {}
     }
     return res.json({ user: safeUser, organization, venues: userVenues });
   });

@@ -6,6 +6,7 @@ import { createServer } from "http";
 import { runMigrations } from "stripe-replit-sync";
 import { getStripeSync } from "./stripeClient";
 import { WebhookHandlers } from "./webhookHandlers";
+import { ensureSchema } from "./db";
 
 const app = express();
 const httpServer = createServer(app);
@@ -131,8 +132,6 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-setupAuth(app);
-
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
     hour: "numeric",
@@ -171,6 +170,8 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  await ensureSchema();
+  setupAuth(app);
   await initStripe();
   await registerRoutes(httpServer, app);
 

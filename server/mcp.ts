@@ -71,9 +71,9 @@ mcpRouter.post("/api/mcp/:agentId", requireAuth, async (req: Request, res: Respo
       }
 
       case "tools/list": {
-        let enabledTools = await storage.getToolsByAgent(agent.id);
+        let enabledTools = await storage.getToolsByAgent(agent.id, user.organizationId);
         if (enabledTools.length === 0) {
-          enabledTools = await autoEnableToolsForAgent(agent.id, agent.type);
+          enabledTools = await autoEnableToolsForAgent(agent.id, agent.type, user.organizationId);
         }
         const toolDefs = getOpenAIToolDefinitions(enabledTools);
 
@@ -98,9 +98,9 @@ mcpRouter.post("/api/mcp/:agentId", requireAuth, async (req: Request, res: Respo
           return res.json(jsonRpcError(requestId, -32602, "Tool name is required in params.name"));
         }
 
-        let enabledToolsForCall = await storage.getToolsByAgent(agent.id);
+        let enabledToolsForCall = await storage.getToolsByAgent(agent.id, user.organizationId);
         if (enabledToolsForCall.length === 0) {
-          enabledToolsForCall = await autoEnableToolsForAgent(agent.id, agent.type);
+          enabledToolsForCall = await autoEnableToolsForAgent(agent.id, agent.type, user.organizationId);
         }
         const enabledToolNames = enabledToolsForCall.filter(t => t.enabled).map(t => t.toolName);
 
@@ -148,9 +148,9 @@ mcpRouter.get("/api/mcp/:agentId", requireAuth, async (req: Request, res: Respon
     return res.status(404).json({ error: "Agent not found" });
   }
 
-  let enabledTools = await storage.getToolsByAgent(agent.id);
+  let enabledTools = await storage.getToolsByAgent(agent.id, user.organizationId);
   if (enabledTools.length === 0) {
-    enabledTools = await autoEnableToolsForAgent(agent.id, agent.type);
+    enabledTools = await autoEnableToolsForAgent(agent.id, agent.type, user.organizationId);
   }
   const toolDefs = getOpenAIToolDefinitions(enabledTools);
 

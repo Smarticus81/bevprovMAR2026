@@ -125,7 +125,7 @@ export async function registerRoutes(
     const user = req.user as any;
     const agent = await storage.getAgentById(parseInt(param(req.params.id)), user.organizationId);
     if (!agent) return res.status(404).json({ error: "Agent not found" });
-    const tools = await storage.getToolsByAgent(agent.id);
+    const tools = await storage.getToolsByAgent(agent.id, user.organizationId);
     return res.json(tools);
   });
 
@@ -133,8 +133,119 @@ export async function registerRoutes(
     const user = req.user as any;
     const agent = await storage.getAgentById(parseInt(param(req.params.id)), user.organizationId);
     if (!agent) return res.status(404).json({ error: "Agent not found" });
-    const tools = await storage.setAgentTools(agent.id, req.body.tools || []);
+    const tools = await storage.setAgentTools(agent.id, user.organizationId, req.body.tools || []);
     return res.json(tools);
+  });
+
+  // ========== VENUES ==========
+  app.get("/api/venues", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const venuesList = await storage.getVenuesByOrg(user.organizationId);
+    return res.json(venuesList);
+  });
+
+  app.post("/api/venues", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const schema = z.object({
+      name: z.string().min(1),
+      address: z.string().optional(),
+      city: z.string().optional(),
+      state: z.string().optional(),
+      timezone: z.string().optional(),
+      phone: z.string().optional(),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+
+    const org = await storage.getOrganization(user.organizationId);
+    const plan = org?.plan || "starter";
+    const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.starter;
+    const existingVenues = await storage.getVenuesByOrg(user.organizationId);
+    if (existingVenues.length >= limits.venues) {
+      return res.status(403).json({
+        error: `Your ${plan} plan allows up to ${limits.venues} venues. Upgrade to create more.`,
+        code: "PLAN_LIMIT_REACHED",
+      });
+    }
+
+    const venue = await storage.createVenue({ ...parsed.data, organizationId: user.organizationId });
+    return res.status(201).json(venue);
+  });
+
+  app.get("/api/venues/:id", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const venue = await storage.getVenue(parseInt(param(req.params.id)), user.organizationId);
+    if (!venue) return res.status(404).json({ error: "Venue not found" });
+    return res.json(venue);
+  });
+
+  app.patch("/api/venues/:id", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const venue = await storage.updateVenue(parseInt(param(req.params.id)), user.organizationId, req.body);
+    if (!venue) return res.status(404).json({ error: "Venue not found" });
+    return res.json(venue);
+  });
+
+  app.delete("/api/venues/:id", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const deleted = await storage.deleteVenue(parseInt(param(req.params.id)), user.organizationId);
+    if (!deleted) return res.status(404).json({ error: "Venue not found" });
+    return res.status(204).send();
+  });
+
+  // ========== VENUE DATASETS ==========
+  app.get("/api/venues/:venueId/datasets", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const venueId = parseInt(param(req.params.venueId));
+    const venue = await storage.getVenue(venueId, user.organizationId);
+    if (!venue) return res.status(404).json({ error: "Venue not found" });
+    const datasets = await storage.getVenueDatasets(venueId, user.organizationId);
+    return res.json(datasets);
+  });
+
+  app.post("/api/venues/:venueId/datasets", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const venueId = parseInt(param(req.params.venueId));
+    const venue = await storage.getVenue(venueId, user.organizationId);
+    if (!venue) return res.status(404).json({ error: "Venue not found" });
+    const schema = z.object({
+      name: z.string().min(1),
+      description: z.string().optional(),
+      sourceType: z.string().optional(),
+      agentId: z.number().optional(),
+      data: z.array(z.record(z.unknown())).optional(),
+      dataSchema: z.record(z.string()).optional(),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    const dataset = await storage.createVenueDataset({
+      ...parsed.data,
+      venueId,
+      organizationId: user.organizationId,
+      rowCount: parsed.data.data?.length ?? 0,
+    });
+    return res.status(201).json(dataset);
+  });
+
+  app.get("/api/venues/:venueId/datasets/:id", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const dataset = await storage.getVenueDataset(parseInt(param(req.params.id)), user.organizationId);
+    if (!dataset) return res.status(404).json({ error: "Dataset not found" });
+    return res.json(dataset);
+  });
+
+  app.patch("/api/venues/:venueId/datasets/:id", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const dataset = await storage.updateVenueDataset(parseInt(param(req.params.id)), user.organizationId, req.body);
+    if (!dataset) return res.status(404).json({ error: "Dataset not found" });
+    return res.json(dataset);
+  });
+
+  app.delete("/api/venues/:venueId/datasets/:id", requireAuth, async (req, res) => {
+    const user = req.user as any;
+    const deleted = await storage.deleteVenueDataset(parseInt(param(req.params.id)), user.organizationId);
+    if (!deleted) return res.status(404).json({ error: "Dataset not found" });
+    return res.status(204).send();
   });
 
   // ========== MENU ITEMS ==========
@@ -706,7 +817,7 @@ export async function registerRoutes(
     limits: { fileSize: 10 * 1024 * 1024 },
   });
 
-  app.post("/api/files/upload", fileUpload.single("file"), (req, res) => {
+  app.post("/api/files/upload", requireAuth, fileUpload.single("file"), (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: "No file provided" });
     }
@@ -721,7 +832,7 @@ export async function registerRoutes(
     return res.json(fileInfo);
   });
 
-  app.get("/api/files/:id", (req, res) => {
+  app.get("/api/files/:id", requireAuth, (req, res) => {
     const filePath = path.resolve(uploadsDir, param(req.params.id));
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: "File not found" });

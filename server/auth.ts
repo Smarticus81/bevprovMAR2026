@@ -8,7 +8,7 @@ import connectPgSimple from "connect-pg-simple";
 import type { Express, Request, Response, NextFunction } from "express";
 import { storage, seedVenueData } from "./storage";
 import { db } from "./db";
-import { mobileSessions, users, organizations } from "@shared/schema";
+import { mobileSessions, users, organizations, venues } from "@shared/schema";
 import { eq, and, gt } from "drizzle-orm";
 
 const PgSession = connectPgSimple(session);
@@ -20,7 +20,12 @@ export function setupAuth(app: Express) {
         conString: process.env.DATABASE_URL,
         createTableIfMissing: true,
       }),
-      secret: process.env.SESSION_SECRET || "bevpro-dev-secret-change-in-prod",
+      secret: process.env.SESSION_SECRET || (() => {
+        if (process.env.NODE_ENV === "production") {
+          console.error("CRITICAL: SESSION_SECRET env var is not set in production!");
+        }
+        return "bevpro-dev-secret-change-in-prod";
+      })(),
       resave: false,
       saveUninitialized: false,
       cookie: {
@@ -87,6 +92,12 @@ export function setupAuth(app: Express) {
                 plan: "starter",
               });
 
+              // Create default venue
+              const venue = await storage.createVenue({
+                name: `${displayName}'s Venue`,
+                organizationId: org.id,
+              });
+
               const randomPass = await bcrypt.hash(Math.random().toString(36), 12);
               user = await storage.createUser({
                 email,
@@ -94,9 +105,10 @@ export function setupAuth(app: Express) {
                 name: displayName,
                 role: "owner",
                 organizationId: org.id,
+                activeVenueId: venue.id,
               });
 
-              seedVenueData(org.id).catch((err) => console.error("Seed data error:", err));
+              seedVenueData(org.id, venue.id).catch((err) => console.error("Seed data error:", err));
             }
 
             return done(null, user);
@@ -139,6 +151,12 @@ export function setupAuth(app: Express) {
         plan: plan || "starter",
       });
 
+      // Create default venue
+      const defaultVenue = await storage.createVenue({
+        name: venue,
+        organizationId: org.id,
+      });
+
       const hashedPassword = await bcrypt.hash(password, 12);
       const user = await storage.createUser({
         email,
@@ -146,9 +164,10 @@ export function setupAuth(app: Express) {
         name,
         role: "owner",
         organizationId: org.id,
+        activeVenueId: defaultVenue.id,
       });
 
-      seedVenueData(org.id).catch((err) => console.error("Seed data error:", err));
+      seedVenueData(org.id, defaultVenue.id).catch((err) => console.error("Seed data error:", err));
 
       // Create mobile session token
       const sessionToken = crypto.randomBytes(32).toString("hex");
@@ -256,10 +275,12 @@ export function setupAuth(app: Express) {
         if (!user) return res.status(401).json({ error: "User not found" });
         const { password: _, ...safeUser } = user;
         let organization = null;
+        let userVenues: any[] = [];
         if (user.organizationId) {
           organization = await storage.getOrganization(user.organizationId);
+          userVenues = await storage.getVenuesByOrg(user.organizationId);
         }
-        return res.json({ user: safeUser, organization });
+        return res.json({ user: safeUser, organization, venues: userVenues });
       } catch (err) {
         return res.status(500).json({ error: "Session check failed" });
       }
@@ -271,10 +292,12 @@ export function setupAuth(app: Express) {
     const user = req.user as any;
     const { password: _, ...safeUser } = user;
     let organization = null;
+    let userVenues: any[] = [];
     if (user.organizationId) {
       organization = await storage.getOrganization(user.organizationId);
+      userVenues = await storage.getVenuesByOrg(user.organizationId);
     }
-    return res.json({ user: safeUser, organization });
+    return res.json({ user: safeUser, organization, venues: userVenues });
   });
 }
 

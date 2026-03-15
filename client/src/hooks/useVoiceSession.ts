@@ -34,8 +34,9 @@ interface PrewarmedSession {
 }
 
 const PREWARM_TTL_MS = 50_000;
-const WAKE_CHUNK_MS = 1500;
-const WAKE_GAP_MS = 50;
+const WAKE_CHUNK_MS = 2500;       // iOS MediaRecorder has startup latency; 2.5s ensures usable audio
+const WAKE_GAP_MS = 100;
+const MAX_TRANSCRIBE_FAILURES = 5; // Show error after this many consecutive failures
 
 // Shared audio constraints for echo cancellation and noise suppression
 const MIC_CONSTRAINTS: MediaStreamConstraints = {
@@ -680,6 +681,16 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
       return;
     }
 
+    // iOS requires AudioContext to be created within a user gesture — warm it up now
+    // so the mic stream doesn't go silent
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtx) {
+        const warmCtx = new AudioCtx();
+        warmCtx.resume().then(() => warmCtx.close()).catch(() => {});
+      }
+    } catch {}
+
     // If we already have a live mic stream (e.g. returning to standby on iOS
     // where getUserMedia requires a user gesture), reuse it directly.
     // Guard: onClick handlers pass a MouseEvent — only accept actual MediaStreams.
@@ -712,15 +723,6 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
         ? "audio/mpeg"
         : null;
 
-      if (!mimeType) {
-        setState((s) => ({
-          ...s,
-          status: "error",
-          error: "Your browser does not support audio recording for wake word detection. Please use Chrome or Safari.",
-        }));
-        return;
-      }
-
       // Determine file extension for the transcription upload based on MIME type
       const mimeExtMap: Record<string, string> = {
         "audio/webm;codecs=opus": "webm",
@@ -729,7 +731,9 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
         "audio/aac": "aac",
         "audio/mpeg": "mp3",
       };
-      const wakeFileExt = mimeExtMap[mimeType] || "webm";
+      const wakeFileExt = mimeType ? (mimeExtMap[mimeType] || "webm") : "mp4";
+
+      let consecutiveFailures = 0;
 
       const recordAndCheck = () => {
         if (!wakeWordActiveRef.current || !wakeMediaStreamRef.current) return;
@@ -756,15 +760,24 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
 
         let recorder: MediaRecorder;
         try {
-          recorder = new MediaRecorder(wakeMediaStreamRef.current, { mimeType });
+          // On iOS Safari, creating MediaRecorder without mimeType often works
+          // when explicit mimeType detection fails
+          recorder = mimeType
+            ? new MediaRecorder(wakeMediaStreamRef.current, { mimeType })
+            : new MediaRecorder(wakeMediaStreamRef.current);
         } catch {
-          recordingInFlightRef.current = false;
-          setState((s) => ({
-            ...s,
-            status: "error",
-            error: "Failed to start audio recorder. Please try a different browser.",
-          }));
-          return;
+          // Final fallback: try without any options
+          try {
+            recorder = new MediaRecorder(wakeMediaStreamRef.current);
+          } catch {
+            recordingInFlightRef.current = false;
+            setState((s) => ({
+              ...s,
+              status: "error",
+              error: "Failed to start audio recorder. Please try a different browser.",
+            }));
+            return;
+          }
         }
         recorderRef.current = recorder;
         const chunks: BlobPart[] = [];
@@ -791,9 +804,8 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
           }
 
           // On iOS the first chunk can be a bare container header with no
-          // actual audio.  Use a very small threshold (just above 0) so
-          // we don't accidentally filter out short utterances, but still
-          // skip truly empty recordings.
+          // actual audio. Skip truly empty recordings but don't filter by size
+          // since short wake phrases can be very small.
           if (chunks.length === 0) {
             recordingInFlightRef.current = false;
             if (wakeWordActiveRef.current) {
@@ -802,7 +814,7 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
             return;
           }
 
-          const blob = new Blob(chunks, { type: mimeType });
+          const blob = new Blob(chunks, { type: mimeType || "audio/mp4" });
 
           try {
             const formData = new FormData();
@@ -820,6 +832,7 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
             }
 
             if (res.ok) {
+              consecutiveFailures = 0; // Reset on success
               const { text } = await res.json();
               const cfg = wakeWordConfigRef.current;
               if (cfg && text && phraseMatchesWithLevenshtein(text, cfg.phrase, cfg.levenshteinThreshold)) {
@@ -839,10 +852,26 @@ export function useVoiceSession(agentId: number | null, wakeWordConfig?: WakeWor
                 return;
               }
             } else {
-              console.warn("Wake word transcription failed:", res.status);
+              consecutiveFailures++;
+              console.warn(`Wake word transcription failed (${consecutiveFailures}/${MAX_TRANSCRIBE_FAILURES}):`, res.status);
+              if (consecutiveFailures >= MAX_TRANSCRIBE_FAILURES) {
+                setState((s) => ({
+                  ...s,
+                  error: "Wake word detection having trouble. Check your microphone and try again.",
+                }));
+                consecutiveFailures = 0; // Reset so it can recover
+              }
             }
           } catch (err) {
+            consecutiveFailures++;
             console.error("Wake word transcription error:", err);
+            if (consecutiveFailures >= MAX_TRANSCRIBE_FAILURES) {
+              setState((s) => ({
+                ...s,
+                error: "Wake word detection having trouble. Check your connection and try again.",
+              }));
+              consecutiveFailures = 0;
+            }
           }
 
           recordingInFlightRef.current = false;

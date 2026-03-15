@@ -3,7 +3,7 @@ import { useVoiceSession, type TranscriptEntry, type WakeWordConfig } from "@/ho
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { getAuthHeaders } from "@/lib/queryClient";
-import { ArrowLeft, Mic, MicOff, PhoneOff, Wrench, ShoppingCart, DollarSign, CreditCard, User, Hash, Receipt, Volume2, Upload, FileText, Loader2, X, Wifi, WifiOff, Clock } from "lucide-react";
+import { ArrowLeft, Mic, MicOff, PhoneOff, Wrench, ShoppingCart, DollarSign, CreditCard, User, Hash, Receipt, Volume2, Upload, FileText, Loader2, X, Wifi, WifiOff, Clock, Ear } from "lucide-react";
 import { BevProLogo } from "@/components/BevProLogo";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState, useMemo } from "react";
@@ -618,17 +618,17 @@ function VoiceControls({ voice, wakeWordConfig }: { voice: ReturnType<typeof use
               transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
               className="relative w-18 h-18 sm:w-20 sm:h-20"
             >
-              <div className="w-full h-full rounded-full bg-surface-3 border border-line-strong flex items-center justify-center">
-                <Volume2 size={28} className="text-ink-muted" />
+              <div className="w-full h-full rounded-full bg-surface-3 border border-accent/30 flex items-center justify-center">
+                <Ear size={28} className="text-accent" />
               </div>
               <motion.div
-                className="absolute inset-[-6px] rounded-full border border-line"
-                animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.4, 0.2] }}
+                className="absolute inset-[-6px] rounded-full border border-accent/20"
+                animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.5, 0.2] }}
                 transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
               />
             </motion.div>
             <p className="text-ink-muted text-sm font-medium" data-testid="text-wake-listening">
-              Say "{wakeWordConfig?.phrase || "hey bev"}" to begin
+              Listening for "{wakeWordConfig?.phrase || "hey bev"}"...
             </p>
             <button
               data-testid="button-stop-wake-word"
@@ -661,9 +661,9 @@ function VoiceControls({ voice, wakeWordConfig }: { voice: ReturnType<typeof use
               <button
                 data-testid="button-start-wake-word"
                 onClick={voice.startWakeWordListening}
-                className="px-5 py-2.5 rounded-full text-sm font-medium border border-line text-ink-faint hover:text-ink-secondary hover:border-line-strong transition-all flex items-center gap-2 min-h-[44px]"
+                className="px-5 py-2.5 rounded-full text-sm font-medium border border-accent/30 text-accent/80 hover:text-accent hover:border-accent/50 transition-all flex items-center gap-2 min-h-[44px]"
               >
-                <Volume2 size={15} />
+                <Ear size={15} />
                 Wake Word Mode
               </button>
             )}
@@ -744,14 +744,14 @@ export default function AgentApp() {
 
   const agentConfig = agent?.config as AgentConfig | null;
   const wakeWordConfig: WakeWordConfig | undefined = useMemo(() => {
-    if (!agentConfig?.wakeWord?.enabled) return undefined;
-    const wk = agentConfig.wakeWord;
+    const wk = agentConfig?.wakeWord;
+    // Always provide wake word config with sensible defaults so the ear button is available
     return {
       enabled: true,
-      phrase: wk.phrase || "hey bev",
-      endPhrases: wk.endPhrases?.length ? wk.endPhrases : ["goodbye", "we are done", "that's all"],
-      shutdownPhrases: wk.shutdownPhrases?.length ? wk.shutdownPhrases : ["stop listening", "shut down"],
-      levenshteinThreshold: wk.levenshteinThreshold ?? 2,
+      phrase: wk?.phrase || "hey bev",
+      endPhrases: wk?.endPhrases?.length ? wk.endPhrases : ["goodbye", "we are done", "that's all"],
+      shutdownPhrases: wk?.shutdownPhrases?.length ? wk.shutdownPhrases : ["stop listening", "shut down"],
+      levenshteinThreshold: wk?.levenshteinThreshold ?? 2,
     };
   }, [agentConfig?.wakeWord]);
 

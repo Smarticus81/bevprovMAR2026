@@ -31,9 +31,9 @@ voice.post("/api/voice/session", requireAuth, async (req, res) => {
     const agent = await storage.getAgentById(agentId, user.organizationId);
     if (!agent) return res.status(404).json({ error: "Agent not found" });
 
-    let tools = await storage.getToolsByAgent(agent.id);
+    let tools = await storage.getToolsByAgent(agent.id, user.organizationId);
     if (tools.length === 0) {
-      tools = await autoEnableToolsForAgent(agent.id, agent.type);
+      tools = await autoEnableToolsForAgent(agent.id, agent.type, user.organizationId);
     }
     const config = (agent.config || {}) as any;
 
@@ -126,7 +126,7 @@ voice.post("/api/voice/chat", requireAuth, async (req, res) => {
     const agent = await storage.getAgentById(agentId, user.organizationId);
     if (!agent) return res.status(404).json({ error: "Agent not found" });
 
-    const tools = await storage.getToolsByAgent(agent.id);
+    const tools = await storage.getToolsByAgent(agent.id, user.organizationId);
     const systemPrompt = buildSystemPrompt(agent);
     const toolDefs = getOpenAIToolDefinitions(tools);
 

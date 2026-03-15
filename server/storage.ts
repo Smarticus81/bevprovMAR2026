@@ -1,6 +1,7 @@
 import {
   type Organization, type InsertOrg, organizations,
   type User, type InsertUser, users,
+  type Venue, type InsertVenue, venues,
   type Agent, type InsertAgent, agents,
   type AgentTool, type InsertAgentTool, agentTools,
   type WaitlistEntry, type InsertWaitlistEntry, waitlist,
@@ -16,27 +17,43 @@ import {
   type WasteLog, type InsertWasteLog, wasteLogs,
   type Supplier, type InsertSupplier, suppliers,
   type RagDocument, type InsertRagDocument, ragDocuments,
+  type VenueDataset, type InsertVenueDataset, venueDatasets,
+  conversations,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, ilike, lte, sql, gte, desc } from "drizzle-orm";
 
 export interface IStorage {
+  // ---- Platform-level ----
   createOrganization(org: InsertOrg): Promise<Organization>;
   getOrganization(id: number): Promise<Organization | undefined>;
   getOrganizationBySlug(slug: string): Promise<Organization | undefined>;
+  updateOrganization(id: number, data: Partial<{ plan: string; stripeCustomerId: string; stripeSubscriptionId: string }>): Promise<Organization | undefined>;
+  getOrganizationByStripeCustomerId(customerId: string): Promise<Organization | undefined>;
 
   createUser(user: InsertUser): Promise<User>;
   getUserById(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  updateUser(id: number, data: Partial<InsertUser>): Promise<User | undefined>;
+
+  addToWaitlist(entry: InsertWaitlistEntry): Promise<WaitlistEntry>;
+
+  // ---- Company-level (venues, agents, suppliers) ----
+  createVenue(venue: InsertVenue): Promise<Venue>;
+  getVenuesByOrg(orgId: number): Promise<Venue[]>;
+  getVenue(id: number, orgId: number): Promise<Venue | undefined>;
+  updateVenue(id: number, orgId: number, data: Partial<InsertVenue>): Promise<Venue | undefined>;
+  deleteVenue(id: number, orgId: number): Promise<boolean>;
 
   getAgentsByOrg(orgId: number): Promise<Agent[]>;
   getAgentById(id: number, orgId: number): Promise<Agent | undefined>;
   createAgent(agent: InsertAgent): Promise<Agent>;
   updateAgent(id: number, orgId: number, data: Partial<InsertAgent>): Promise<Agent | undefined>;
   deleteAgent(id: number, orgId: number): Promise<boolean>;
+  getAgentCountByOrg(orgId: number): Promise<number>;
 
-  getToolsByAgent(agentId: number): Promise<AgentTool[]>;
-  setAgentTools(agentId: number, tools: InsertAgentTool[]): Promise<AgentTool[]>;
+  getToolsByAgent(agentId: number, orgId: number): Promise<AgentTool[]>;
+  setAgentTools(agentId: number, orgId: number, tools: InsertAgentTool[]): Promise<AgentTool[]>;
 
   addToWaitlist(entry: InsertWaitlistEntry): Promise<WaitlistEntry>;
 
@@ -98,6 +115,7 @@ export interface IStorage {
   createWasteLog(log: InsertWasteLog): Promise<WasteLog>;
   getWasteLogs(orgId: number): Promise<WasteLog[]>;
 
+  // ---- Company-level: suppliers, RAG, revenue stats ----
   getSuppliers(orgId: number): Promise<Supplier[]>;
   getSupplier(id: number, orgId: number): Promise<Supplier | undefined>;
   createSupplier(supplier: InsertSupplier): Promise<Supplier>;
@@ -116,6 +134,17 @@ export interface IStorage {
   searchRagDocuments(agentId: number, orgId: number, query: string, maxResults?: number): Promise<RagDocument[]>;
   getDocumentById(id: number, orgId: number): Promise<RagDocument | undefined>;
   listAllRagDocuments(orgId: number, agentId?: number): Promise<RagDocument[]>;
+
+  // ---- Venue-level extensibility: datasets ----
+  createVenueDataset(dataset: InsertVenueDataset): Promise<VenueDataset>;
+  getVenueDatasets(venueId: number, orgId: number): Promise<VenueDataset[]>;
+  getVenueDataset(id: number, orgId: number): Promise<VenueDataset | undefined>;
+  updateVenueDataset(id: number, orgId: number, data: Partial<InsertVenueDataset>): Promise<VenueDataset | undefined>;
+  deleteVenueDataset(id: number, orgId: number): Promise<boolean>;
+
+  // ---- Conversations (scoped) ----
+  getConversationsByOrg(orgId: number): Promise<any[]>;
+  createConversation(title: string, orgId: number, venueId?: number): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -164,6 +193,43 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
+  async updateUser(id: number, data: Partial<InsertUser>): Promise<User | undefined> {
+    const [result] = await db.update(users).set(data).where(eq(users.id, id)).returning();
+    return result;
+  }
+
+  // ---- Company-level: Venues ----
+
+  async createVenue(venue: InsertVenue): Promise<Venue> {
+    const [result] = await db.insert(venues).values(venue).returning();
+    return result;
+  }
+
+  async getVenuesByOrg(orgId: number): Promise<Venue[]> {
+    return await db.select().from(venues).where(eq(venues.organizationId, orgId));
+  }
+
+  async getVenue(id: number, orgId: number): Promise<Venue | undefined> {
+    const [result] = await db.select().from(venues).where(
+      and(eq(venues.id, id), eq(venues.organizationId, orgId))
+    );
+    return result;
+  }
+
+  async updateVenue(id: number, orgId: number, data: Partial<InsertVenue>): Promise<Venue | undefined> {
+    const [result] = await db.update(venues).set(data).where(
+      and(eq(venues.id, id), eq(venues.organizationId, orgId))
+    ).returning();
+    return result;
+  }
+
+  async deleteVenue(id: number, orgId: number): Promise<boolean> {
+    const result = await db.delete(venues).where(
+      and(eq(venues.id, id), eq(venues.organizationId, orgId))
+    ).returning();
+    return result.length > 0;
+  }
+
   async getAgentsByOrg(orgId: number): Promise<Agent[]> {
     return await db.select().from(agents).where(eq(agents.organizationId, orgId));
   }
@@ -197,11 +263,17 @@ export class DatabaseStorage implements IStorage {
     return result.length > 0;
   }
 
-  async getToolsByAgent(agentId: number): Promise<AgentTool[]> {
+  async getToolsByAgent(agentId: number, orgId: number): Promise<AgentTool[]> {
+    // Verify agent belongs to org, then return tools
+    const agent = await this.getAgentById(agentId, orgId);
+    if (!agent) return [];
     return await db.select().from(agentTools).where(eq(agentTools.agentId, agentId));
   }
 
-  async setAgentTools(agentId: number, tools: InsertAgentTool[]): Promise<AgentTool[]> {
+  async setAgentTools(agentId: number, orgId: number, tools: InsertAgentTool[]): Promise<AgentTool[]> {
+    // Verify agent belongs to org before modifying tools
+    const agent = await this.getAgentById(agentId, orgId);
+    if (!agent) return [];
     await db.delete(agentTools).where(eq(agentTools.agentId, agentId));
     if (tools.length === 0) return [];
     return await db.insert(agentTools).values(tools).returning();
@@ -406,6 +478,7 @@ export class DatabaseStorage implements IStorage {
       startTime: staffShifts.startTime,
       endTime: staffShifts.endTime,
       organizationId: staffShifts.organizationId,
+      venueId: staffShifts.venueId,
       staffName: staffMembers.name,
       staffRole: staffMembers.role,
     }).from(staffShifts)
@@ -592,48 +665,98 @@ export class DatabaseStorage implements IStorage {
       .where(and(...conditions))
       .orderBy(desc(ragDocuments.createdAt));
   }
+
+  // ---- Venue-level extensibility: datasets ----
+
+  async createVenueDataset(dataset: InsertVenueDataset): Promise<VenueDataset> {
+    const [result] = await db.insert(venueDatasets).values(dataset).returning();
+    return result;
+  }
+
+  async getVenueDatasets(venueId: number, orgId: number): Promise<VenueDataset[]> {
+    return await db.select().from(venueDatasets).where(
+      and(eq(venueDatasets.venueId, venueId), eq(venueDatasets.organizationId, orgId))
+    ).orderBy(desc(venueDatasets.createdAt));
+  }
+
+  async getVenueDataset(id: number, orgId: number): Promise<VenueDataset | undefined> {
+    const [result] = await db.select().from(venueDatasets).where(
+      and(eq(venueDatasets.id, id), eq(venueDatasets.organizationId, orgId))
+    );
+    return result;
+  }
+
+  async updateVenueDataset(id: number, orgId: number, data: Partial<InsertVenueDataset>): Promise<VenueDataset | undefined> {
+    const [result] = await db.update(venueDatasets).set({ ...data, updatedAt: new Date() }).where(
+      and(eq(venueDatasets.id, id), eq(venueDatasets.organizationId, orgId))
+    ).returning();
+    return result;
+  }
+
+  async deleteVenueDataset(id: number, orgId: number): Promise<boolean> {
+    const result = await db.delete(venueDatasets).where(
+      and(eq(venueDatasets.id, id), eq(venueDatasets.organizationId, orgId))
+    ).returning();
+    return result.length > 0;
+  }
+
+  // ---- Conversations (scoped) ----
+
+  async getConversationsByOrg(orgId: number): Promise<any[]> {
+    return await db.select().from(conversations).where(eq(conversations.organizationId, orgId)).orderBy(desc(conversations.createdAt));
+  }
+
+  async createConversation(title: string, orgId: number, venueId?: number): Promise<any> {
+    const [result] = await db.insert(conversations).values({
+      title,
+      organizationId: orgId,
+      venueId: venueId ?? null,
+    }).returning();
+    return result;
+  }
 }
 
 export const storage = new DatabaseStorage();
 
-export async function seedVenueData(orgId: number): Promise<void> {
+export async function seedVenueData(orgId: number, venueId?: number): Promise<void> {
+  const venueField = venueId ? { venueId } : {};
   const menuSeed: InsertMenuItem[] = [
-    { name: "Margarita", price: "12.00", category: "cocktails", description: "Classic lime margarita with salt rim", available: true, organizationId: orgId },
-    { name: "Old Fashioned", price: "14.00", category: "cocktails", description: "Bourbon, bitters, sugar, orange peel", available: true, organizationId: orgId },
-    { name: "Moscow Mule", price: "13.00", category: "cocktails", description: "Vodka, ginger beer, lime", available: true, organizationId: orgId },
-    { name: "Mojito", price: "12.00", category: "cocktails", description: "Rum, mint, lime, soda", available: true, organizationId: orgId },
-    { name: "Espresso Martini", price: "15.00", category: "cocktails", description: "Vodka, espresso, coffee liqueur", available: true, organizationId: orgId },
-    { name: "Bud Light", price: "6.00", category: "beer", description: "Light lager, 12oz draft", available: true, organizationId: orgId },
-    { name: "IPA", price: "8.00", category: "beer", description: "Local craft IPA, 16oz", available: true, organizationId: orgId },
-    { name: "Chardonnay", price: "11.00", category: "wine", description: "California Chardonnay, 6oz pour", available: true, organizationId: orgId },
-    { name: "Cabernet Sauvignon", price: "13.00", category: "wine", description: "Napa Valley Cabernet, 6oz pour", available: true, organizationId: orgId },
-    { name: "Prosecco", price: "10.00", category: "wine", description: "Italian sparkling wine, 6oz pour", available: true, organizationId: orgId },
-    { name: "Tito's Vodka", price: "10.00", category: "spirits", description: "Tito's handmade vodka, neat or mixed", available: true, organizationId: orgId },
-    { name: "Jack Daniels", price: "10.00", category: "spirits", description: "Tennessee whiskey, neat or on the rocks", available: true, organizationId: orgId },
-    { name: "Hendrick's Gin", price: "12.00", category: "spirits", description: "Scottish gin with cucumber and rose", available: true, organizationId: orgId },
-    { name: "Patron Silver", price: "14.00", category: "spirits", description: "Premium silver tequila", available: true, organizationId: orgId },
-    { name: "Nachos", price: "12.00", category: "food", description: "Loaded nachos with cheese, jalapeños, salsa", available: true, organizationId: orgId },
-    { name: "Wings", price: "14.00", category: "food", description: "Buffalo wings with ranch, 12ct", available: true, organizationId: orgId },
-    { name: "Sliders", price: "16.00", category: "food", description: "Three beef sliders with fries", available: true, organizationId: orgId },
-    { name: "Fries", price: "8.00", category: "food", description: "Crispy seasoned fries", available: true, organizationId: orgId },
+    { name: "Margarita", price: "12.00", category: "cocktails", description: "Classic lime margarita with salt rim", available: true, organizationId: orgId, ...venueField },
+    { name: "Old Fashioned", price: "14.00", category: "cocktails", description: "Bourbon, bitters, sugar, orange peel", available: true, organizationId: orgId, ...venueField },
+    { name: "Moscow Mule", price: "13.00", category: "cocktails", description: "Vodka, ginger beer, lime", available: true, organizationId: orgId, ...venueField },
+    { name: "Mojito", price: "12.00", category: "cocktails", description: "Rum, mint, lime, soda", available: true, organizationId: orgId, ...venueField },
+    { name: "Espresso Martini", price: "15.00", category: "cocktails", description: "Vodka, espresso, coffee liqueur", available: true, organizationId: orgId, ...venueField },
+    { name: "Bud Light", price: "6.00", category: "beer", description: "Light lager, 12oz draft", available: true, organizationId: orgId, ...venueField },
+    { name: "IPA", price: "8.00", category: "beer", description: "Local craft IPA, 16oz", available: true, organizationId: orgId, ...venueField },
+    { name: "Chardonnay", price: "11.00", category: "wine", description: "California Chardonnay, 6oz pour", available: true, organizationId: orgId, ...venueField },
+    { name: "Cabernet Sauvignon", price: "13.00", category: "wine", description: "Napa Valley Cabernet, 6oz pour", available: true, organizationId: orgId, ...venueField },
+    { name: "Prosecco", price: "10.00", category: "wine", description: "Italian sparkling wine, 6oz pour", available: true, organizationId: orgId, ...venueField },
+    { name: "Tito's Vodka", price: "10.00", category: "spirits", description: "Tito's handmade vodka, neat or mixed", available: true, organizationId: orgId, ...venueField },
+    { name: "Jack Daniels", price: "10.00", category: "spirits", description: "Tennessee whiskey, neat or on the rocks", available: true, organizationId: orgId, ...venueField },
+    { name: "Hendrick's Gin", price: "12.00", category: "spirits", description: "Scottish gin with cucumber and rose", available: true, organizationId: orgId, ...venueField },
+    { name: "Patron Silver", price: "14.00", category: "spirits", description: "Premium silver tequila", available: true, organizationId: orgId, ...venueField },
+    { name: "Nachos", price: "12.00", category: "food", description: "Loaded nachos with cheese, jalapeños, salsa", available: true, organizationId: orgId, ...venueField },
+    { name: "Wings", price: "14.00", category: "food", description: "Buffalo wings with ranch, 12ct", available: true, organizationId: orgId, ...venueField },
+    { name: "Sliders", price: "16.00", category: "food", description: "Three beef sliders with fries", available: true, organizationId: orgId, ...venueField },
+    { name: "Fries", price: "8.00", category: "food", description: "Crispy seasoned fries", available: true, organizationId: orgId, ...venueField },
   ];
 
   const inventorySeed: InsertInventoryItem[] = [
-    { name: "Tito's Vodka", quantity: "12", unit: "bottles", cost: "22.00", reorderThreshold: "5", supplier: "Premier Spirits", organizationId: orgId },
-    { name: "Jack Daniels", quantity: "8", unit: "bottles", cost: "28.00", reorderThreshold: "5", supplier: "Premier Spirits", organizationId: orgId },
-    { name: "Hendrick's Gin", quantity: "3", unit: "bottles", cost: "35.00", reorderThreshold: "4", supplier: "Premier Spirits", organizationId: orgId },
-    { name: "Patron Silver", quantity: "6", unit: "bottles", cost: "42.00", reorderThreshold: "3", supplier: "Premier Spirits", organizationId: orgId },
-    { name: "Bud Light", quantity: "48", unit: "cans", cost: "0.75", reorderThreshold: "24", supplier: "Valley Beverage", organizationId: orgId },
-    { name: "Prosecco", quantity: "15", unit: "bottles", cost: "12.00", reorderThreshold: "6", supplier: "Wine Direct", organizationId: orgId },
-    { name: "Chardonnay", quantity: "10", unit: "bottles", cost: "14.00", reorderThreshold: "4", supplier: "Wine Direct", organizationId: orgId },
-    { name: "Cabernet Sauvignon", quantity: "8", unit: "bottles", cost: "18.00", reorderThreshold: "4", supplier: "Wine Direct", organizationId: orgId },
-    { name: "Limes", quantity: "25", unit: "pieces", cost: "0.30", reorderThreshold: "10", supplier: "Fresh Produce Co", organizationId: orgId },
-    { name: "Lemons", quantity: "18", unit: "pieces", cost: "0.35", reorderThreshold: "10", supplier: "Fresh Produce Co", organizationId: orgId },
-    { name: "Simple Syrup", quantity: "4", unit: "bottles", cost: "5.00", reorderThreshold: "2", supplier: "Bar Supplies Inc", organizationId: orgId },
-    { name: "Ice", quantity: "200", unit: "lbs", cost: "0.05", reorderThreshold: "50", supplier: "Arctic Ice", organizationId: orgId },
-    { name: "Ginger Beer", quantity: "36", unit: "bottles", cost: "1.50", reorderThreshold: "12", supplier: "Valley Beverage", organizationId: orgId },
-    { name: "Coffee Liqueur", quantity: "4", unit: "bottles", cost: "24.00", reorderThreshold: "2", supplier: "Premier Spirits", organizationId: orgId },
-    { name: "Bitters", quantity: "6", unit: "bottles", cost: "12.00", reorderThreshold: "2", supplier: "Bar Supplies Inc", organizationId: orgId },
+    { name: "Tito's Vodka", quantity: "12", unit: "bottles", cost: "22.00", reorderThreshold: "5", supplier: "Premier Spirits", organizationId: orgId, ...venueField },
+    { name: "Jack Daniels", quantity: "8", unit: "bottles", cost: "28.00", reorderThreshold: "5", supplier: "Premier Spirits", organizationId: orgId, ...venueField },
+    { name: "Hendrick's Gin", quantity: "3", unit: "bottles", cost: "35.00", reorderThreshold: "4", supplier: "Premier Spirits", organizationId: orgId, ...venueField },
+    { name: "Patron Silver", quantity: "6", unit: "bottles", cost: "42.00", reorderThreshold: "3", supplier: "Premier Spirits", organizationId: orgId, ...venueField },
+    { name: "Bud Light", quantity: "48", unit: "cans", cost: "0.75", reorderThreshold: "24", supplier: "Valley Beverage", organizationId: orgId, ...venueField },
+    { name: "Prosecco", quantity: "15", unit: "bottles", cost: "12.00", reorderThreshold: "6", supplier: "Wine Direct", organizationId: orgId, ...venueField },
+    { name: "Chardonnay", quantity: "10", unit: "bottles", cost: "14.00", reorderThreshold: "4", supplier: "Wine Direct", organizationId: orgId, ...venueField },
+    { name: "Cabernet Sauvignon", quantity: "8", unit: "bottles", cost: "18.00", reorderThreshold: "4", supplier: "Wine Direct", organizationId: orgId, ...venueField },
+    { name: "Limes", quantity: "25", unit: "pieces", cost: "0.30", reorderThreshold: "10", supplier: "Fresh Produce Co", organizationId: orgId, ...venueField },
+    { name: "Lemons", quantity: "18", unit: "pieces", cost: "0.35", reorderThreshold: "10", supplier: "Fresh Produce Co", organizationId: orgId, ...venueField },
+    { name: "Simple Syrup", quantity: "4", unit: "bottles", cost: "5.00", reorderThreshold: "2", supplier: "Bar Supplies Inc", organizationId: orgId, ...venueField },
+    { name: "Ice", quantity: "200", unit: "lbs", cost: "0.05", reorderThreshold: "50", supplier: "Arctic Ice", organizationId: orgId, ...venueField },
+    { name: "Ginger Beer", quantity: "36", unit: "bottles", cost: "1.50", reorderThreshold: "12", supplier: "Valley Beverage", organizationId: orgId, ...venueField },
+    { name: "Coffee Liqueur", quantity: "4", unit: "bottles", cost: "24.00", reorderThreshold: "2", supplier: "Premier Spirits", organizationId: orgId, ...venueField },
+    { name: "Bitters", quantity: "6", unit: "bottles", cost: "12.00", reorderThreshold: "2", supplier: "Bar Supplies Inc", organizationId: orgId, ...venueField },
   ];
 
   const supplierSeed: InsertSupplier[] = [
@@ -645,18 +768,18 @@ export async function seedVenueData(orgId: number): Promise<void> {
   ];
 
   const staffSeed: InsertStaffMember[] = [
-    { name: "Alex Rivera", role: "Head Bartender", email: "alex@venue.com", phone: "555-1001", organizationId: orgId },
-    { name: "Jordan Kim", role: "Server", email: "jordan@venue.com", phone: "555-1002", organizationId: orgId },
-    { name: "Sam Patel", role: "Host", email: "sam@venue.com", phone: "555-1003", organizationId: orgId },
-    { name: "Taylor Brooks", role: "Bartender", email: "taylor@venue.com", phone: "555-1004", organizationId: orgId },
-    { name: "Casey Morgan", role: "Server", email: "casey@venue.com", phone: "555-1005", organizationId: orgId },
+    { name: "Alex Rivera", role: "Head Bartender", email: "alex@venue.com", phone: "555-1001", organizationId: orgId, ...venueField },
+    { name: "Jordan Kim", role: "Server", email: "jordan@venue.com", phone: "555-1002", organizationId: orgId, ...venueField },
+    { name: "Sam Patel", role: "Host", email: "sam@venue.com", phone: "555-1003", organizationId: orgId, ...venueField },
+    { name: "Taylor Brooks", role: "Bartender", email: "taylor@venue.com", phone: "555-1004", organizationId: orgId, ...venueField },
+    { name: "Casey Morgan", role: "Server", email: "casey@venue.com", phone: "555-1005", organizationId: orgId, ...venueField },
   ];
 
   const guestSeed: InsertGuest[] = [
-    { name: "James Wilson", email: "james.w@email.com", phone: "555-2001", notes: "Prefers Old Fashioned, birthday in March", visitCount: 12, totalSpent: "486.50", vipStatus: true, organizationId: orgId },
-    { name: "Emily Chen", email: "emily.c@email.com", phone: "555-2002", notes: "Wine enthusiast, likes Cabernet", visitCount: 8, totalSpent: "312.00", vipStatus: true, organizationId: orgId },
-    { name: "Michael Brown", email: "mike.b@email.com", phone: "555-2003", notes: "Usually orders wings and IPA", visitCount: 5, totalSpent: "145.00", vipStatus: false, organizationId: orgId },
-    { name: "Sarah Davis", email: "sarah.d@email.com", phone: "555-2004", notes: "Cocktail lover, tries new drinks", visitCount: 15, totalSpent: "720.00", vipStatus: true, organizationId: orgId },
+    { name: "James Wilson", email: "james.w@email.com", phone: "555-2001", notes: "Prefers Old Fashioned, birthday in March", visitCount: 12, totalSpent: "486.50", vipStatus: true, organizationId: orgId, ...venueField },
+    { name: "Emily Chen", email: "emily.c@email.com", phone: "555-2002", notes: "Wine enthusiast, likes Cabernet", visitCount: 8, totalSpent: "312.00", vipStatus: true, organizationId: orgId, ...venueField },
+    { name: "Michael Brown", email: "mike.b@email.com", phone: "555-2003", notes: "Usually orders wings and IPA", visitCount: 5, totalSpent: "145.00", vipStatus: false, organizationId: orgId, ...venueField },
+    { name: "Sarah Davis", email: "sarah.d@email.com", phone: "555-2004", notes: "Cocktail lover, tries new drinks", visitCount: 15, totalSpent: "720.00", vipStatus: true, organizationId: orgId, ...venueField },
   ];
 
   await db.insert(menuItems).values(menuSeed);

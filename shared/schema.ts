@@ -13,6 +13,20 @@ export const organizations = pgTable("organizations", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// ==================== COMPANY-LEVEL SCHEMA ====================
+
+export const venues = pgTable("venues", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  address: text("address"),
+  city: text("city"),
+  state: text("state"),
+  timezone: text("timezone").default("America/New_York"),
+  phone: text("phone"),
+  organizationId: integer("organization_id").references(() => organizations.id, { onDelete: "cascade" }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
@@ -20,6 +34,7 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   role: text("role").notNull().default("owner"),
   organizationId: integer("organization_id").references(() => organizations.id),
+  activeVenueId: integer("active_venue_id").references(() => venues.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -55,6 +70,8 @@ export const waitlist = pgTable("waitlist", {
 export const conversations = pgTable("conversations", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
+  organizationId: integer("organization_id").references(() => organizations.id),
+  venueId: integer("venue_id").references(() => venues.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
@@ -73,6 +90,7 @@ export const menuItems = pgTable("menu_items", {
   category: text("category").notNull(),
   description: text("description"),
   available: boolean("available").notNull().default(true),
+  venueId: integer("venue_id").references(() => venues.id, { onDelete: "cascade" }),
   organizationId: integer("organization_id").references(() => organizations.id).notNull(),
 });
 
@@ -84,6 +102,7 @@ export const inventoryItems = pgTable("inventory_items", {
   cost: numeric("cost", { precision: 10, scale: 2 }),
   reorderThreshold: numeric("reorder_threshold", { precision: 10, scale: 2 }).notNull().default("0"),
   supplier: text("supplier"),
+  venueId: integer("venue_id").references(() => venues.id, { onDelete: "cascade" }),
   organizationId: integer("organization_id").references(() => organizations.id).notNull(),
 });
 
@@ -96,6 +115,7 @@ export const orders = pgTable("orders", {
   paymentStatus: text("payment_status").notNull().default("unpaid"),
   tableNumber: integer("table_number"),
   customerName: text("customer_name"),
+  venueId: integer("venue_id").references(() => venues.id, { onDelete: "cascade" }),
   organizationId: integer("organization_id").references(() => organizations.id).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -106,6 +126,7 @@ export const tabs = pgTable("tabs", {
   items: jsonb("items").$type<OrderItem[]>().notNull().default([]),
   total: numeric("total", { precision: 10, scale: 2 }).notNull().default("0"),
   status: text("status").notNull().default("open"),
+  venueId: integer("venue_id").references(() => venues.id, { onDelete: "cascade" }),
   organizationId: integer("organization_id").references(() => organizations.id).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -121,6 +142,7 @@ export const bookings = pgTable("bookings", {
   guestCount: integer("guest_count").notNull().default(1),
   status: text("status").notNull().default("pending"),
   notes: text("notes"),
+  venueId: integer("venue_id").references(() => venues.id, { onDelete: "cascade" }),
   organizationId: integer("organization_id").references(() => organizations.id).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -131,6 +153,7 @@ export const staffMembers = pgTable("staff_members", {
   role: text("role").notNull(),
   email: text("email"),
   phone: text("phone"),
+  venueId: integer("venue_id").references(() => venues.id, { onDelete: "cascade" }),
   organizationId: integer("organization_id").references(() => organizations.id).notNull(),
 });
 
@@ -140,6 +163,7 @@ export const staffShifts = pgTable("staff_shifts", {
   shiftDate: date("shift_date").notNull(),
   startTime: text("start_time").notNull(),
   endTime: text("end_time").notNull(),
+  venueId: integer("venue_id").references(() => venues.id, { onDelete: "cascade" }),
   organizationId: integer("organization_id").references(() => organizations.id).notNull(),
 });
 
@@ -152,6 +176,7 @@ export const guests = pgTable("guests", {
   visitCount: integer("visit_count").notNull().default(0),
   totalSpent: numeric("total_spent", { precision: 10, scale: 2 }).notNull().default("0"),
   vipStatus: boolean("vip_status").notNull().default(false),
+  venueId: integer("venue_id").references(() => venues.id, { onDelete: "cascade" }),
   organizationId: integer("organization_id").references(() => organizations.id).notNull(),
 });
 
@@ -163,6 +188,7 @@ export const tasks = pgTable("tasks", {
   dueDate: date("due_date"),
   status: text("status").notNull().default("pending"),
   priority: text("priority").notNull().default("medium"),
+  venueId: integer("venue_id").references(() => venues.id, { onDelete: "cascade" }),
   organizationId: integer("organization_id").references(() => organizations.id).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -174,6 +200,7 @@ export const wasteLogs = pgTable("waste_logs", {
   unit: text("unit"),
   reason: text("reason").notNull(),
   cost: numeric("cost", { precision: 10, scale: 2 }),
+  venueId: integer("venue_id").references(() => venues.id, { onDelete: "cascade" }),
   organizationId: integer("organization_id").references(() => organizations.id).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -205,6 +232,24 @@ export const mobileSessions = pgTable("mobile_sessions", {
   userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ==================== VENUE-LEVEL EXTENSIBILITY ====================
+
+// Agent-driven venue datasets (Excel/JSON/CSV imports or agent-generated data)
+export const venueDatasets = pgTable("venue_datasets", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  venueId: integer("venue_id").references(() => venues.id, { onDelete: "cascade" }).notNull(),
+  organizationId: integer("organization_id").references(() => organizations.id).notNull(),
+  agentId: integer("agent_id").references(() => agents.id, { onDelete: "set null" }),
+  sourceType: text("source_type").notNull().default("manual"),
+  data: jsonb("data").$type<Record<string, unknown>[]>().notNull().default([]),
+  dataSchema: jsonb("data_schema").$type<Record<string, string>>().default({}),
+  rowCount: integer("row_count").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export interface OrderItem {
@@ -293,6 +338,8 @@ export const insertTaskSchema = createInsertSchema(tasks).omit({ id: true, creat
 export const insertWasteLogSchema = createInsertSchema(wasteLogs).omit({ id: true, createdAt: true });
 export const insertRagDocumentSchema = createInsertSchema(ragDocuments).omit({ id: true, createdAt: true });
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true });
+export const insertVenueSchema = createInsertSchema(venues).omit({ id: true, createdAt: true });
+export const insertVenueDatasetSchema = createInsertSchema(venueDatasets).omit({ id: true, createdAt: true, updatedAt: true });
 
 export type InsertOrg = z.infer<typeof insertOrgSchema>;
 export type Organization = typeof organizations.$inferSelect;
@@ -328,5 +375,9 @@ export type InsertRagDocument = z.infer<typeof insertRagDocumentSchema>;
 export type RagDocument = typeof ragDocuments.$inferSelect;
 export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
 export type Supplier = typeof suppliers.$inferSelect;
+export type InsertVenue = z.infer<typeof insertVenueSchema>;
+export type Venue = typeof venues.$inferSelect;
+export type InsertVenueDataset = z.infer<typeof insertVenueDatasetSchema>;
+export type VenueDataset = typeof venueDatasets.$inferSelect;
 
 export type MobileSession = typeof mobileSessions.$inferSelect;

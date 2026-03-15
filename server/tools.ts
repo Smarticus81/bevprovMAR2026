@@ -51,7 +51,7 @@ export function getToolsForAgentType(agentType: string): ToolCatalogEntry[] {
   return TOOL_CATALOG.filter((tool) => tool.agentTypes.includes(agentType));
 }
 
-export async function autoEnableToolsForAgent(agentId: number, agentType: string): Promise<AgentTool[]> {
+export async function autoEnableToolsForAgent(agentId: number, agentType: string, orgId?: number): Promise<AgentTool[]> {
   const tools = getToolsForAgentType(agentType);
   if (tools.length === 0) return [];
   const toolInserts: InsertAgentTool[] = tools.map((t) => ({
@@ -61,7 +61,17 @@ export async function autoEnableToolsForAgent(agentId: number, agentType: string
     enabled: true,
     config: {},
   }));
-  return await storage.setAgentTools(agentId, toolInserts);
+  // If orgId provided, use scoped version; otherwise fall back for backward compat
+  if (orgId) {
+    return await storage.setAgentTools(agentId, orgId, toolInserts);
+  }
+  // Fallback: direct insert (only for initial agent creation where agent was just verified)
+  const { agentTools } = await import("@shared/schema");
+  const { db } = await import("./db");
+  const { eq } = await import("drizzle-orm");
+  await db.delete(agentTools).where(eq(agentTools.agentId, agentId));
+  if (toolInserts.length === 0) return [];
+  return await db.insert(agentTools).values(toolInserts).returning();
 }
 
 const TOOL_DEFINITIONS: Record<string, { description: string; parameters: Record<string, unknown> }> = {

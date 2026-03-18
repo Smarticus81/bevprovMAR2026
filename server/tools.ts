@@ -1,5 +1,18 @@
 import type { Agent, AgentTool, AgentConfig, InsertAgentTool } from "@shared/schema";
 import { storage } from "./storage";
+import {
+  isSquareConnected,
+  syncCatalog,
+  createSquareOrder,
+  searchSquareOrders,
+  updateSquareOrderState,
+  createExternalPayment,
+  getInventoryCounts,
+  adjustInventory,
+  setInventoryCount,
+  fuzzyMatchCatalogItem,
+  type SquareCatalogItem,
+} from "./square";
 
 export interface ToolCallRequest {
   name: string;
@@ -22,6 +35,12 @@ const ALL_TYPES = ["pos-integration", "voice-pos", "inventory", "venue-admin", "
 
 const TOOL_CATALOG: ToolCatalogEntry[] = [
   { name: "square_pos_sync", category: "POS", agentTypes: ALL_TYPES },
+  { name: "square_catalog_sync", category: "POS", agentTypes: ALL_TYPES },
+  { name: "square_create_order", category: "POS", agentTypes: ALL_TYPES },
+  { name: "square_submit_order", category: "POS", agentTypes: ALL_TYPES },
+  { name: "square_check_inventory", category: "Inventory", agentTypes: ALL_TYPES },
+  { name: "square_adjust_inventory", category: "Inventory", agentTypes: ALL_TYPES },
+  { name: "square_set_inventory", category: "Inventory", agentTypes: ALL_TYPES },
   { name: "toast_pos_sync", category: "POS", agentTypes: ALL_TYPES },
   { name: "payment_processing", category: "POS", agentTypes: ALL_TYPES },
   { name: "receipt_generation", category: "POS", agentTypes: ALL_TYPES },
@@ -76,8 +95,32 @@ export async function autoEnableToolsForAgent(agentId: number, agentType: string
 
 const TOOL_DEFINITIONS: Record<string, { description: string; parameters: Record<string, unknown> }> = {
   square_pos_sync: {
-    description: "Sync orders and payments with Square POS. Returns current sync status and recent transactions.",
+    description: "Sync orders and payments with Square POS. Returns current sync status, recent transactions from Square, and connection info.",
     parameters: { type: "object", properties: { action: { type: "string", enum: ["sync", "status", "recent_orders"], description: "The sync action to perform" } }, required: ["action"] },
+  },
+  square_catalog_sync: {
+    description: "Fetch the full Square product catalog. Returns all items with names, prices, variation IDs, and categories from the connected Square account.",
+    parameters: { type: "object", properties: {}, required: [] },
+  },
+  square_create_order: {
+    description: "Create a new order in Square with line items. Use item names from the catalog — they will be fuzzy-matched. The order appears in Square Dashboard.",
+    parameters: { type: "object", properties: { items: { type: "array", items: { type: "object", properties: { name: { type: "string", description: "Item name (fuzzy matched against catalog)" }, quantity: { type: "number", description: "Quantity" } } }, description: "Items to add to the order" }, state: { type: "string", enum: ["OPEN", "COMPLETED"], description: "Order state (default: COMPLETED)" } }, required: ["items"] },
+  },
+  square_submit_order: {
+    description: "Submit/complete an existing open Square order and create an external payment. Marks the order as completed and paid in Square Dashboard.",
+    parameters: { type: "object", properties: { orderId: { type: "string", description: "Square order ID to complete" }, paymentSource: { type: "string", description: "Payment source description (default: Pre-paid Event Package)" } }, required: ["orderId"] },
+  },
+  square_check_inventory: {
+    description: "Check Square inventory counts for items. Use item names from the catalog — they will be fuzzy-matched. Shows how many units are in stock.",
+    parameters: { type: "object", properties: { items: { type: "array", items: { type: "string" }, description: "Item names to check inventory for" } }, required: ["items"] },
+  },
+  square_adjust_inventory: {
+    description: "Adjust Square inventory — receive new stock or record waste/spoilage. Positive quantity adds stock (NONE→IN_STOCK). Negative quantity records waste (IN_STOCK→WASTE).",
+    parameters: { type: "object", properties: { item: { type: "string", description: "Item name (fuzzy matched against catalog)" }, quantity: { type: "number", description: "Quantity to adjust (positive=receive, negative=waste)" } }, required: ["item", "quantity"] },
+  },
+  square_set_inventory: {
+    description: "Set the absolute inventory count for a Square catalog item. Use this for physical counts — sets the exact quantity in stock.",
+    parameters: { type: "object", properties: { item: { type: "string", description: "Item name (fuzzy matched against catalog)" }, quantity: { type: "number", description: "Exact quantity to set" } }, required: ["item", "quantity"] },
   },
   toast_pos_sync: {
     description: "Sync orders and payments with Toast POS. Returns current sync status and recent transactions.",
@@ -502,13 +545,37 @@ export async function executeToolCall(toolName: string, args: Record<string, unk
       }
 
       case "inventory_pos_sync": {
+        const posSystem = (args.posSystem as string) || "square";
+        if (posSystem === "square") {
+          const connected = await isSquareConnected(orgId);
+          if (connected) {
+            try {
+              const catalog = await syncCatalog(orgId);
+              const squareOrders = await searchSquareOrders(orgId, { limit: 10 });
+              const localInventory = await storage.getInventoryItems(orgId);
+              return {
+                success: true,
+                result: {
+                  posSystem: "Square (Live)",
+                  catalogItems: catalog.length,
+                  recentSquareOrders: squareOrders.length,
+                  localInventoryItems: localInventory.length,
+                  lowStockItems: localInventory.filter(i => parseFloat(i.quantity) <= parseFloat(i.reorderThreshold)).length,
+                  message: `Square POS synced. ${catalog.length} catalog items, ${squareOrders.length} recent orders, ${localInventory.length} local inventory items tracked.`,
+                },
+              };
+            } catch (e: any) {
+              // Fall through to local data if Square API fails
+            }
+          }
+        }
         const inventory = await storage.getInventoryItems(orgId);
         const recentOrders = await storage.getOrders(orgId);
         const last10 = recentOrders.slice(0, 10);
         return {
           success: true,
           result: {
-            posSystem: args.posSystem,
+            posSystem: posSystem,
             inventoryCount: inventory.length,
             recentOrders: last10.length,
             lowStockItems: inventory.filter(i => parseFloat(i.quantity) <= parseFloat(i.reorderThreshold)).length,
@@ -517,10 +584,305 @@ export async function executeToolCall(toolName: string, args: Record<string, unk
         };
       }
 
-      case "square_pos_sync":
+      case "square_pos_sync": {
+        const action = args.action as string;
+        const connected = await isSquareConnected(orgId);
+        if (!connected) {
+          return { success: false, result: { error: "Square is not connected. Please connect your Square account first via Settings → Connections." } };
+        }
+        if (action === "recent_orders") {
+          try {
+            const squareOrders = await searchSquareOrders(orgId, { limit: 10 });
+            return {
+              success: true,
+              result: {
+                orders: squareOrders.map((o: any) => ({
+                  id: o.id,
+                  state: o.state,
+                  total: o.total_money ? `$${(o.total_money.amount / 100).toFixed(2)}` : "$0.00",
+                  items: o.line_items?.map((li: any) => li.name).join(", ") || "N/A",
+                  date: o.created_at,
+                })),
+                count: squareOrders.length,
+                message: `${squareOrders.length} recent orders from Square POS.`,
+              },
+            };
+          } catch (e: any) {
+            return { success: false, result: { error: `Failed to fetch Square orders: ${e.message}` } };
+          }
+        }
+        if (action === "status") {
+          try {
+            const squareOrders = await searchSquareOrders(orgId, { limit: 50 });
+            const totalRevenue = squareOrders.reduce((sum: number, o: any) => sum + (o.total_money?.amount || 0), 0) / 100;
+            return {
+              success: true,
+              result: {
+                posSystem: "Square",
+                status: "connected",
+                totalRevenue: `$${totalRevenue.toFixed(2)}`,
+                orderCount: squareOrders.length,
+                message: `Square POS connected. ${squareOrders.length} recent orders, $${totalRevenue.toFixed(2)} total revenue.`,
+              },
+            };
+          } catch (e: any) {
+            return { success: false, result: { error: `Square status check failed: ${e.message}` } };
+          }
+        }
+        // Default: sync action
+        try {
+          const catalog = await syncCatalog(orgId);
+          const squareOrders = await searchSquareOrders(orgId, { limit: 10 });
+          return {
+            success: true,
+            result: {
+              posSystem: "Square",
+              synced: true,
+              catalogItems: catalog.length,
+              recentOrders: squareOrders.length,
+              message: `Square POS synced. ${catalog.length} catalog items, ${squareOrders.length} recent orders.`,
+            },
+          };
+        } catch (e: any) {
+          return { success: false, result: { error: `Square sync failed: ${e.message}` } };
+        }
+      }
+
+      case "square_catalog_sync": {
+        const connected = await isSquareConnected(orgId);
+        if (!connected) return { success: false, result: { error: "Square not connected." } };
+        try {
+          const catalog = await syncCatalog(orgId);
+          return {
+            success: true,
+            result: {
+              items: catalog.map(i => ({
+                name: i.name,
+                price: `$${(i.price / 100).toFixed(2)}`,
+                category: i.category || "Uncategorized",
+                variationId: i.variationId,
+                variationName: i.variationName,
+              })),
+              count: catalog.length,
+              message: `Square catalog: ${catalog.length} items. ${catalog.slice(0, 5).map(i => `${i.name} ($${(i.price / 100).toFixed(2)})`).join(", ")}${catalog.length > 5 ? "..." : ""}`,
+            },
+          };
+        } catch (e: any) {
+          return { success: false, result: { error: `Catalog sync failed: ${e.message}` } };
+        }
+      }
+
+      case "square_create_order": {
+        const connected = await isSquareConnected(orgId);
+        if (!connected) return { success: false, result: { error: "Square not connected." } };
+        try {
+          const catalog = await syncCatalog(orgId);
+          const requestedItems = args.items as Array<{ name: string; quantity: number }>;
+          if (!requestedItems?.length) return { success: false, result: { error: "No items provided." } };
+
+          const orderItems: Array<{ catalogObjectId: string; variationId: string; quantity: number; name: string; price: number }> = [];
+          const notFound: string[] = [];
+
+          for (const ri of requestedItems) {
+            const match = fuzzyMatchCatalogItem(ri.name, catalog);
+            if (match) {
+              orderItems.push({
+                catalogObjectId: match.id,
+                variationId: match.variationId,
+                quantity: ri.quantity || 1,
+                name: match.name,
+                price: match.price,
+              });
+            } else {
+              notFound.push(ri.name);
+            }
+          }
+
+          if (orderItems.length === 0) {
+            return { success: false, result: { error: `No matching items found in Square catalog for: ${notFound.join(", ")}` } };
+          }
+
+          const state = (args.state as string) === "OPEN" ? "OPEN" : "COMPLETED";
+          const order = await createSquareOrder(orgId, orderItems, state as any);
+
+          // Create external payment if completed
+          let payment = null;
+          if (state === "COMPLETED" && order.total_money?.amount > 0) {
+            payment = await createExternalPayment(orgId, order.id, order.total_money.amount);
+          }
+
+          // Also create local order record
+          const totalDollars = (order.total_money?.amount || 0) / 100;
+          await storage.createOrder({
+            items: orderItems.map(i => ({ name: i.name, quantity: i.quantity, price: i.price / 100 })),
+            total: totalDollars.toFixed(2),
+            status: state === "COMPLETED" ? "completed" : "pending",
+            paymentStatus: payment ? "paid" : "unpaid",
+            paymentMethod: payment ? "external" : undefined,
+            organizationId: orgId,
+          });
+
+          const itemsSummary = orderItems.map(i => `${i.quantity}x ${i.name} ($${(i.price * i.quantity / 100).toFixed(2)})`).join(", ");
+          let msg = `Order created in Square: ${itemsSummary}. Total: $${totalDollars.toFixed(2)}.`;
+          if (notFound.length > 0) msg += ` Not found: ${notFound.join(", ")}.`;
+          if (payment) msg += " Payment recorded.";
+
+          return {
+            success: true,
+            result: {
+              orderId: order.id,
+              state: order.state,
+              total: `$${totalDollars.toFixed(2)}`,
+              items: orderItems.map(i => ({ name: i.name, quantity: i.quantity, price: `$${(i.price / 100).toFixed(2)}` })),
+              paymentId: payment?.id || null,
+              notFound,
+              message: msg,
+            },
+          };
+        } catch (e: any) {
+          return { success: false, result: { error: `Failed to create Square order: ${e.message}` } };
+        }
+      }
+
+      case "square_submit_order": {
+        const connected = await isSquareConnected(orgId);
+        if (!connected) return { success: false, result: { error: "Square not connected." } };
+        try {
+          const orderId = args.orderId as string;
+          if (!orderId) return { success: false, result: { error: "orderId is required." } };
+
+          const order = await updateSquareOrderState(orgId, orderId, "COMPLETED");
+          const totalCents = order.total_money?.amount || 0;
+          let payment = null;
+          if (totalCents > 0) {
+            const source = (args.paymentSource as string) || "Pre-paid Event Package";
+            payment = await createExternalPayment(orgId, orderId, totalCents, source);
+          }
+
+          return {
+            success: true,
+            result: {
+              orderId: order.id,
+              state: "COMPLETED",
+              total: `$${(totalCents / 100).toFixed(2)}`,
+              paymentId: payment?.id || null,
+              message: `Order ${orderId} completed in Square. Total: $${(totalCents / 100).toFixed(2)}.${payment ? " Payment recorded." : ""}`,
+            },
+          };
+        } catch (e: any) {
+          return { success: false, result: { error: `Failed to submit order: ${e.message}` } };
+        }
+      }
+
+      case "square_check_inventory": {
+        const connected = await isSquareConnected(orgId);
+        if (!connected) return { success: false, result: { error: "Square not connected." } };
+        try {
+          const itemNames = args.items as string[];
+          if (!itemNames?.length) return { success: false, result: { error: "Provide item names to check." } };
+
+          const catalog = await syncCatalog(orgId);
+          const results: Array<{ name: string; quantity: string; state: string }> = [];
+          const notFound: string[] = [];
+
+          for (const name of itemNames) {
+            const match = fuzzyMatchCatalogItem(name, catalog);
+            if (match) {
+              const counts = await getInventoryCounts(orgId, [match.variationId]);
+              const inStock = counts.find((c: any) => c.state === "IN_STOCK");
+              results.push({
+                name: match.name,
+                quantity: inStock?.quantity || "0",
+                state: inStock ? "IN_STOCK" : "NONE",
+              });
+            } else {
+              notFound.push(name);
+            }
+          }
+
+          const msg = results.map(r => `${r.name}: ${r.quantity} in stock`).join(", ");
+          return {
+            success: true,
+            result: {
+              inventory: results,
+              notFound,
+              message: msg || "No items found.",
+            },
+          };
+        } catch (e: any) {
+          return { success: false, result: { error: `Inventory check failed: ${e.message}` } };
+        }
+      }
+
+      case "square_adjust_inventory": {
+        const connected = await isSquareConnected(orgId);
+        if (!connected) return { success: false, result: { error: "Square not connected." } };
+        try {
+          const itemName = args.item as string;
+          const quantity = args.quantity as number;
+          if (!itemName || quantity === undefined) return { success: false, result: { error: "Item name and quantity are required." } };
+
+          const catalog = await syncCatalog(orgId);
+          const match = fuzzyMatchCatalogItem(itemName, catalog);
+          if (!match) return { success: false, result: { error: `Item "${itemName}" not found in Square catalog.` } };
+
+          let fromState: string, toState: string, action: string;
+          if (quantity >= 0) {
+            fromState = "NONE";
+            toState = "IN_STOCK";
+            action = "received";
+          } else {
+            fromState = "IN_STOCK";
+            toState = "WASTE";
+            action = "wasted";
+          }
+
+          await adjustInventory(orgId, match.variationId, quantity, fromState, toState);
+
+          return {
+            success: true,
+            result: {
+              item: match.name,
+              quantity: Math.abs(quantity),
+              action,
+              message: `${action === "received" ? "Received" : "Recorded waste of"} ${Math.abs(quantity)} ${match.name} in Square inventory.`,
+            },
+          };
+        } catch (e: any) {
+          return { success: false, result: { error: `Inventory adjustment failed: ${e.message}` } };
+        }
+      }
+
+      case "square_set_inventory": {
+        const connected = await isSquareConnected(orgId);
+        if (!connected) return { success: false, result: { error: "Square not connected." } };
+        try {
+          const itemName = args.item as string;
+          const quantity = args.quantity as number;
+          if (!itemName || quantity === undefined) return { success: false, result: { error: "Item name and quantity are required." } };
+
+          const catalog = await syncCatalog(orgId);
+          const match = fuzzyMatchCatalogItem(itemName, catalog);
+          if (!match) return { success: false, result: { error: `Item "${itemName}" not found in Square catalog.` } };
+
+          await setInventoryCount(orgId, match.variationId, quantity);
+
+          return {
+            success: true,
+            result: {
+              item: match.name,
+              quantity,
+              message: `Set ${match.name} inventory to ${quantity} in Square.`,
+            },
+          };
+        } catch (e: any) {
+          return { success: false, result: { error: `Set inventory failed: ${e.message}` } };
+        }
+      }
+
       case "toast_pos_sync": {
         const action = args.action as string;
-        const posName = toolName === "square_pos_sync" ? "Square" : "Toast";
+        const posName = "Toast";
         if (action === "recent_orders") {
           const recentOrders = await storage.getOrders(orgId);
           const last10 = recentOrders.slice(0, 10);

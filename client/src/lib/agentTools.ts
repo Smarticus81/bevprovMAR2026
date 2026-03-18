@@ -9,6 +9,12 @@ const ALL_TYPES = ["pos-integration", "voice-pos", "inventory", "venue-admin", "
 
 export const TOOL_CATALOG: ToolDefinition[] = [
   { name: "square_pos_sync", category: "POS", description: "Sync orders and payments with Square POS", agentTypes: ALL_TYPES },
+  { name: "square_catalog_sync", category: "POS", description: "Fetch full Square product catalog with prices and variations", agentTypes: ALL_TYPES },
+  { name: "square_create_order", category: "POS", description: "Create orders in Square with voice — items fuzzy-matched from catalog", agentTypes: ALL_TYPES },
+  { name: "square_submit_order", category: "POS", description: "Complete an open Square order with external payment", agentTypes: ALL_TYPES },
+  { name: "square_check_inventory", category: "Inventory", description: "Check Square inventory counts for items by name", agentTypes: ALL_TYPES },
+  { name: "square_adjust_inventory", category: "Inventory", description: "Receive stock or record waste in Square inventory", agentTypes: ALL_TYPES },
+  { name: "square_set_inventory", category: "Inventory", description: "Set exact physical count for Square inventory item", agentTypes: ALL_TYPES },
   { name: "toast_pos_sync", category: "POS", description: "Sync orders and payments with Toast POS", agentTypes: ALL_TYPES },
   { name: "payment_processing", category: "POS", description: "Process credit card and digital payments", agentTypes: ALL_TYPES },
   { name: "receipt_generation", category: "POS", description: "Generate and send digital receipts", agentTypes: ALL_TYPES },

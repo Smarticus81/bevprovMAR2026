@@ -5,6 +5,7 @@ import { insertWaitlistSchema, AGENT_TYPES } from "@shared/schema";
 import { requireAuth } from "./auth";
 import { voiceRouter } from "./voice";
 import { mcpRouter } from "./mcp";
+import { squareRouter } from "./squareRoutes";
 import { autoEnableToolsForAgent } from "./tools";
 import { z } from "zod";
 import multer from "multer";
@@ -34,6 +35,7 @@ export async function registerRoutes(
 
   app.use(voiceRouter);
   app.use(mcpRouter);
+  app.use(squareRouter);
 
   app.post("/api/waitlist", async (req, res) => {
     const parsed = insertWaitlistSchema.safeParse(req.body);

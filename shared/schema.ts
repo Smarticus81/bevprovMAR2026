@@ -10,6 +10,13 @@ export const organizations = pgTable("organizations", {
   plan: text("plan").notNull().default("starter"),
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),
+  // Square integration credentials (per-tenant)
+  squareAccessToken: text("square_access_token"),
+  squareRefreshToken: text("square_refresh_token"),
+  squareMerchantId: text("square_merchant_id"),
+  squareLocationId: text("square_location_id"),
+  squareTokenExpiresAt: timestamp("square_token_expires_at"),
+  squareEnvironment: text("square_environment").default("production"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

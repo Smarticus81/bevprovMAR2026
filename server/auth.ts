@@ -13,11 +13,37 @@ import { eq, and, gt } from "drizzle-orm";
 
 const PgSession = connectPgSimple(session);
 
+function buildSessionConnectionConfig() {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    return undefined;
+  }
+
+  let sslMode = "";
+  try {
+    const parsed = new URL(connectionString);
+    sslMode = (parsed.searchParams.get("sslmode") || "").toLowerCase();
+  } catch {
+    // fall back to plain connection string
+  }
+
+  if (sslMode === "no-verify") {
+    return {
+      connectionString,
+      ssl: { rejectUnauthorized: false },
+    };
+  }
+
+  return { connectionString };
+}
+
 export function setupAuth(app: Express) {
+  const sessionConnection = buildSessionConnectionConfig();
+
   app.use(
     session({
       store: new PgSession({
-        conString: process.env.DATABASE_URL,
+        ...(sessionConnection ? { conObject: sessionConnection } : { conString: process.env.DATABASE_URL }),
         createTableIfMissing: true,
       }),
       secret: process.env.SESSION_SECRET || (() => {
@@ -184,11 +210,15 @@ export function setupAuth(app: Express) {
       // Create mobile session token
       const sessionToken = crypto.randomBytes(32).toString("hex");
       const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-      await db.insert(mobileSessions).values({
-        id: sessionToken,
-        userId: user.id,
-        expiresAt,
-      });
+      try {
+        await db.insert(mobileSessions).values({
+          id: sessionToken,
+          userId: user.id,
+          expiresAt,
+        });
+      } catch (sessionErr) {
+        console.warn("Failed to create mobile session token:", (sessionErr as Error).message);
+      }
 
       req.login(user, (err) => {
         if (err) return res.status(500).json({ error: "Login failed after registration" });
@@ -216,11 +246,15 @@ export function setupAuth(app: Express) {
         // Create mobile session token
         const sessionToken = crypto.randomBytes(32).toString("hex");
         const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-        await db.insert(mobileSessions).values({
-          id: sessionToken,
-          userId: user.id,
-          expiresAt,
-        });
+        try {
+          await db.insert(mobileSessions).values({
+            id: sessionToken,
+            userId: user.id,
+            expiresAt,
+          });
+        } catch (sessionErr) {
+          console.warn("Failed to create mobile session token:", (sessionErr as Error).message);
+        }
 
         let organization = null;
         if (user.organizationId) {

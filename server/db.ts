@@ -17,8 +17,9 @@ export const db = drizzle(pool, { schema });
  * Safe to run multiple times (all statements are IF NOT EXISTS / IF NOT FOUND).
  */
 export async function ensureSchema() {
-  const client = await pool.connect();
+  let client: pg.PoolClient | null = null;
   try {
+    client = await pool.connect();
     await client.query("BEGIN");
 
     // 1. venues table
@@ -103,9 +104,15 @@ export async function ensureSchema() {
     await client.query("COMMIT");
     console.log("Schema migration check complete");
   } catch (err) {
-    await client.query("ROLLBACK");
+    if (client) {
+      try {
+        await client.query("ROLLBACK");
+      } catch {
+        // ignore rollback errors when connection is unavailable
+      }
+    }
     console.error("Schema migration error:", err);
   } finally {
-    client.release();
+    client?.release();
   }
 }

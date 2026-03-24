@@ -109,6 +109,9 @@ export default function AgentBuilder() {
   const [ragMaxResults, setRagMaxResults] = useState(5);
   const [fileUploadEnabled, setFileUploadEnabled] = useState(false);
 
+  // Square connection state
+  const [squareConnecting, setSquareConnecting] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -120,6 +123,102 @@ export default function AgentBuilder() {
       return res.json();
     },
     enabled: !!id,
+  });
+
+  // Square connection status query
+  const { data: squareStatus, isLoading: squareStatusLoading, refetch: refetchSquareStatus } = useQuery<{
+    connected: boolean;
+    merchantId: string | null;
+    locationId: string | null;
+    businessName?: string;
+    country?: string;
+    currency?: string;
+  }>({
+    queryKey: ["square", "status"],
+    queryFn: async () => {
+      const res = await fetch("/api/square/status", { credentials: "include", headers: getAuthHeaders() });
+      if (!res.ok) throw new Error("Failed to fetch Square status");
+      return res.json();
+    },
+  });
+
+  const { data: squareLocations } = useQuery<{ locations: Array<{ id: string; name: string; address: any; status: string }>; activeLocationId: string | null }>({
+    queryKey: ["square", "locations"],
+    queryFn: async () => {
+      const res = await fetch("/api/square/locations", { credentials: "include", headers: getAuthHeaders() });
+      if (!res.ok) throw new Error("Failed to fetch locations");
+      return res.json();
+    },
+    enabled: !!squareStatus?.connected,
+  });
+
+  const connectSquare = useCallback(async () => {
+    setSquareConnecting(true);
+    try {
+      const res = await fetch("/api/square/oauth/authorize", { credentials: "include", headers: getAuthHeaders() });
+      if (!res.ok) throw new Error("Failed to get authorization URL");
+      const { url } = await res.json();
+
+      // Open OAuth popup
+      const popup = window.open(url, "square-oauth", "width=600,height=700,scrollbars=yes");
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data?.type === "square-oauth-success") {
+          window.removeEventListener("message", handleMessage);
+          setSquareConnecting(false);
+          refetchSquareStatus();
+          queryClient.invalidateQueries({ queryKey: ["square"] });
+          toast({ title: "Square Connected", description: "Your Square account has been connected successfully." });
+        } else if (event.data?.type === "square-oauth-error") {
+          window.removeEventListener("message", handleMessage);
+          setSquareConnecting(false);
+          toast({ title: "Connection Failed", description: event.data.error || "Failed to connect Square.", variant: "destructive" });
+        }
+      };
+      window.addEventListener("message", handleMessage);
+
+      // Cleanup if popup closed without completing
+      const pollClosed = setInterval(() => {
+        if (popup?.closed) {
+          clearInterval(pollClosed);
+          window.removeEventListener("message", handleMessage);
+          setSquareConnecting(false);
+        }
+      }, 500);
+    } catch (err: any) {
+      setSquareConnecting(false);
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  }, [refetchSquareStatus, queryClient, toast]);
+
+  const disconnectSquare = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/square/disconnect", { method: "POST", credentials: "include", headers: getAuthHeaders() });
+      if (!res.ok) throw new Error("Failed to disconnect");
+      return res.json();
+    },
+    onSuccess: () => {
+      refetchSquareStatus();
+      queryClient.invalidateQueries({ queryKey: ["square"] });
+      toast({ title: "Disconnected", description: "Square has been disconnected." });
+    },
+  });
+
+  const setSquareLocation = useMutation({
+    mutationFn: async (locationId: string) => {
+      const res = await fetch("/api/square/locations/set", {
+        method: "POST",
+        credentials: "include",
+        headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ locationId }),
+      });
+      if (!res.ok) throw new Error("Failed to set location");
+      return res.json();
+    },
+    onSuccess: () => {
+      refetchSquareStatus();
+      queryClient.invalidateQueries({ queryKey: ["square"] });
+      toast({ title: "Location Set", description: "Square location updated." });
+    },
   });
 
   const { data: documents = [], isLoading: documentsLoading } = useQuery<RagDocument[]>({
@@ -237,6 +336,7 @@ export default function AgentBuilder() {
             maxResults: ragMaxResults,
           },
           fileUploadEnabled,
+          squareEnabled: !!squareStatus?.connected,
           wakeWord: {
             enabled: wakeWordEnabled,
             phrase: wakeWordPhrase,
@@ -703,6 +803,110 @@ export default function AgentBuilder() {
                   </div>
 
                   <div className="space-y-1">
+                    <ConnectionSection
+                      title="Square POS"
+                      description="Connect to your Square account for orders, payments, catalog, and inventory"
+                      icon={<Zap size={16} />}
+                      enabled={!!squareStatus?.connected}
+                      onToggle={() => {
+                        if (squareStatus?.connected) {
+                          disconnectSquare.mutate();
+                        } else {
+                          connectSquare();
+                        }
+                      }}
+                      toggleTestId="switch-square-pos"
+                    >
+                      <div className="space-y-4 pt-2">
+                        {squareStatusLoading ? (
+                          <div className="flex items-center gap-2 py-3">
+                            <Loader2 size={14} className="text-ink-ghost animate-spin" />
+                            <span className="text-sm text-ink-faint">Checking connection...</span>
+                          </div>
+                        ) : squareStatus?.connected ? (
+                          <>
+                            <div className="flex items-center gap-2 py-2">
+                              <CheckCircle2 size={14} className="text-emerald-400" />
+                              <span className="text-sm text-ink">Connected to Square</span>
+                            </div>
+                            {squareStatus.businessName && (
+                              <div className="text-xs text-ink-faint">
+                                Business: <span className="text-ink-muted">{squareStatus.businessName}</span>
+                              </div>
+                            )}
+                            {squareStatus.merchantId && (
+                              <div className="text-xs text-ink-faint">
+                                Merchant: <span className="text-ink-muted font-mono">{squareStatus.merchantId.slice(0, 12)}...</span>
+                              </div>
+                            )}
+
+                            {/* Location selector */}
+                            {squareLocations && squareLocations.locations.length > 0 && (
+                              <div>
+                                <label className="text-xs uppercase tracking-[0.15em] text-ink-faint font-medium block mb-2">Active Location</label>
+                                <div className="space-y-1">
+                                  {squareLocations.locations.map((loc) => (
+                                    <button
+                                      key={loc.id}
+                                      onClick={() => setSquareLocation.mutate(loc.id)}
+                                      className={`w-full text-left px-3 py-2.5 text-sm transition-all duration-200 border-b border-line-subtle ${
+                                        squareLocations.activeLocationId === loc.id
+                                          ? "text-ink bg-accent/5 border-l-2 border-l-accent"
+                                          : "text-ink-muted hover:text-ink hover:bg-surface-2"
+                                      }`}
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <span>{loc.name}</span>
+                                        {squareLocations.activeLocationId === loc.id && (
+                                          <CheckCircle2 size={12} className="text-accent" />
+                                        )}
+                                      </div>
+                                      <span className="text-xs text-ink-faint">{loc.status}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="text-xs text-ink-ghost pt-2 space-y-1">
+                              <p>Scopes: Catalog, Orders, Payments, Inventory</p>
+                              <p>Your agents can now create orders, manage inventory, and process payments through voice commands.</p>
+                            </div>
+
+                            <button
+                              onClick={() => disconnectSquare.mutate()}
+                              disabled={disconnectSquare.isPending}
+                              className="text-xs text-red-400/70 hover:text-red-400 transition-colors"
+                            >
+                              {disconnectSquare.isPending ? "Disconnecting..." : "Disconnect Square"}
+                            </button>
+                          </>
+                        ) : (
+                          <div className="space-y-3">
+                            <p className="text-sm text-ink-faint">
+                              Connect your Square account to enable voice-driven orders, payments, catalog sync, and inventory management.
+                            </p>
+                            <button
+                              onClick={connectSquare}
+                              disabled={squareConnecting}
+                              className="flex items-center gap-2 px-4 py-2.5 bg-surface-3 hover:bg-surface-4 text-ink text-sm transition-all duration-200 border border-line hover:border-line-strong"
+                            >
+                              {squareConnecting ? (
+                                <Loader2 size={14} className="animate-spin" />
+                              ) : (
+                                <ExternalLink size={14} />
+                              )}
+                              {squareConnecting ? "Connecting..." : "Connect with Square"}
+                            </button>
+                            <div className="text-xs text-ink-ghost space-y-1">
+                              <p>Required permissions: Merchant Profile, Catalog, Orders, Payments, Inventory</p>
+                              <p>A popup will open to authorize your Square account via OAuth 2.0.</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </ConnectionSection>
+
                     <ConnectionSection
                       title="External Database"
                       description="Connect to Supabase, Convex, or a custom PostgreSQL database"

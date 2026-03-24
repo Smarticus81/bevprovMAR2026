@@ -83,7 +83,15 @@ export async function ensureSchema() {
     await addColumnIfMissing("conversations", "organization_id", "INTEGER REFERENCES organizations(id)");
     await addColumnIfMissing("conversations", "venue_id", "INTEGER REFERENCES venues(id) ON DELETE CASCADE");
 
-    // 6. Operational tables: add venue_id where missing
+    // 6. Square integration columns on organizations
+    await addColumnIfMissing("organizations", "square_access_token", "TEXT");
+    await addColumnIfMissing("organizations", "square_refresh_token", "TEXT");
+    await addColumnIfMissing("organizations", "square_merchant_id", "TEXT");
+    await addColumnIfMissing("organizations", "square_location_id", "TEXT");
+    await addColumnIfMissing("organizations", "square_token_expires_at", "TIMESTAMP");
+    await addColumnIfMissing("organizations", "square_environment", "TEXT DEFAULT 'production'");
+
+    // 7. Operational tables: add venue_id where missing
     const venueIdTables = [
       "menu_items", "inventory_items", "orders", "tabs", "bookings",
       "staff_members", "staff_shifts", "guests", "tasks", "waste_logs"

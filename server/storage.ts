@@ -28,7 +28,7 @@ export interface IStorage {
   createOrganization(org: InsertOrg): Promise<Organization>;
   getOrganization(id: number): Promise<Organization | undefined>;
   getOrganizationBySlug(slug: string): Promise<Organization | undefined>;
-  updateOrganization(id: number, data: Partial<{ plan: string; stripeCustomerId: string; stripeSubscriptionId: string }>): Promise<Organization | undefined>;
+  updateOrganization(id: number, data: Partial<{ plan: string; stripeCustomerId: string; stripeSubscriptionId: string; squareAccessToken: string | null; squareRefreshToken: string | null; squareMerchantId: string | null; squareLocationId: string | null; squareTokenExpiresAt: Date | null; squareEnvironment: string }>): Promise<Organization | undefined>;
   getOrganizationByStripeCustomerId(customerId: string): Promise<Organization | undefined>;
 
   createUser(user: InsertUser): Promise<User>;
@@ -122,7 +122,7 @@ export interface IStorage {
   updateSupplier(id: number, orgId: number, data: Partial<InsertSupplier>): Promise<Supplier | undefined>;
   deleteSupplier(id: number, orgId: number): Promise<boolean>;
 
-  updateOrganization(id: number, data: Partial<{ plan: string; stripeCustomerId: string; stripeSubscriptionId: string }>): Promise<Organization | undefined>;
+  updateOrganization(id: number, data: Partial<{ plan: string; stripeCustomerId: string; stripeSubscriptionId: string; squareAccessToken: string | null; squareRefreshToken: string | null; squareMerchantId: string | null; squareLocationId: string | null; squareTokenExpiresAt: Date | null; squareEnvironment: string }>): Promise<Organization | undefined>;
   getOrganizationByStripeCustomerId(customerId: string): Promise<Organization | undefined>;
   getAgentCountByOrg(orgId: number): Promise<number>;
 
@@ -163,7 +163,7 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async updateOrganization(id: number, data: Partial<{ plan: string; stripeCustomerId: string; stripeSubscriptionId: string }>): Promise<Organization | undefined> {
+  async updateOrganization(id: number, data: Partial<{ plan: string; stripeCustomerId: string; stripeSubscriptionId: string; squareAccessToken: string | null; squareRefreshToken: string | null; squareMerchantId: string | null; squareLocationId: string | null; squareTokenExpiresAt: Date | null; squareEnvironment: string }>): Promise<Organization | undefined> {
     const [result] = await db.update(organizations).set(data).where(eq(organizations.id, id)).returning();
     return result;
   }

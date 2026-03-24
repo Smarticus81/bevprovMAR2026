@@ -1,13 +1,17 @@
 import { useParams } from "wouter";
-import { useVoiceSession, type TranscriptEntry, type WakeWordConfig } from "@/hooks/useVoiceSession";
+import { useVoiceSession, type TranscriptEntry, type AgentState } from "@/hooks/useVoiceSession";
+import { useWakeWord, isWakeWordSupported } from "@/hooks/useWakeWord";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { getAuthHeaders } from "@/lib/queryClient";
 import { ArrowLeft, Mic, MicOff, PhoneOff, Wrench, ShoppingCart, DollarSign, CreditCard, User, Hash, Receipt, Volume2, Upload, FileText, Loader2, X, Wifi, WifiOff, Clock } from "lucide-react";
 import { BevProLogo } from "@/components/BevProLogo";
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import type { OrderItem, AgentConfig } from "@shared/schema";
+import { soundWake, soundSleep, soundError } from "@/lib/sounds";
+
+type AppMode = "idle" | "wake_word" | "command" | "shutdown";
 
 interface PosState {
   orderItems: OrderItem[];
@@ -163,24 +167,24 @@ const AGENT_TYPE_LABELS: Record<string, string> = {
   "bevone": "BevOne",
 };
 
-function StatusPill({ status, latency }: { status: string; latency: number | null }) {
-  const isConnected = status === "connected";
+function StatusPill({ status, latency }: { status: AgentState; latency: number | null }) {
+  const isLive = status === "listening" || status === "thinking" || status === "speaking";
   const isConnecting = status === "connecting";
   return (
     <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium tracking-wide ${
-      isConnected ? "bg-emerald-500/15 text-emerald-400" :
+      isLive ? "bg-emerald-500/15 text-emerald-400" :
       isConnecting ? "bg-amber-500/15 text-amber-400" :
       status === "error" ? "bg-red-500/15 text-red-400" :
       "bg-surface-3 text-ink-faint"
     }`} data-testid="status-pill">
       <div className={`w-1.5 h-1.5 rounded-full ${
-        isConnected ? "bg-emerald-400" :
+        isLive ? "bg-emerald-400" :
         isConnecting ? "bg-amber-400 animate-pulse" :
         status === "error" ? "bg-red-400" :
         "bg-ink-faint"
       }`} />
-      {isConnected ? "Live" : isConnecting ? "Connecting" : status === "error" ? "Error" : "Ready"}
-      {isConnected && latency !== null && (
+      {isLive ? "Live" : isConnecting ? "Connecting" : status === "error" ? "Error" : "Ready"}
+      {isLive && latency !== null && (
         <span className="text-ink-faint ml-0.5">{latency}ms</span>
       )}
     </div>
@@ -426,6 +430,7 @@ function TranscriptPanel({
   voice: ReturnType<typeof useVoiceSession>;
   scrollRef: React.RefObject<HTMLDivElement | null>;
 }) {
+  const isLive = voice.status === "listening" || voice.status === "thinking" || voice.status === "speaking";
   return (
     <div className="h-full flex flex-col">
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 pb-4 pt-3" data-testid="transcript-panel">
@@ -445,7 +450,7 @@ function TranscriptPanel({
             </motion.div>
           )}
 
-          {voice.status === "connected" && voice.transcript.length === 0 && (
+          {isLive && voice.transcript.length === 0 && (
             <motion.div
               key="listening-pulse"
               initial={{ opacity: 0 }}
@@ -464,7 +469,7 @@ function TranscriptPanel({
             <TranscriptBubble key={i} entry={entry} index={i} />
           ))}
 
-          {voice.status === "connected" && voice.isSpeaking && voice.transcript.length > 0 && (
+          {voice.status === "speaking" && voice.transcript.length > 0 && (
             <motion.div
               key="speaking-pulse"
               initial={{ opacity: 0 }}
@@ -472,14 +477,18 @@ function TranscriptPanel({
               className="flex justify-start mb-3"
             >
               <div className="bg-agent-bubble border border-agent-bubble-border rounded-2xl rounded-bl-md px-4 py-3">
-                <BevProLogo size={24} className="text-accent/50" animated={true} />
+                {voice.partialTranscript ? (
+                  <p className="text-ink-secondary text-[15px] leading-relaxed opacity-70">{voice.partialTranscript}</p>
+                ) : (
+                  <BevProLogo size={24} className="text-accent/50" animated={true} />
+                )}
               </div>
             </motion.div>
           )}
 
-          {voice.status === "connected" && voice.isListening && !voice.isSpeaking && voice.transcript.length > 0 && (
+          {voice.status === "thinking" && voice.transcript.length > 0 && (
             <motion.div
-              key="listening-indicator"
+              key="thinking-indicator"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="flex justify-start mb-3"
@@ -607,49 +616,78 @@ function AudioRing({ isActive, isSpeaking }: { isActive: boolean; isSpeaking: bo
   );
 }
 
-function VoiceControls({ voice, wakeWordConfig }: { voice: ReturnType<typeof useVoiceSession>; wakeWordConfig?: WakeWordConfig }) {
+function VoiceControls({
+  voice,
+  appMode,
+  wakeWordEnabled,
+  wakePhrase,
+  wakeWordListening,
+  onTap,
+  onStopWakeWord,
+}: {
+  voice: ReturnType<typeof useVoiceSession>;
+  appMode: AppMode;
+  wakeWordEnabled: boolean;
+  wakePhrase: string;
+  wakeWordListening: boolean;
+  onTap: () => void;
+  onStopWakeWord: () => void;
+}) {
+  const isLive = voice.status === "listening" || voice.status === "thinking" || voice.status === "speaking";
+  const isMuted = voice.isMuted;
+
   return (
     <div className="shrink-0 border-t border-line-subtle bg-page/40 backdrop-blur-md" data-testid="voice-controls">
       <div className="flex flex-col items-center gap-3 py-5 sm:py-7 px-4">
-        {voice.status === "wake-listening" ? (
+        {appMode === "wake_word" ? (
           <div className="flex flex-col items-center gap-3">
             <motion.div
               animate={{ scale: [1, 1.1, 1] }}
               transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
               className="relative w-18 h-18 sm:w-20 sm:h-20"
             >
-              <div className="w-full h-full rounded-full bg-surface-3 border border-line-strong flex items-center justify-center">
+              <motion.button
+                onClick={onTap}
+                whileTap={{ scale: 0.92 }}
+                className="w-full h-full rounded-full bg-surface-3 border border-line-strong flex items-center justify-center"
+              >
                 <Volume2 size={28} className="text-ink-muted" />
-              </div>
+              </motion.button>
               <motion.div
-                className="absolute inset-[-6px] rounded-full border border-line"
+                className="absolute inset-[-6px] rounded-full border border-line pointer-events-none"
                 animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.4, 0.2] }}
                 transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
               />
             </motion.div>
             <p className="text-ink-muted text-sm font-medium" data-testid="text-wake-listening">
-              Say "{wakeWordConfig?.phrase || "hey bev"}" to begin
+              {wakeWordListening ? `Say "${wakePhrase}" to begin` : "Tap to talk, or say the wake word"}
             </p>
             <button
               data-testid="button-stop-wake-word"
-              onClick={voice.disconnect}
+              onClick={onStopWakeWord}
               className="px-5 py-2.5 rounded-full text-sm font-medium border border-line text-ink-faint hover:text-ink-secondary hover:border-line-strong transition-all min-h-[44px]"
             >
               Stop Listening
             </button>
           </div>
-        ) : voice.returningToStandby ? (
+        ) : appMode === "shutdown" ? (
           <div className="flex flex-col items-center gap-3">
-            <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-surface-3 flex items-center justify-center">
-              <Loader2 size={28} className="text-ink-faint animate-spin" />
-            </div>
-            <p className="text-ink-faint text-sm" data-testid="text-returning-standby">Returning to standby...</p>
+            <motion.button
+              data-testid="button-reactivate"
+              onClick={onTap}
+              whileTap={{ scale: 0.92 }}
+              whileHover={{ scale: 1.04 }}
+              className="relative w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-full bg-surface-3 border border-line flex items-center justify-center"
+            >
+              <Volume2 size={28} className="text-ink-faint" />
+            </motion.button>
+            <p className="text-ink-faint text-sm font-medium">Shut down. Tap to reactivate.</p>
           </div>
         ) : voice.status === "idle" || voice.status === "error" ? (
           <div className="flex flex-col items-center gap-3">
             <motion.button
               data-testid="button-start-call"
-              onClick={() => voice.connect()}
+              onClick={onTap}
               whileTap={{ scale: 0.92 }}
               whileHover={{ scale: 1.04 }}
               className="relative w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-full bg-gradient-to-b from-accent-hover to-accent flex items-center justify-center shadow-[0_0_40px_rgba(201,169,110,0.2),0_4px_16px_rgba(0,0,0,0.3)]"
@@ -657,10 +695,10 @@ function VoiceControls({ voice, wakeWordConfig }: { voice: ReturnType<typeof use
               <Mic size={28} className="text-black sm:w-8 sm:h-8" />
             </motion.button>
             <p className="text-ink-faint text-sm font-medium">Tap to start</p>
-            {wakeWordConfig?.enabled && (
+            {wakeWordEnabled && isWakeWordSupported() && (
               <button
                 data-testid="button-start-wake-word"
-                onClick={voice.startWakeWordListening}
+                onClick={onTap}
                 className="px-5 py-2.5 rounded-full text-sm font-medium border border-line text-ink-faint hover:text-ink-secondary hover:border-line-strong transition-all flex items-center gap-2 min-h-[44px]"
               >
                 <Volume2 size={15} />
@@ -684,19 +722,19 @@ function VoiceControls({ voice, wakeWordConfig }: { voice: ReturnType<typeof use
               onClick={voice.toggleMute}
               whileTap={{ scale: 0.9 }}
               className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all ${
-                voice.isListening
+                !isMuted
                   ? "bg-surface-3 border border-line text-ink-secondary hover:bg-surface-4"
                   : "bg-red-500/15 border border-red-500/20 text-red-400"
               }`}
             >
-              {voice.isListening ? <Mic size={20} /> : <MicOff size={20} />}
+              {!isMuted ? <Mic size={20} /> : <MicOff size={20} />}
             </motion.button>
 
             <div className="relative">
-              <AudioRing isActive={voice.status === "connected"} isSpeaking={voice.isSpeaking} />
+              <AudioRing isActive={isLive} isSpeaking={voice.status === "speaking"} />
               <motion.button
                 data-testid="button-end-call"
-                onClick={voice.disconnect}
+                onClick={onTap}
                 whileTap={{ scale: 0.9 }}
                 className="relative w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-full bg-red-500 flex items-center justify-center shadow-[0_0_30px_rgba(239,68,68,0.25),0_4px_12px_rgba(0,0,0,0.3)]"
               >
@@ -714,9 +752,15 @@ function VoiceControls({ voice, wakeWordConfig }: { voice: ReturnType<typeof use
           </div>
         )}
 
-        {!voice.error && !voice.returningToStandby && voice.status === "connected" && (
+        {!voice.error && isLive && (
           <p className="text-ink-faint text-xs">
-            {voice.isListening ? (voice.isSpeaking ? "Agent speaking..." : "Listening...") : "Muted"}
+            {voice.status === "speaking"
+              ? "Agent speaking..."
+              : voice.status === "thinking"
+              ? "Processing..."
+              : isMuted
+              ? "Muted"
+              : "Listening..."}
           </p>
         )}
       </div>
@@ -728,6 +772,7 @@ export default function AgentApp() {
   const { agentId } = useParams<{ agentId: string }>();
   const id = parseInt(agentId || "0");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [appMode, setAppMode] = useState<AppMode>("idle");
 
   const { data: agent } = useQuery({
     queryKey: ["agent-app", agentId],
@@ -743,29 +788,160 @@ export default function AgentApp() {
   });
 
   const agentConfig = agent?.config as AgentConfig | null;
-  const wakeWordConfig: WakeWordConfig | undefined = useMemo(() => {
-    if (!agentConfig?.wakeWord?.enabled) return undefined;
-    const wk = agentConfig.wakeWord;
-    return {
-      enabled: true,
-      phrase: wk.phrase || "hey bev",
-      endPhrases: wk.endPhrases?.length ? wk.endPhrases : ["goodbye", "we are done", "that's all"],
-      shutdownPhrases: wk.shutdownPhrases?.length ? wk.shutdownPhrases : ["stop listening", "shut down"],
-      levenshteinThreshold: wk.levenshteinThreshold ?? 2,
-    };
-  }, [agentConfig?.wakeWord]);
+  const wakeWordEnabled = !!agentConfig?.wakeWord?.enabled;
+  const wakePhrase = agentConfig?.wakeWord?.phrase || "hey bev";
+  const stopPhrases = useMemo(
+    () =>
+      agentConfig?.wakeWord?.endPhrases?.length
+        ? agentConfig.wakeWord.endPhrases
+        : ["goodbye", "we are done", "that's all", "that's all for now", "nothing else", "see you"],
+    [agentConfig?.wakeWord?.endPhrases],
+  );
+  const shutdownPhrases = useMemo(
+    () =>
+      agentConfig?.wakeWord?.shutdownPhrases?.length
+        ? agentConfig.wakeWord.shutdownPhrases
+        : ["shut down", "shut it down", "turn off", "stop listening", "terminate"],
+    [agentConfig?.wakeWord?.shutdownPhrases],
+  );
 
-  const voice = useVoiceSession(id, wakeWordConfig);
-
+  const voice = useVoiceSession(id);
   const isVoicePos = agent?.type === "voice-pos";
-
   const posState = useMemo(() => extractPosState(voice.transcript), [voice.transcript]);
+  const isLive = voice.status === "listening" || voice.status === "thinking" || voice.status === "speaking";
+
+  // Wake word callbacks
+  const onWakeWordDetected = useCallback(() => {
+    soundWake();
+    setAppMode("command");
+    voice.connect();
+  }, [voice]);
+
+  const onStopDetected = useCallback(() => {
+    soundSleep();
+    voice.disconnect();
+    // 600ms delay before restarting SpeechRecognition — mic conflict
+    setTimeout(() => setAppMode("wake_word"), 600);
+  }, [voice]);
+
+  const onShutdownDetected = useCallback(() => {
+    soundSleep();
+    voice.disconnect();
+    setAppMode("shutdown");
+  }, [voice]);
+
+  const wakeWord = useWakeWord({
+    wakeWords: [wakePhrase, `okay ${wakePhrase.split(" ").pop()}`],
+    stopPhrases,
+    shutdownPhrases,
+    onWakeWordDetected,
+    onStopDetected,
+    onShutdownDetected,
+  });
+
+  // In-conversation termination: monitor user transcripts for stop/shutdown phrases
+  useEffect(() => {
+    if (appMode !== "command") return;
+    const lastMsg = voice.transcript[voice.transcript.length - 1];
+    if (!lastMsg || lastMsg.role !== "user") return;
+    const text = lastMsg.text.toLowerCase();
+
+    if (shutdownPhrases.some((p) => text.includes(p))) {
+      setTimeout(() => {
+        voice.disconnect();
+        setAppMode("shutdown");
+      }, 2000);
+    } else if (stopPhrases.some((p) => text.includes(p))) {
+      setTimeout(() => {
+        soundSleep();
+        voice.disconnect();
+        setTimeout(() => {
+          setAppMode("wake_word");
+          wakeWord.startWakeWord();
+        }, 600);
+      }, 2000);
+    }
+  }, [voice.transcript, appMode, stopPhrases, shutdownPhrases, voice, wakeWord]);
+
+  // Main tap handler implementing the app state machine
+  const handleTap = useCallback(async () => {
+    if (appMode === "idle" || appMode === "shutdown") {
+      // Request mic permission, then enter wake word or command mode
+      try {
+        const testStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        testStream.getTracks().forEach((t) => t.stop());
+      } catch {
+        // Permission denied — fall through to command mode which will show error
+      }
+      if (wakeWordEnabled && isWakeWordSupported()) {
+        soundWake();
+        setAppMode("wake_word");
+        wakeWord.startWakeWord();
+      } else {
+        soundWake();
+        setAppMode("command");
+        voice.connect();
+      }
+    } else if (appMode === "wake_word") {
+      // Tap while in wake_word = go straight to command mode
+      wakeWord.stopWakeWord();
+      soundWake();
+      setAppMode("command");
+      voice.connect();
+    } else if (appMode === "command") {
+      if (voice.status === "speaking") {
+        // Tap while speaking = interrupt
+        voice.interrupt();
+      } else {
+        // Tap while listening/thinking = disconnect, return to wake word or idle
+        soundSleep();
+        voice.disconnect();
+        if (wakeWordEnabled && isWakeWordSupported()) {
+          setTimeout(() => {
+            setAppMode("wake_word");
+            wakeWord.startWakeWord();
+          }, 600);
+        } else {
+          setAppMode("idle");
+        }
+      }
+    }
+  }, [appMode, wakeWordEnabled, wakeWord, voice]);
+
+  const handleStopWakeWord = useCallback(() => {
+    wakeWord.stopWakeWord();
+    soundSleep();
+    setAppMode("idle");
+  }, [wakeWord]);
+
+  // Sync appMode when voice connects/disconnects externally
+  useEffect(() => {
+    if (isLive && appMode !== "command") {
+      setAppMode("command");
+    }
+  }, [isLive, appMode]);
+
+  useEffect(() => {
+    if (voice.status === "error" && appMode === "command") {
+      soundError();
+    }
+  }, [voice.status, appMode]);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [voice.transcript]);
+
+  const controlsProps = {
+    voice,
+    appMode,
+    wakeWordEnabled,
+    wakePhrase,
+    wakeWordListening: wakeWord.isListening,
+    onTap: handleTap,
+    onStopWakeWord: handleStopWakeWord,
+  };
 
   if (isVoicePos) {
     return (
@@ -782,10 +958,12 @@ export default function AgentApp() {
           </div>
         </div>
 
-        <VoiceControls voice={voice} wakeWordConfig={wakeWordConfig} />
+        <VoiceControls {...controlsProps} />
       </div>
     );
   }
+
+  const isLiveForContent = isLive;
 
   return (
     <div className="h-[100dvh] bg-page-deep text-ink flex flex-col" style={{ paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
@@ -794,7 +972,7 @@ export default function AgentApp() {
       <div className="flex-1 overflow-hidden min-h-0 flex flex-col">
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 pb-4 pt-3 min-h-0">
           <AnimatePresence mode="popLayout">
-            {voice.status === "idle" && (
+            {(voice.status === "idle" || appMode === "wake_word" || appMode === "shutdown") && voice.transcript.length === 0 && (
               <motion.div
                 key="idle"
                 initial={{ opacity: 0 }}
@@ -811,12 +989,18 @@ export default function AgentApp() {
                   <h2 className="text-ink-muted text-base sm:text-lg font-medium mb-1">
                     {agent?.name || "Voice Agent"}
                   </h2>
-                  <p className="text-ink-faint text-sm">Tap the button below to start</p>
+                  <p className="text-ink-faint text-sm">
+                    {appMode === "wake_word"
+                      ? `Say "${wakePhrase}" or tap the button`
+                      : appMode === "shutdown"
+                      ? "Shut down. Tap to reactivate."
+                      : "Tap the button below to start"}
+                  </p>
                 </div>
               </motion.div>
             )}
 
-            {voice.status === "connected" && voice.transcript.length === 0 && (
+            {isLiveForContent && voice.transcript.length === 0 && (
               <motion.div
                 key="listening-pulse"
                 initial={{ opacity: 0 }}
@@ -848,7 +1032,7 @@ export default function AgentApp() {
               <TranscriptBubble key={i} entry={entry} index={i} />
             ))}
 
-            {voice.status === "connected" && voice.isSpeaking && voice.transcript.length > 0 && (
+            {voice.status === "speaking" && voice.transcript.length > 0 && (
               <motion.div
                 key="speaking-pulse"
                 initial={{ opacity: 0 }}
@@ -856,14 +1040,18 @@ export default function AgentApp() {
                 className="flex justify-start mb-3"
               >
                 <div className="bg-agent-bubble border border-agent-bubble-border rounded-2xl rounded-bl-md px-4 py-3">
-                  <BevProLogo size={24} className="text-accent/50" animated={true} />
+                  {voice.partialTranscript ? (
+                    <p className="text-ink-secondary text-[15px] leading-relaxed opacity-70">{voice.partialTranscript}</p>
+                  ) : (
+                    <BevProLogo size={24} className="text-accent/50" animated={true} />
+                  )}
                 </div>
               </motion.div>
             )}
 
-            {voice.status === "connected" && voice.isListening && !voice.isSpeaking && voice.transcript.length > 0 && (
+            {voice.status === "thinking" && voice.transcript.length > 0 && (
               <motion.div
-                key="listening-indicator"
+                key="thinking-indicator"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className="flex justify-start mb-3"
@@ -891,7 +1079,7 @@ export default function AgentApp() {
         </div>
       </div>
 
-      <VoiceControls voice={voice} wakeWordConfig={wakeWordConfig} />
+      <VoiceControls {...controlsProps} />
     </div>
   );
 }

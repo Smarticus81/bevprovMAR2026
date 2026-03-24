@@ -59,18 +59,25 @@ voice.post("/api/voice/session", requireAuth, async (req, res) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini-realtime-preview",
+        model: "gpt-4o-mini-realtime-preview-2024-12-17",
+        modalities: ["text", "audio"],
         voice: sanitizeVoice(config.voice),
         instructions: systemPrompt,
         tools: toolDefs,
-        max_response_output_tokens: 4096,
+        tool_choice: "auto",
+        input_audio_format: "pcm16",
+        output_audio_format: "pcm16",
         input_audio_transcription: { model: "whisper-1" },
         turn_detection: {
           type: "server_vad",
-          threshold: config.vadSensitivity ?? 0.5,
-          silence_duration_ms: 500,
-          prefix_padding_ms: 300,
+          threshold: config.vadSensitivity ?? 0.35,
+          silence_duration_ms: 400,
+          prefix_padding_ms: 200,
+          create_response: true,
         },
+        temperature: 0.6,
+        speed: config.speed ?? 0.9,
+        max_response_output_tokens: 4096,
       }),
     });
 
@@ -87,13 +94,12 @@ voice.post("/api/voice/session", requireAuth, async (req, res) => {
 
     const session = await response.json();
     return res.json({
+      ...session,
+      // Keep legacy token field for backward compatibility
       token: session.client_secret?.value,
-      sessionId: session.id,
-      voice: sanitizeVoice(config.voice),
-      tools: toolDefs.map((t: any) => t.name),
+      greeting: config.greeting || null,
       agentName: agent.name,
       agentType: agent.type,
-      greeting: config.greeting || null,
     });
   } catch (error: any) {
     console.error("Voice session error:", error);

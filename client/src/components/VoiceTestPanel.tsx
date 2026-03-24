@@ -10,6 +10,7 @@ interface VoiceTestPanelProps {
 
 export function VoiceTestPanel({ agentId, agentName }: VoiceTestPanelProps) {
   const voice = useVoiceSession(agentId);
+  const isLive = voice.status === "listening" || voice.status === "thinking" || voice.status === "speaking";
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -23,7 +24,7 @@ export function VoiceTestPanel({ agentId, agentName }: VoiceTestPanelProps) {
       <div className="p-4 border-b border-line flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className={`w-2 h-2 rounded-full ${
-            voice.status === "connected" ? "bg-green-500" :
+            isLive ? "bg-green-500" :
             voice.status === "connecting" ? "bg-yellow-500 animate-pulse" :
             voice.status === "error" ? "bg-red-500" : "bg-surface-4"
           }`} />
@@ -36,19 +37,19 @@ export function VoiceTestPanel({ agentId, agentName }: VoiceTestPanelProps) {
               {voice.latency}ms
             </span>
           )}
-          {voice.isSpeaking && (
+          {voice.status === "speaking" && (
             <Volume2 size={14} className="text-ink-faint animate-pulse" />
           )}
         </div>
       </div>
 
       <div ref={scrollRef} className="h-64 overflow-y-auto p-4 space-y-3" data-testid="voice-transcript">
-        {voice.transcript.length === 0 && voice.status !== "connected" && (
+        {voice.transcript.length === 0 && !isLive && (
           <div className="h-full flex items-center justify-center">
             <p className="text-ink-ghost text-sm">Start a voice session to test your agent</p>
           </div>
         )}
-        {voice.transcript.length === 0 && voice.status === "connected" && (
+        {voice.transcript.length === 0 && isLive && (
           <div className="h-full flex items-center justify-center">
             <p className="text-ink-faint text-sm animate-pulse">Listening...</p>
           </div>
@@ -120,12 +121,12 @@ export function VoiceTestPanel({ agentId, agentName }: VoiceTestPanelProps) {
               data-testid="button-toggle-mute"
               onClick={voice.toggleMute}
               className={`p-3 rounded-full border transition-all duration-300 ${
-                voice.isListening
+                !voice.isMuted
                   ? "border-line-strong text-ink-secondary hover:border-line-strong"
                   : "border-red-500/30 text-red-400"
               }`}
             >
-              {voice.isListening ? <Mic size={20} /> : <MicOff size={20} />}
+              {!voice.isMuted ? <Mic size={20} /> : <MicOff size={20} />}
             </button>
             <button
               data-testid="button-end-voice"

@@ -7,43 +7,28 @@ import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import type { Express, Request, Response, NextFunction } from "express";
 import { storage, seedVenueData } from "./storage";
-import { db } from "./db";
+import { db, buildPgConnectionConfig, databaseUrl } from "./db";
 import { mobileSessions, users, organizations, venues } from "@shared/schema";
 import { eq, and, gt } from "drizzle-orm";
 
 const PgSession = connectPgSimple(session);
 
-function buildSessionConnectionConfig() {
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
-    return undefined;
-  }
-
-  let sslMode = "";
-  try {
-    const parsed = new URL(connectionString);
-    sslMode = (parsed.searchParams.get("sslmode") || "").toLowerCase();
-  } catch {
-    // fall back to plain connection string
-  }
-
-  if (sslMode === "no-verify") {
-    return {
-      connectionString,
-      ssl: { rejectUnauthorized: false },
-    };
-  }
-
-  return { connectionString };
+function getMobileSessionId(req: Request): string | null {
+  const raw = req.headers["x-session-id"];
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (!value) return null;
+  const normalized = value.trim();
+  if (!normalized || normalized === "undefined" || normalized === "null") return null;
+  return normalized;
 }
 
 export function setupAuth(app: Express) {
-  const sessionConnection = buildSessionConnectionConfig();
+  const sessionConnection = buildPgConnectionConfig(databaseUrl);
 
   app.use(
     session({
       store: new PgSession({
-        ...(sessionConnection ? { conObject: sessionConnection } : { conString: process.env.DATABASE_URL }),
+        conObject: sessionConnection,
         createTableIfMissing: true,
       }),
       secret: process.env.SESSION_SECRET || (() => {
@@ -272,7 +257,7 @@ export function setupAuth(app: Express) {
 
   app.post("/api/auth/logout", async (req: Request, res: Response) => {
     // Delete mobile session if x-session-id provided
-    const mobileSessionId = req.headers["x-session-id"] as string;
+    const mobileSessionId = getMobileSessionId(req);
     if (mobileSessionId) {
       try {
         await db.delete(mobileSessions).where(eq(mobileSessions.id, mobileSessionId));
@@ -302,7 +287,7 @@ export function setupAuth(app: Express) {
 
   app.get("/api/auth/me", async (req: Request, res: Response) => {
     // Support both passport cookies and x-session-id token auth
-    const mobileSessionId = req.headers["x-session-id"] as string;
+    const mobileSessionId = getMobileSessionId(req);
 
     if (mobileSessionId) {
       try {
@@ -354,7 +339,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   }
 
   // Support mobile x-session-id token auth
-  const mobileSessionId = req.headers["x-session-id"] as string;
+  const mobileSessionId = getMobileSessionId(req);
   if (mobileSessionId) {
     try {
       const sessions = await db.select()

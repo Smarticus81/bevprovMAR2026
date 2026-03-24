@@ -2,12 +2,80 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import * as schema from "@shared/schema";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL must be set");
+function isUsableDatabaseUrl(value: string): boolean {
+  try {
+    const parsed = new URL(value);
+    if (!["postgres:", "postgresql:"].includes(parsed.protocol)) return false;
+    if (!parsed.hostname) return false;
+    if (parsed.hostname.toLowerCase() === "base") return false;
+    if (value.includes("[YOUR-PASSWORD]")) return false;
+    return true;
+  } catch {
+    return false;
+  }
 }
 
+function buildUrlFromPgParts(): string | null {
+  const host = process.env.PGHOST;
+  const port = process.env.PGPORT;
+  const user = process.env.PGUSER;
+  const password = process.env.PGPASSWORD;
+  const database = process.env.PGDATABASE;
+
+  if (!host || !port || !user || !password || !database) {
+    return null;
+  }
+
+  const encodedUser = encodeURIComponent(user);
+  const encodedPassword = encodeURIComponent(password);
+  const sslMode = (process.env.PGSSLMODE || "require").toLowerCase();
+  const sslQuery = sslMode ? `?sslmode=${encodeURIComponent(sslMode)}` : "";
+  return `postgresql://${encodedUser}:${encodedPassword}@${host}:${port}/${database}${sslQuery}`;
+}
+
+export function resolveDatabaseUrl(): string {
+  const candidates = [
+    process.env.DATABASE_URL,
+    process.env.DATABASE_PRIVATE_URL,
+    process.env.DATABASE_PUBLIC_URL,
+    process.env.POSTGRES_URL,
+    process.env.POSTGRES_PRIVATE_URL,
+    process.env.POSTGRES_PUBLIC_URL,
+    buildUrlFromPgParts(),
+  ].filter((value): value is string => !!value && value.trim().length > 0);
+
+  const usable = candidates.find(isUsableDatabaseUrl);
+  if (usable) return usable;
+
+  const attempted = candidates.length > 0 ? candidates.join(" | ") : "(none)";
+  throw new Error(
+    `No valid PostgreSQL connection string found. Checked DATABASE_URL, DATABASE_PRIVATE_URL, DATABASE_PUBLIC_URL, POSTGRES_URL, POSTGRES_PRIVATE_URL, POSTGRES_PUBLIC_URL, PG* vars. Attempted: ${attempted}`,
+  );
+}
+
+export function buildPgConnectionConfig(connectionString = resolveDatabaseUrl()): pg.PoolConfig {
+  let sslMode = "";
+  try {
+    const parsed = new URL(connectionString);
+    sslMode = (parsed.searchParams.get("sslmode") || "").toLowerCase();
+  } catch {
+    // Keep default behavior if parsing fails
+  }
+
+  if (sslMode === "no-verify") {
+    return {
+      connectionString,
+      ssl: { rejectUnauthorized: false },
+    };
+  }
+
+  return { connectionString };
+}
+
+export const databaseUrl = resolveDatabaseUrl();
+
 const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
+  ...buildPgConnectionConfig(databaseUrl),
 });
 
 export const db = drizzle(pool, { schema });

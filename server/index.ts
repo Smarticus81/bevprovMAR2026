@@ -6,7 +6,7 @@ import { createServer } from "http";
 import { runMigrations } from "stripe-replit-sync";
 import { getStripeSync } from "./stripeClient";
 import { WebhookHandlers } from "./webhookHandlers";
-import { ensureSchema } from "./db";
+import { ensureSchema, databaseUrl } from "./db";
 
 const app = express();
 const httpServer = createServer(app);
@@ -20,7 +20,6 @@ declare module "http" {
 }
 
 async function initStripe() {
-  const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
     console.error("DATABASE_URL required for Stripe integration");
     return;
